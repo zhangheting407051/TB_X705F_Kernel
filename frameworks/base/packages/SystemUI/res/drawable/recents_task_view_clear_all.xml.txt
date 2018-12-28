@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- add by zhaoguangbing@wind-mobi.com for featrue 10058 update Recents UI on 20180403 start-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/clear_all_recents_pressed" android:state_pressed="true"/>
+    <item android:drawable="@drawable/clear_all_recents"/>
+</selector>
+<!-- add by zhaoguangbing@wind-mobi.com for featrue 10058 update Recents UI on 20180403 end-->

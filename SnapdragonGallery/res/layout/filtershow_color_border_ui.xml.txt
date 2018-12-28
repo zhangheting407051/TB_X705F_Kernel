@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/top"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0D0D0D"
+    android:orientation="vertical"
+    android:visibility="visible" >
+
+    <FrameLayout
+        android:id="@+id/editorContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="bottom"
+        android:layout_weight="5" >
+
+        <LinearLayout
+            android:id="@+id/controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_weight="5"
+            android:orientation="vertical"
+            android:visibility="visible" >
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="2.5"
+                android:columnCount="2"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/controlName1"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="8dip"
+                    android:text="@string/color_border_size"
+                    android:textColor="#ffffff" />
+
+                <TextView
+                    android:id="@+id/colorBorderSizeValue"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="8dip"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold" />
+
+                <SeekBar
+                    android:id="@+id/colorBorderSizeSeekBar"
+                    android:indeterminateTint="#4f92e9"
+                    android:progressBackgroundTint="#ffffff"
+                    android:progressTint="#4f92e9"
+                    android:thumbTint="#ffffff"
+                    android:layout_width="match_parent"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_gravity="fill_horizontal" />
+            </GridLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="2.5"
+                android:columnCount="2"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/controlName2"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="8dip"
+                    android:text="@string/color_border_corner_size"
+                    android:textColor="#ffffff" />
+
+                <TextView
+                    android:id="@+id/colorBorderCornerValue"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="8dip"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold" />
+
+                <SeekBar
+                    android:id="@+id/colorBorderCornerSizeSeekBar"
+                    android:indeterminateTint="#4f92e9"
+                    android:progressBackgroundTint="#ffffff"
+                    android:progressTint="#4f92e9"
+                    android:thumbTint="#ffffff"
+                    android:layout_width="match_parent"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_gravity="fill_horizontal" />
+            </GridLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/colorPicker"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dip"
+                android:text="@string/draw_color" />
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorCompareView
+                android:id="@+id/btnSelect"
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:layout_marginBottom="0dp"
+                android:layout_marginEnd="18dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginTop="0dp" />
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorSVRectView
+                android:id="@+id/colorRectView"
+                android:layout_width="@dimen/draw_ui_width"
+                android:layout_height="@dimen/draw_ui_width"
+                android:layout_gravity="center"
+                android:layout_marginEnd="1dp"
+                android:layout_marginTop="8dp" />
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorHueView
+                android:id="@+id/ColorHueView"
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:layout_marginTop="0dp" />
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorOpacityView
+                android:id="@+id/colorOpacityView"
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:layout_marginTop="24dp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="5dp"
+        android:layout_weight="3"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal" >
+
+        <LinearLayout
+            android:id="@+id/listColors"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <Button
+                android:id="@+id/draw_color_button01"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:background="@drawable/filtershow_color_picker_circle" />
+
+            <Button
+                android:id="@+id/draw_color_button02"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:layout_marginStart="30dp"
+                android:background="@drawable/filtershow_color_picker_circle" />
+
+            <Button
+                android:id="@+id/draw_color_button03"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:layout_marginStart="30dp"
+                android:background="@drawable/filtershow_color_picker_circle" />
+
+            <Button
+                android:id="@+id/draw_color_button04"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:layout_marginStart="30dp"
+                android:background="@drawable/filtershow_color_picker_circle" />
+
+            <Button
+                android:id="@+id/draw_color_button05"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:layout_marginStart="30dp"
+                android:background="@drawable/filtershow_color_picker_circle" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

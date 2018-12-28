@@ -1,0 +1,1030 @@
+package com.android.systemui.lenovo.screenshot;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnKeyListener;
+import android.view.View.OnLayoutChangeListener;
+import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.util.DisplayMetrics;
+import android.view.Display;
+import java.lang.reflect.InvocationTargetException;
+//shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 start
+import android.widget.LinearLayout;
+import com.android.systemui.scrollshot.JudgeScrollShotService;
+//shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 end
+
+import com.android.systemui.FontSizeUtils;
+import com.android.systemui.R;
+import com.android.systemui.lenovo.avatar.LenovoAvataCommon.LenovoAvataAction;
+import com.android.systemui.lenovo.avatar.LenovoAvataCommon.LenovoAvataCategory;
+import com.android.systemui.lenovo.avatar.LenovoAvatarImpl;
+import com.android.systemui.lenovo.screenshot.DrawableView.OnPaintEventListener;
+import com.android.systemui.lenovo.screenshot.HomeWatcher.OnHomePressedListener;
+//import com.lenovo.lps.reaper.sdk.api.ParamMap;
+//shiyaru@wind-mobi.com add 2018.5.30 start
+import com.android.systemui.scrollshot.ScrollShot;
+import com.android.systemui.scrollshot.ScrollShotListener;
+import com.android.systemui.lenovo.screenshot.TakeScreenshot;
+//shiyaru@wind-mobi.com add 2018.5.30 end
+
+public class AreaScreenshotView implements OnClickListener, OnTouchListener, OnHomePressedListener, OnKeyListener {
+
+    private static final String TAG = ScreenShotUtil.TAG + ".AreaScreenshotView";    // added by ligr3 at 2014-8-25
+    private static AreaScreenshotView areaScreenshotView;
+    private boolean autoShare;
+    private Context mContext;
+    private boolean isRunning;
+    private boolean isDebug = false;
+    private boolean isFullScreenShot = true;
+    private View mScreenshotView;
+    //shiyaru@wind-mobi.com add 2018.6.27 start
+    private View mBackgroundView;
+    //shiyaru@wind-mobi.com add 2018.6.27 end
+    private Bitmap mScreenBitmap;
+    private ImageView mScreenImageView;
+    private TextView mGuideTextView;
+    private WindowManager mWindowManager;
+    private CaptureView mCaptureView;
+    private TextView confirmBtn,shareBtn, cancelBtn;
+    //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 start
+    private TextView scrollShotBtn, editBtn, saveAndShareBtn, deleteBtn;
+    //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 start
+    private LinearLayout bottomBtnLayout, bottomEditBtnLayout;
+    private RelativeLayout titleBtnLayout;
+    //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 end
+    //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 end
+    private Rect mCaptureRect;
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+    private ScrollShotListener mScreenshotService;
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+
+    private LenovoGlobalScreenshot mGlobalScreenshot;
+
+    private TelephonyManager mTelephonyManager;
+    private MyPhoneStateListener mPhoneStateListener;
+
+    private HomeWatcher mHomeWatcher;
+
+    /** Lenovo-sw ligr3 added 2014-08-22 begin, adding painting function */
+    private static final int COLOR_RED = 0;
+    private static final int COLOR_YELLOW = 1;
+    private static final int COLOR_BLACK = 2;
+    private static final int COLOR_BLUE = 3;
+
+    private static final int SPOT_1 = 0;
+    private static final int SPOT_2 = 1;
+    private static final int SPOT_3 = 2;
+
+    private static final String LENOVO_SCREENSHOT_PREFS = "lenovoscreenshot.prefs";
+    private static final String LENOVO_SCREENSHOT_COLOR = "lenovoscreenshot.color";
+    private static final String LENOVO_SCREENSHOT_STROKE = "lenovoscreenshot.stroke";
+    private static final String HIDE_SHOW_NAVIGATIONBAR = "com.android.systemui.NAVIGATIONBAR_UPDATE";
+
+    private int mCurrentColor;
+    private int mCurrentSpot;
+
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+    private ImageView mBtnSwitch, mBtnUndo, mBtnRedo, mBtnToolpanel;
+    private View mToolPanel;
+    private ImageView  mBtnYellow, mBtnBlack, mBtnRed, mBtnBlue;    // 工具弹出面板，颜色、线条选择
+    private ImageView mBtnSpot1, mBtnSpot2, mBtnSpot3;
+    private DrawableView mDrawableView;
+    private boolean bIsPaintingMode;
+    private boolean bIsViewAdjusted;
+    private boolean bIsUndoAvailable;
+    private boolean bIsRedoAvailable;
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+    private float mScale;    // 缩放比例
+    private float mScale2;
+    private Bitmap mDrawedBitmap;
+    private Animation mToolpanelShowAnim, mToolpanelHideAnim;
+    private int mSystemUIVisibility;    // 系统UI当前显示情况
+    /** Lenovo-sw ligr3 added 2014-08-22 end, adding painting function */
+    /* Lenovo-sw ligr3 added 2014-11-20 begin, for screenshot avatar */
+    private boolean mTrackedOpenTool, mTrackedEnterPaint, mTrackedBackToCut; // Only track once
+    /* Lenovo-sw ligr3 added 2014-11-20 end, for screenshot avatar */
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+    private TakeScreenshot mTakeScreenshot;
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+
+    public static AreaScreenshotView getAreaScreenshotView(Context context) {
+        Log.d(TAG, "getAreaScreenshotView");
+        if(areaScreenshotView == null) {
+            areaScreenshotView = new AreaScreenshotView(context);
+        }
+        return areaScreenshotView;
+    }
+
+    public AreaScreenshotView(Context context) {
+        initView(context);
+    }
+    /* 2016-01-14 modified by wangyifa delete the guide layout and other relate layout */
+    private void initView(Context context) {
+        Log.d(TAG, "initView");
+        this.mContext = context;
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+        mTakeScreenshot = TakeScreenshot.getTakeScreenshot(mContext);
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+        mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        mScreenshotView = View.inflate(context, R.layout.lenovo_view_area_screenshot, null);
+        mScreenshotView.setFocusable(true);
+        mScreenshotView.setOnKeyListener(this);
+
+        //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 start
+        mBackgroundView = mScreenshotView.findViewById(R.id.screenshot_background_view);
+        //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 end
+        mScreenImageView = (ImageView) mScreenshotView.findViewById(R.id.iv_screen);
+        mGuideTextView = (TextView) mScreenshotView.findViewById(R.id.tv_guide);
+        mCaptureView = (CaptureView) mScreenshotView.findViewById(R.id.capture);
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 start
+        bottomBtnLayout = (LinearLayout) mScreenshotView.findViewById(R.id.linerlayout_btns);
+        titleBtnLayout = (RelativeLayout) mScreenshotView.findViewById(R.id.screenshot_title_bar);
+        //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 start
+        bottomEditBtnLayout = (LinearLayout) mScreenshotView.findViewById(R.id.screenshot_edit_btns);
+        //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 end
+
+        deleteBtn = (TextView) mScreenshotView.findViewById(R.id.btn_delete);
+        scrollShotBtn = (TextView) mScreenshotView.findViewById(R.id.btn_scrollshot);
+        editBtn = (TextView) mScreenshotView.findViewById(R.id.btn_edit);
+        shareBtn = (TextView)mScreenshotView.findViewById(R.id.btn_share);
+        saveAndShareBtn = (TextView)mScreenshotView.findViewById(R.id.btn_save_share);
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 end
+        confirmBtn =  (TextView) mScreenshotView.findViewById(R.id.btn_confirm);
+        cancelBtn = (TextView) mScreenshotView.findViewById(R.id.btn_cancel);
+        mBtnSwitch = (ImageView) mScreenshotView.findViewById(R.id.screenshot_btn_switch);
+        mBtnSwitch.setBackgroundResource(R.drawable.lenovo_screenshot_icon_screenshot);
+        mBtnSwitch.setOnClickListener(this);
+        mDrawableView = (DrawableView) mScreenshotView.findViewById(R.id.screenshot_drawable_view);
+        mScreenshotView.addOnLayoutChangeListener(new OnLayoutChangeListener() {
+
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right,
+                    int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                adjustScreenshotViewSize();
+            }
+        });
+
+        mBtnUndo = (ImageView) mScreenshotView.findViewById(R.id.screenshot_btn_undo);
+        mBtnUndo.setBackgroundResource(R.drawable.lenovo_screenshot_ic_back);
+        mBtnUndo.setOnClickListener(this);
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+        mBtnRedo = (ImageView) mScreenshotView.findViewById(R.id.screenshot_btn_redo);
+        mBtnRedo.setBackgroundResource(R.drawable.lenovo_screenshot_ic_redo);
+        mBtnRedo.setOnClickListener(this);
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+        mBtnToolpanel = (ImageView) mScreenshotView.findViewById(R.id.screenshot_btn_toolpanel);
+        mBtnToolpanel.setBackgroundResource(R.drawable.lenovo_screenshot_icon_brush);
+        mBtnToolpanel.setOnClickListener(this);
+        mToolPanel = mScreenshotView.findViewById(R.id.screenshot_tool_panel);
+
+        mBtnYellow = (ImageView) mScreenshotView.findViewById(R.id.screenshot_color_yellow);
+        mBtnYellow.setOnClickListener(this);
+        mBtnBlack = (ImageView) mScreenshotView.findViewById(R.id.screenshot_color_black);
+        mBtnBlack.setOnClickListener(this);
+        mBtnRed = (ImageView) mScreenshotView.findViewById(R.id.screenshot_color_red);
+        mBtnRed.setOnClickListener(this);
+        mBtnBlue = (ImageView) mScreenshotView.findViewById(R.id.screenshot_color_blue);
+        mBtnBlue.setOnClickListener(this);
+
+        mBtnSpot1 = (ImageView) mScreenshotView.findViewById(R.id.screenshot_spot_1);
+        mBtnSpot1.setOnClickListener(this);
+        mBtnSpot2 = (ImageView) mScreenshotView.findViewById(R.id.screenshot_spot_2);
+        mBtnSpot2.setOnClickListener(this);
+        mBtnSpot3 = (ImageView) mScreenshotView.findViewById(R.id.screenshot_spot_3);
+        mBtnSpot3.setOnClickListener(this);
+
+        mToolpanelShowAnim = AnimationUtils.loadAnimation(mContext,
+                R.anim.lenovo_screenshot_toolpanel_show);
+        mToolpanelHideAnim = AnimationUtils.loadAnimation(mContext,
+                R.anim.lenovo_screenshot_toolpanel_hide);
+
+        mDrawableView.setOnPaintEventListener(new OnPaintEventListener() {
+            @Override
+            public void onUndoEnabledChanged(boolean enabled) {
+                if(enabled){
+                    setUndoEnabled(true);
+                } else{
+                    setUndoEnabled(false);
+                }
+            }
+
+            //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+            @Override
+            public void onRedoEnabledChanged(boolean enabled) {
+                if(enabled){
+                    setRedoEnabled(true);
+                } else{
+                    setRedoEnabled(false);
+                }
+            }
+            //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+
+            @Override
+            public void onStartPaint() {
+                if(mToolPanel.getVisibility() == View.VISIBLE){
+                    hideToolPanel();
+                }
+            }
+        });
+        /** Lenovo-sw ligr3 modified 2014-08-22 end, adding painting function */
+        /* 2016-01-14 modified by wangyifa */
+        //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 start
+        mBackgroundView.setOnClickListener(this);
+        //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 end
+        mCaptureView.setOnTouchListener(this);
+        confirmBtn.setOnClickListener(this);
+        cancelBtn.setOnClickListener(this);
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 start
+        deleteBtn.setOnClickListener(this);
+        scrollShotBtn.setOnClickListener(this);
+        editBtn.setOnClickListener(this);
+        shareBtn.setOnClickListener(this);
+        saveAndShareBtn.setOnClickListener(this);
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 end
+
+        /*phone state listening*/
+        mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        mPhoneStateListener = new MyPhoneStateListener();
+//        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+
+        mHomeWatcher = new HomeWatcher(context);
+        mHomeWatcher.setOnHomePressedListener(this);
+
+        mCaptureView.resetCatureStatus();
+        //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 start
+        mCaptureView.setVisibility(View.INVISIBLE);
+        //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 end
+    }
+
+    private int getRealHeight(){
+        int heightPixels = 0;
+        Display d = mWindowManager.getDefaultDisplay();
+        DisplayMetrics metrics = new DisplayMetrics();
+        d.getMetrics(metrics);
+        android.graphics.Point realSize = new android.graphics.Point();
+        try{
+            Display.class.getMethod("getRealSize",android.graphics.Point.class).invoke(d,realSize);
+        }catch(IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException | NoSuchMethodException e){
+            e.printStackTrace();
+        }
+        heightPixels = realSize.y;
+        return heightPixels;
+    }
+
+    /**
+     * Adjust the screenshot view size, added by ligr3
+     */
+    @SuppressWarnings("deprecation")
+    private void adjustScreenshotViewSize() {
+        /** Lenovo-sw ligr3 added 2014-08-21 begin, for adjusting the frame size */
+        Log.d(TAG, "adjustScreenshotViewSize");
+        if(bIsViewAdjusted){
+            FrameLayout fl = (FrameLayout) mScreenshotView.findViewById(R.id.screenshot_frame);
+            int height = fl.getHeight();
+            int windowHeight = mWindowManager.getDefaultDisplay().getHeight();
+            mScale = ((float)height) / windowHeight;
+            mScale2 = ((float)height) / getRealHeight();
+            mDrawableView.setSize(fl.getWidth(), fl.getHeight());
+            Log.d(TAG, "mScale = " + mScale);
+            return;
+        }
+        FrameLayout fl = (FrameLayout) mScreenshotView.findViewById(R.id.screenshot_frame);
+        ViewGroup.LayoutParams lp = fl.getLayoutParams();
+        int height = fl.getHeight();
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+        int mScreenBitmapHeight = mScreenBitmap.getHeight();
+        int mScreenBitmapWidth = mScreenBitmap.getWidth();
+        //int windowWidth = mWindowManager.getDefaultDisplay().getWidth();
+        //int windowHeight = mWindowManager.getDefaultDisplay().getHeight();
+        lp.width = (int) (height * (((float)mScreenBitmapWidth) / mScreenBitmapHeight));
+        //lp.width = (int) (height * (((float)windowWidth) / windowHeight));
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+        fl.setLayoutParams(lp);
+        bIsViewAdjusted = true;
+        /** Lenovo-sw ligr3 added 2014-08-21 end, for adjusting the frame size */
+    }
+
+    //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 start
+    public Bitmap getScreenBitmap() {
+        return this.mScreenBitmap;
+    }
+    //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 end
+
+    public void setScreenBitmap(Bitmap bm) {
+        if(bm != null) {
+            this.mScreenBitmap = bm;
+            /*调整图片，A890e 上面不做调整在裁剪页面显示的时候，竖屏下宽度无法填满整个屏幕*/
+            bm = BitmapCropUtil.cropBitmap(bm, bm.getHeight());
+            mScreenImageView.setImageBitmap(bm);
+        }
+    }
+
+    public boolean addScreenshotView() {
+        if(isRunning) return false;
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 0, 0,
+                WindowManager.LayoutParams.TYPE_STATUS_BAR_PANEL,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+                    | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+                    | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                    | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION,
+                PixelFormat.TRANSLUCENT);
+        /* 控制屏幕旋转 */
+        int origen = mContext.getResources().getConfiguration().orientation;
+        if(origen == ActivityInfo.SCREEN_ORIENTATION_USER) {
+            layoutParams.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
+        } else {
+            layoutParams.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT;
+        }
+        /* 确认截屏页面的大小和屏幕一致 */
+        layoutParams.height = mScreenBitmap.getHeight();
+        layoutParams.width = mScreenBitmap.getWidth();
+        //for pad use, adjust the layout position
+        if (true) {
+            layoutParams.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+            layoutParams.height = getRealHeight();
+            //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+            layoutParams.gravity = Gravity.START | Gravity.TOP;
+        }
+
+        resetViewStatus();
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 start
+        resetAutoShare();
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 end
+        mWindowManager.addView(mScreenshotView, layoutParams);
+        Log.d(TAG, "AreaScreenshotView addScreenshotView");
+        isRunning = true;
+        registerReceivers();
+        sendHideShowNavigationBar(true);
+        return true;
+    }
+
+    public void removeScreenshotView() {
+        if(!isRunning) return;
+        mScreenshotView.setVisibility(View.INVISIBLE);
+        if(isDebug) Log.d("LenovoScreenshot", "AreaScreenshotView removeScreenshotView");
+        // Hide navigation bar
+        mScreenshotView.setSystemUiVisibility(mSystemUIVisibility);
+        mWindowManager.removeViewImmediate(mScreenshotView);
+        isRunning = false;
+        unregisterReceivers();
+        /** Lenovo-sw ligr3 added 2014-08-22 begin, adding painting function */
+        mDrawableView.recycleResources();
+        exitPaintingMode();
+        saveConfig();
+        /** Lenovo-sw ligr3 added 2014-08-22 end, adding painting function */
+        //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 start
+        clearImage();
+        //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 end
+    }
+
+    /**
+     * 进入涂鸦模式， added by Lenovo-sw ligr3 at 2014-08-22
+     */
+    /* 2016-01-14 modified by wangyifa redesign the flow of painting logic */
+    private void switchToPaintingMode() {
+        mBtnSwitch.setBackgroundResource(R.drawable.lenovo_screenshot_ic_shot);
+        mCaptureView.setVisibility(View.INVISIBLE);
+        mDrawableView.setDrawableRect(mCaptureView.getCaptureRect());
+        mDrawableView.setVisibility(View.VISIBLE);
+        mDrawableView.setIsPainting(true);
+        confirmBtn.setText(R.string.screenshot_area);
+        mBtnSwitch.setBackgroundResource(R.drawable.lenovo_screenshot_ic_shot);
+        mBtnUndo.setVisibility(View.VISIBLE);
+        bIsPaintingMode = true;
+    }
+
+    /**
+     * 退出涂鸦模式, added by Lenovo-sw ligr3 at 2014-08-22
+     */
+    /* 2016-01-14 modified by wangyifa redesign the exit Painting mode*/
+    private void exitPaintingMode(){
+        mBtnToolpanel.setBackgroundResource(R.drawable.lenovo_screenshot_icon_brush);
+        mDrawableView.setIsPainting(false);
+        mToolPanel.setVisibility(View.INVISIBLE);
+        mCaptureView.setVisibility(View.VISIBLE);
+        bIsPaintingMode = false;
+    }
+
+    /**
+     * 合并绘图结果至截图结果，added by ligr3 at 2014-08-22
+     */
+    public void mergeDrawingImage(){
+        Bitmap bm = Bitmap.createBitmap(mScreenBitmap.getWidth(),
+                mScreenBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bm);
+        canvas.drawBitmap(mScreenBitmap, 0f, 0f, null);
+        Matrix mtx = new Matrix();
+        mtx.postScale(1 / mScale, 1 / mScale2);
+//        canvas.drawBitmap(mDrawableView.getPaintResult(), 0f, 0f, null);
+        if(mDrawedBitmap != null && !mDrawedBitmap.isRecycled()){
+            canvas.drawBitmap(mDrawedBitmap, mtx, null);
+            mDrawedBitmap.recycle();
+            mDrawedBitmap = null;
+        }
+        mDrawableView.recycleResources();
+        mScreenBitmap.recycle();
+        mScreenBitmap = bm;
+    }
+
+    /**
+     * register the BroadcastReceivers
+     */
+    private void registerReceivers() {
+        mHomeWatcher.startWatch();
+        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        mContext.registerReceiver(screenReceiver, filter);
+        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+    }
+
+    /**
+     * unregister the BroadcastReceivers
+     */
+    private void unregisterReceivers() {
+        if(mHomeWatcher != null) {
+            mHomeWatcher.stopWatch();
+        }
+        if(screenReceiver != null) {
+            mContext.unregisterReceiver(screenReceiver);
+        }
+        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
+    }
+
+    //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 start
+    public void sendHideShowNavigationBar(boolean fullScreen){
+    Intent intent = new Intent(HIDE_SHOW_NAVIGATIONBAR);
+    intent.putExtra("fullscreen",fullScreen);
+    mContext.sendBroadcast(intent);
+    }
+    //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 start
+    /* 2016-01-14 modified by wangyifa redesign the ontouch logic*/
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        switch (event.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+            if(isFullScreenShot) {
+                isFullScreenShot = false;
+                confirmBtn.setText(R.string.screenshot_area);
+                return false;
+            }
+            break;
+        default:
+            break;
+        }
+        return false;
+    }
+
+    @Override
+    public void onClick(View view) {
+        //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 start
+        this.mGlobalScreenshot.removeCallback();
+        //shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 end
+        switch (view.getId()) {
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 start
+        case R.id.btn_share:
+        case R.id.btn_save_share:
+            autoShare = true;
+            sendHideShowNavigationBar(false);
+            savePaintingResult();
+            doSaveScreenshotBitmap();
+            removeScreenshotView();
+            break;
+        //shiyaru@wind-mobi.com fix TABFIVEP-3654 2018.7.24 start
+        case R.id.screenshot_background_view:
+            if (titleBtnLayout.getVisibility() == View.VISIBLE) {
+                break;
+            }
+        //shiyaru@wind-mobi.com fix TABFIVEP-3654 2018.7.24 end
+        case R.id.btn_confirm:
+            sendHideShowNavigationBar(false);
+            savePaintingResult();
+            //shiyaru@wind-mobi.com fix TABFIVEP-3915 2018.8.29 start
+            doSaveScreenshotBitmap();
+            removeScreenshotView();
+            //shiyaru@wind-mobi.com fix TABFIVEP-3915 2018.8.29 end
+            /* Lenovo-sw ligr3 added 2014-11-20 begin, for screenshot avatar */
+        /*    if(isFullScreenShot){
+                ParamMap params = new ParamMap();
+                params.put(0, "ACTION_NOTIFICATIONSETTING_SCREEN_ALLSCREEN", "FullScreenScreenshot");
+                LenovoAvatarImpl.getInstance().trackEventEx(
+                        LenovoAvataCategory.CATEGORY_NOTIFICATION_SWITCHPANNEL,
+                        LenovoAvataAction.ACTION_NOTIFICATIONSETTING_SCREEN_ALLSCREEN,
+                        "", 0, params);
+            }*/
+            /* Lenovo-sw ligr3 added 2014-11-20 end, for screenshot avatar */
+            break;
+        case R.id.btn_delete:
+        case R.id.btn_cancel:
+            sendHideShowNavigationBar(false);
+            removeScreenshotView();
+            unbindService();
+            //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 start
+            clearImage();
+            //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 start
+            break;
+        case R.id.btn_scrollshot:
+            sendHideShowNavigationBar(false);
+            removeScreenshotView();
+            //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+            unbindService();
+            mTakeScreenshot.takeScreenshot(true);
+            //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+            break;
+        case R.id.btn_edit:
+            bottomBtnLayout.setVisibility(View.INVISIBLE);
+            titleBtnLayout.setVisibility(View.VISIBLE);
+            bottomEditBtnLayout.setVisibility(View.VISIBLE);
+            //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 start
+            mCaptureView.setVisibility(View.VISIBLE);
+            //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 end
+            break;
+        //shiyaru@wind-mobi.com Feature #10056 move scrollShot switch to screenshot 2018.4.25 end
+        case R.id.screenshot_btn_switch:
+            mBtnSwitch.setBackgroundResource(R.drawable.lenovo_screenshot_icon_screenshot);
+            setUndoEnabled(false);
+            //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+            setRedoEnabled(false);
+            //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+            if(!bIsPaintingMode){
+                //switchToPaintingMode();     /* 2016-01-14 modified by wangyifa */
+                /* Lenovo-sw ligr3 added 2014-11-20 begin, for screenshot avatar */
+       /*         if(!mTrackedEnterPaint){
+                    ParamMap params = new ParamMap();
+                    params.put(0, "ACTION_NOTIFICATIONSETTING_SCREEN_SCRAWL", "Enter paint mode");
+                    LenovoAvatarImpl.getInstance().trackEventEx(
+                            LenovoAvataCategory.CATEGORY_NOTIFICATION_SWITCHPANNEL,
+                            LenovoAvataAction.ACTION_NOTIFICATIONSETTING_SCREEN_SCRAWL,
+                            "", 0, params);
+                    mTrackedEnterPaint = true;
+                }*/
+                /* Lenovo-sw ligr3 added 2014-11-20 end, for screenshot avatar */
+            } else{
+                exitPaintingMode();
+                /* Lenovo-sw ligr3 added 2014-11-20 begin, for screenshot avatar */
+       /*         if(!mTrackedBackToCut){
+                    ParamMap params = new ParamMap();
+                    params.put(0, "ACTION_NOTIFICATIONSETTING_SCREEN_SCRAWL_BACK", "Back to cut mode");
+                    LenovoAvatarImpl.getInstance().trackEventEx(
+                            LenovoAvataCategory.CATEGORY_NOTIFICATION_SWITCHPANNEL,
+                            LenovoAvataAction.ACTION_NOTIFICATIONSETTING_SCREEN_SCRAWL_BACK,
+                            "", 0, params);
+                    mTrackedBackToCut = true;
+                }*/
+                /* Lenovo-sw ligr3 added 2014-11-20 end, for screenshot avatar */
+            }
+            break;
+        case R.id.screenshot_btn_undo:
+            if(bIsPaintingMode && bIsUndoAvailable){
+                mDrawableView.undo();
+            }
+            break;
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+        case R.id.screenshot_btn_redo:
+            Log.d("Arrow", "screenshot_btn_redo.....bIsPaintingMode: " + bIsPaintingMode + " bIsRedoAvailable: " + bIsRedoAvailable);
+            if(bIsPaintingMode && bIsRedoAvailable){
+                mDrawableView.redo();
+            }
+            break;
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+        case R.id.screenshot_btn_toolpanel:
+            switchToPaintingMode();
+            mDrawableView.checkUndoStatus();
+            if(mToolPanel.getVisibility() != View.VISIBLE){
+                mBtnToolpanel.setBackgroundResource(R.drawable.lenovo_screenshot_icon_brushable);
+                showToolPanel();
+            } else{
+                hideToolPanel();
+                mBtnToolpanel.setBackgroundResource(R.drawable.lenovo_screenshot_icon_brush);
+            }
+            /* Lenovo-sw ligr3 added 2014-11-20 begin, for screenshot avatar */
+      /*      if(!mTrackedOpenTool){
+                ParamMap params = new ParamMap();
+                params.put(0, "ACTION_NOTIFICATIONSETTING_SCREEN_TOOL", "Open tool panel");
+                LenovoAvatarImpl.getInstance().trackEventEx(
+                        LenovoAvataCategory.CATEGORY_NOTIFICATION_SWITCHPANNEL,
+                        LenovoAvataAction.ACTION_NOTIFICATIONSETTING_SCREEN_TOOL,
+                        "", 0, params);
+                mTrackedOpenTool = true;
+            }*/
+            /* Lenovo-sw ligr3 added 2014-11-20 end, for screenshot avatar */
+            break;
+        case R.id.screenshot_color_yellow:
+            mCurrentColor = COLOR_YELLOW;
+            setSelectedColor();
+            hideToolPanel();
+            break;
+        case R.id.screenshot_color_black:
+            mCurrentColor = COLOR_BLACK;
+            setSelectedColor();
+            hideToolPanel();
+            break;
+        case R.id.screenshot_color_red:
+            mCurrentColor = COLOR_RED;
+            setSelectedColor();
+            hideToolPanel();
+            break;
+        case R.id.screenshot_color_blue:
+            mCurrentColor = COLOR_BLUE;
+            setSelectedColor();
+            hideToolPanel();
+            break;
+        case R.id.screenshot_spot_1:
+            mCurrentSpot = SPOT_1;
+            setSelectedSpot();
+            hideToolPanel();
+            break;
+        case R.id.screenshot_spot_2:
+            mCurrentSpot = SPOT_2;
+            setSelectedSpot();
+            hideToolPanel();
+            break;
+        case R.id.screenshot_spot_3:
+            mCurrentSpot = SPOT_3;
+            setSelectedSpot();
+            hideToolPanel();
+            break;
+        default:
+        }
+        /** Lenovo-sw ligr3 modified 2014-08-22 end, adding painting function */
+    }
+
+    /**
+     * 隐藏工具板
+     */
+    private void hideToolPanel() {
+        mToolPanel.startAnimation(mToolpanelHideAnim);
+        mToolPanel.setVisibility(View.INVISIBLE);
+    }
+
+    /**
+     * 显示绘图工具面板
+     */
+    private void showToolPanel() {
+        mToolPanel.setVisibility(View.VISIBLE);
+        mToolPanel.startAnimation(mToolpanelShowAnim);
+    }
+
+    private void savePaintingResult() {
+        if(mDrawedBitmap != null && !mDrawedBitmap.isRecycled()){
+            mDrawedBitmap.recycle();
+        }
+        mDrawedBitmap = mDrawableView.getPaintResult();
+    }
+
+    private void doSaveAndShareScreenshotBitmap() {
+        doSaveScreenshotBitmap();
+        autoShare = true;
+    }
+
+    public  void doSaveScreenshotBitmap() {
+        if(isDebug) Log.d(TAG, "AreaScreenshotView doSaveScreenshotBitmap");
+        /** Lenovo-sw ligr3 added 2014-08-22 begin, adding painting function */
+        //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 start
+        if (mScreenBitmap == null) {
+            mScreenBitmap = mGlobalScreenshot.getScreenBitmap();
+            if (mScreenBitmap == null) {
+                return;
+            }
+        }
+        //shiyaru@wind-mobi.com fix TABFIVEP-3455 2018.7.17 end
+        mergeDrawingImage();
+        /** Lenovo-sw ligr3 added 2014-08-22 end, adding painting function */
+        if(!isFullScreenShot) {
+            mCaptureRect = mCaptureView.getCaptureRect();
+            /** Lenovo-sw ligr3 added 2014-08-25 begin, adding painting function */
+            mCaptureRect.left = (int) (mCaptureRect.left / mScale);
+            mCaptureRect.right = (int) (mCaptureRect.right / mScale);
+            mCaptureRect.top = (int) ((mCaptureRect.top ) / mScale2);
+            mCaptureRect.bottom = (int) ((mCaptureRect.bottom )/ mScale2);
+            /** Lenovo-sw ligr3 added 2014-08-25 end, adding painting function */
+        }
+        if(mGlobalScreenshot != null) {
+            mGlobalScreenshot.saveCropedScreenBitmap(cropScreenBitmap(mScreenBitmap));
+        } else {
+            if(isDebug) Log.d(TAG, "AreaScreenshotView globalScreenshot  null");
+        }
+        clearImage();
+    }
+
+    /**
+     * 未实际执行截图操作的情况下，调用接触截图服务绑定
+     * 实际执行截图操作的情况下，由 LenovoTakeScreenshotService 在截图保存成功之后自动发送消息解除绑定
+     */
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+    public void unbindService() {
+        if(mScreenshotService != null) {
+            Log.d(TAG, "AreaScreenshotView unbind screenshotService");
+            mScreenshotService.onFinish();
+        } else {
+             Log.d(TAG, "AreaScreenshotView screenshotService is null");
+        }
+    }
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+
+    private Bitmap cropScreenBitmap(Bitmap bm) {
+        Bitmap bitmap = cropScreenBitmap(bm, mCaptureRect);
+        clearCaptureRect();
+        return bitmap;
+    }
+
+    private Bitmap cropScreenBitmap(Bitmap bm, Rect cropRect) {
+        if(cropRect == null || bm ==null) {
+            return bm;
+        }
+        int width = cropRect.width();
+        int height = cropRect.height();
+        Bitmap croppedImage = Bitmap.createBitmap(width, height,
+                Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(croppedImage);
+        Rect dstRect = new Rect(0, 0, width, height);
+
+        canvas.drawBitmap(bm, cropRect, dstRect, null);
+        return croppedImage;
+    }
+
+    private void clearCaptureRect() {
+        mCaptureRect = null;
+    }
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+    public void setScreenshotService(ScrollShotListener service) {
+        this.mScreenshotService = service;
+    }
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+
+    public void setGlobalScreenshot(LenovoGlobalScreenshot globalScreenshot) {
+        this.mGlobalScreenshot = globalScreenshot;
+    }
+
+    private void resetViewStatus() {
+        Log.d("LenovoScreenshot", "AreaScreenshotView resetViewStatus");
+        isFullScreenShot = true;
+        mScreenshotView.setVisibility(View.VISIBLE);
+        mGuideTextView.setText(R.string.screenshot_tip);
+        confirmBtn.setText(R.string.screenshot_area);
+        cancelBtn.setText(R.string.screenshot_cancel);
+        //shiyaru@wind-mobi.com fix TABFIVEP-833 2018.7.17 start
+        shareBtn.setText(R.string.screenshot_share);
+        scrollShotBtn.setText(R.string.widget_text_scrollscreenshot);
+        editBtn.setText(R.string.screenshot_edit);
+        saveAndShareBtn.setText(R.string.scroll_shot_share_button);
+        deleteBtn.setText(R.string.screenshot_delete);
+        //shiyaru@wind-mobi.com fix TABFIVEP-833 2018.7.17 end
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+		//shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 start
+        if (mGlobalScreenshot.getIsScroll()) {
+            bottomBtnLayout.setVisibility(View.INVISIBLE);
+            titleBtnLayout.setVisibility(View.VISIBLE);
+            bottomEditBtnLayout.setVisibility(View.VISIBLE);
+            mCaptureView.setVisibility(View.VISIBLE);
+        } else {
+            bottomBtnLayout.setVisibility(View.VISIBLE);
+            titleBtnLayout.setVisibility(View.INVISIBLE);
+            bottomEditBtnLayout.setVisibility(View.INVISIBLE);
+            mCaptureView.setVisibility(View.INVISIBLE);
+        }
+        //shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 end
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+        // Hide navigation bar
+        mSystemUIVisibility = mScreenshotView.getSystemUiVisibility();
+        bIsViewAdjusted = false;
+        mDrawableView.prepareResources();
+        mDrawableView.setVisibility(View.INVISIBLE);
+        mToolPanel.setVisibility(View.INVISIBLE);
+        setUndoEnabled(false);
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+        setRedoEnabled(false);
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+        loadConfig();
+        setSelectedColor();
+        setSelectedSpot();
+        /* Lenovo-sw ligr3 added 2014-11-20 begin, for screenshot avatar */
+        mTrackedBackToCut = false;
+        mTrackedEnterPaint = false;
+        mTrackedOpenTool = false;
+        /* Lenovo-sw ligr3 added 2014-11-20 end, for screenshot avatar */
+        updateFontSize();
+    }
+
+    /**
+     * 回收图片，优化内存使用；
+     */
+    private void clearImage() {
+        mScreenImageView.setImageBitmap(null);
+        mScreenBitmap = null;
+    }
+
+    public boolean isAutoShare() {
+        return autoShare;
+    }
+
+    public void resetAutoShare() {
+        autoShare = false;
+    }
+
+    /**
+     * phone state listener
+     */
+    private final class MyPhoneStateListener extends PhoneStateListener {
+        @Override
+        public void onCallStateChanged(int state, String incomingNumber) {
+            switch(state) {
+            case TelephonyManager.CALL_STATE_RINGING:
+                removeScreenshotView();
+                unbindService();
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    /**
+     * if screen off, remove the screenshot view
+     */
+    private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+                removeScreenshotView();
+                unbindService();
+            }
+        }
+    };
+
+    @Override
+    public void onHomePressed() {
+        removeScreenshotView();
+        unbindService();
+    }
+
+    @Override
+    public void onHomeLongPressed() {
+        removeScreenshotView();
+        unbindService();
+    }
+
+    @Override
+    public boolean onKey(View v, int keyCode, KeyEvent event) {
+        switch (keyCode) {
+        case KeyEvent.KEYCODE_BACK:
+            removeScreenshotView();
+            unbindService();
+            break;
+        default:
+            break;
+        }
+        return false;
+    }
+
+    /**
+     * Set if undo is available, added by ligr3 at 2014-09-03
+     */
+    private void setUndoEnabled(boolean enabled) {
+        if(enabled){
+            bIsUndoAvailable = true;
+            mBtnUndo.setImageResource(R.drawable.lenovo_screenshot_ic_back);
+            mBtnUndo.setAlpha((float) 1.0);
+        } else{
+            bIsUndoAvailable = false;
+            mBtnUndo.setImageResource(R.drawable.lenovo_screenshot_ic_back_disable);
+            mBtnUndo.setAlpha((float) 0.3);
+        }
+    }
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+    private void setRedoEnabled(boolean enabled) {
+        if(enabled){
+            bIsRedoAvailable = true;
+            mBtnRedo.setImageResource(R.drawable.lenovo_screenshot_ic_redo);
+            mBtnRedo.setAlpha((float) 1.0);
+        } else{
+            bIsRedoAvailable = false;
+            mBtnRedo.setImageResource(R.drawable.lenovo_screenshot_ic_redo_disable);
+            mBtnRedo.setAlpha((float) 0.3);
+        }
+    }
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+
+    /**
+     * Save configurations like color, stroke, added by ligr3 at 2014-09-04
+     */
+    private void saveConfig(){
+        SharedPreferences config = mContext.getSharedPreferences(LENOVO_SCREENSHOT_PREFS, 0);
+        config.edit().putInt(LENOVO_SCREENSHOT_COLOR, mCurrentColor).commit();
+        config.edit().putInt(LENOVO_SCREENSHOT_STROKE, mCurrentSpot).commit();
+        Log.d(TAG, "Save configuration, color :" + mCurrentColor + ", spot: " + mCurrentSpot);
+    }
+
+    /**
+     * Load configurations, added by ligr3 at 2014-09-04
+     */
+    private void loadConfig(){
+        SharedPreferences config = mContext.getSharedPreferences(LENOVO_SCREENSHOT_PREFS, 0);
+        mCurrentColor = config.getInt(LENOVO_SCREENSHOT_COLOR, COLOR_RED);
+        mCurrentSpot = config.getInt(LENOVO_SCREENSHOT_STROKE, SPOT_2);
+        Log.d(TAG, "Load configuration, color :" + mCurrentColor + ", spot: " + mCurrentSpot);
+    }
+
+    private void setSelectedColor(){
+        switch (mCurrentColor) {
+        case COLOR_BLACK:
+            mDrawableView.setPaintColor(Color.BLACK);
+            mBtnYellow.setImageResource(R.drawable.lenovo_screenshot_color_yellow);
+            mBtnRed.setImageResource(R.drawable.lenovo_screenshot_color_red);
+            mBtnBlack.setImageResource(R.drawable.lenovo_screenshot_color_black_stroke);
+            mBtnBlue.setImageResource(R.drawable.lenovo_screenshot_color_blue);
+            break;
+        case COLOR_BLUE:
+            mDrawableView.setPaintColor(Color.BLUE);
+            mBtnYellow.setImageResource(R.drawable.lenovo_screenshot_color_yellow);
+            mBtnRed.setImageResource(R.drawable.lenovo_screenshot_color_red);
+            mBtnBlack.setImageResource(R.drawable.lenovo_screenshot_color_black);
+            mBtnBlue.setImageResource(R.drawable.lenovo_screenshot_color_blue_stroke);
+            break;
+        case COLOR_RED:
+            mDrawableView.setPaintColor(Color.RED);
+            mBtnYellow.setImageResource(R.drawable.lenovo_screenshot_color_yellow);
+            mBtnRed.setImageResource(R.drawable.lenovo_screenshot_color_red_stroke);
+            mBtnBlack.setImageResource(R.drawable.lenovo_screenshot_color_black);
+            mBtnBlue.setImageResource(R.drawable.lenovo_screenshot_color_blue);
+            break;
+        case COLOR_YELLOW:
+            mDrawableView.setPaintColor(Color.YELLOW);
+            mBtnYellow.setImageResource(R.drawable.lenovo_screenshot_color_yellow_stroke);
+            mBtnRed.setImageResource(R.drawable.lenovo_screenshot_color_red);
+            mBtnBlack.setImageResource(R.drawable.lenovo_screenshot_color_black);
+            mBtnBlue.setImageResource(R.drawable.lenovo_screenshot_color_blue);
+            break;
+        default:
+            break;
+        }
+    }
+
+    private void setSelectedSpot(){
+        switch(mCurrentSpot){
+        case SPOT_1:
+            mDrawableView.setPaintStrokeWidth(10.0f);
+            mBtnSpot1.setImageResource(R.drawable.lenovo_screenshot_spot_1_pressed);
+            mBtnSpot2.setImageResource(R.drawable.lenovo_screenshot_spot_2);
+            mBtnSpot3.setImageResource(R.drawable.lenovo_screenshot_spot_3);
+            break;
+        case SPOT_2:
+            mDrawableView.setPaintStrokeWidth(20.0f);
+            mBtnSpot1.setImageResource(R.drawable.lenovo_screenshot_spot_1);
+            mBtnSpot2.setImageResource(R.drawable.lenovo_screenshot_spot_2_pressed);
+            mBtnSpot3.setImageResource(R.drawable.lenovo_screenshot_spot_3);
+            break;
+        case SPOT_3:
+            mDrawableView.setPaintStrokeWidth(30.0f);
+            mBtnSpot1.setImageResource(R.drawable.lenovo_screenshot_spot_1);
+            mBtnSpot2.setImageResource(R.drawable.lenovo_screenshot_spot_2);
+            mBtnSpot3.setImageResource(R.drawable.lenovo_screenshot_spot_3_pressed);
+            break;
+        default:
+            break;
+        }
+    }
+
+    /* 2016-01-14 modified by wangyifa delete the shareBtn*/
+    private void updateFontSize(){
+        if (cancelBtn != null){
+            FontSizeUtils.updateFontSize(cancelBtn, R.dimen.lenovo_screenshot_text_size_button);
+        }
+//        if (shareBtn != null) {
+//            FontSizeUtils.updateFontSize(shareBtn, R.dimen.lenovo_screenshot_text_size_button);
+//        }
+        if (confirmBtn != null) {
+            FontSizeUtils.updateFontSize(confirmBtn, R.dimen.lenovo_screenshot_text_size_button);
+        }
+        if (mGuideTextView != null){
+            FontSizeUtils.updateFontSize(mGuideTextView, R.dimen.lenovo_screenshot_text_size_guide);
+        }
+    }
+}

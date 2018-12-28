@@ -1,0 +1,355 @@
+/*
+ * Copyright (C) 2010 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.gallery3d.data;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
+import android.os.Environment;
+import android.os.Handler;
+import android.provider.MediaStore.Images;
+import android.provider.MediaStore.Video;
+
+import org.codeaurora.gallery.R;
+
+import com.android.gallery3d.app.AlbumSetPage;
+import com.android.gallery3d.app.GalleryApp;
+import com.android.gallery3d.data.BucketHelper.BucketEntry;
+import com.android.gallery3d.util.AlbumFolderInfo;
+import com.android.gallery3d.util.Future;
+import com.android.gallery3d.util.FutureListener;
+import com.android.gallery3d.util.GalleryUtils;
+import com.android.gallery3d.util.MediaSetUtils;
+import com.android.gallery3d.util.ThreadPool;
+import com.android.gallery3d.util.ThreadPool.JobContext;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+// LocalAlbumSet lists all image or video albums in the local storage.
+// The path should be "/local/image", "local/video" or "/local/all"
+public class LocalAlbumSet extends MediaSet
+        implements FutureListener<ArrayList<MediaSet>> {
+    @SuppressWarnings("unused")
+    private static final String TAG = "LocalAlbumSet";
+
+    public static final Path PATH_ALL = Path.fromString("/local/all");
+    public static final Path PATH_IMAGE = Path.fromString("/local/image");
+    public static final Path PATH_VIDEO = Path.fromString("/local/video");
+
+    private static final Uri[] mWatchUris =
+        {Images.Media.EXTERNAL_CONTENT_URI, Video.Media.EXTERNAL_CONTENT_URI};
+
+    private final GalleryApp mApplication;
+    private final int mType;
+    private ArrayList<MediaSet> mAlbums = new ArrayList<MediaSet>();
+    private final ChangeNotifier mNotifier;
+    private final String mName;
+    private final Handler mHandler;
+    private boolean mIsLoading;
+
+    private Future<ArrayList<MediaSet>> mLoadTask;
+    private ArrayList<MediaSet> mLoadBuffer;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    private boolean mReloadForMove;
+    private boolean mReloadForHide;
+    private boolean mReloadForWidget;
+    private boolean mReloadForWallpaper;
+    private boolean mReloadForSdcard;
+    private boolean mReloadForFinal;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+    public LocalAlbumSet(Path path, GalleryApp application) {
+        super(path, nextVersionNumber());
+        mApplication = application;
+        mHandler = new Handler(application.getMainLooper());
+        mType = getTypeFromPath(path);
+        mNotifier = new ChangeNotifier(this, mWatchUris, application);
+        mName = application.getResources().getString(
+                R.string.set_label_local_albums);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        registSDBroadcastReceiver(mApplication.getAndroidContext());
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    }
+
+    private static int getTypeFromPath(Path path) {
+        String name[] = path.split();
+        if (name.length < 2) {
+            throw new IllegalArgumentException(path.toString());
+        }
+        return getTypeFromString(name[1]);
+    }
+
+    @Override
+    public MediaSet getSubMediaSet(int index) {
+        return mAlbums.get(index);
+    }
+
+    @Override
+    public int getSubMediaSetCount() {
+        return mAlbums.size();
+    }
+
+    @Override
+    public String getName() {
+        return mName;
+    }
+
+    private static int findBucket(BucketEntry entries[], int bucketId) {
+        for (int i = 0, n = entries.length; i < n; ++i) {
+            if (entries[i].bucketId == bucketId) return i;
+        }
+        return -1;
+    }
+
+    private class AlbumsLoader implements ThreadPool.Job<ArrayList<MediaSet>> {
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public ArrayList<MediaSet> run(JobContext jc) {
+            // Note: it will be faster if we only select media_type and bucket_id.
+            //       need to test the performance if that is worth
+            BucketEntry[] entries = BucketHelper.loadBucketEntries(
+                    jc, mApplication.getContentResolver(), mType);
+
+            if (jc.isCancelled()) return null;
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+            boolean hasCameraItem = false;
+            List<Integer> hideBucketId =
+                    GalleryUtils.getHideBucketId(mApplication.getAndroidContext());
+            int offset = 0;
+            // Move camera and download bucket to the front, while keeping the
+            // order of others.
+            int index = findBucket(entries, MediaSetUtils.CAMERA_BUCKET_ID);
+            if (index != -1) {
+                hasCameraItem = true;
+                circularShiftRight(entries, offset++, index);
+            }
+            index = findBucket(entries, MediaSetUtils.SNAPSHOT_BUCKET_ID);
+            if (index != -1) {
+                circularShiftRight(entries, offset, index);
+            }
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+            index = findBucket(entries, MediaSetUtils.DOWNLOAD_BUCKET_ID);
+            if (index != -1) {
+                circularShiftRight(entries, offset++, index);
+            }
+
+            ArrayList<MediaSet> albums = new ArrayList<MediaSet>();
+            DataManager dataManager = mApplication.getDataManager();
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+            //When the hide mode is finished, Restore the default state.
+            if (!AlbumSetPage.LEAVE_HIDE_RELOAD) {
+                mReloadForFinal = false;
+            }
+            //When the SD card is mounted, and in Hide mode,the hidden operation is performed¡ê?
+            if (mReloadForFinal) {
+                mReloadForHide = true;
+            }
+            Log.d(TAG, "mReloadForFinal = " + mReloadForFinal + ",mReloadForHide = " + mReloadForHide);
+            for (BucketEntry entry : entries) {
+                GalleryUtils.setAlbumsBucketId(entry.bucketId, entry.bucketName);
+                if ((mReloadForMove || mReloadForHide)
+                        && GalleryUtils.isDefaultAlbum(entry.bucketId)) {
+                    continue;
+                }
+                if (hideBucketId.contains(entry.bucketId) && !mReloadForHide) {
+                    continue;
+                }
+                if (/*GalleryUtils
+                        .searchDirForPath(Environment.getExternalStorageDirectory(),
+                                entry.bucketId) == null &&*/ mReloadForHide && mReloadForSdcard) {
+                    if (entry.bucketName == null) {
+                        continue;
+                    }
+                }
+                Log.d(TAG, "AlbumsLoader add entry.bucketId = " + entry.bucketId + ",entry.bucketName = " + entry.bucketName);
+                MediaSet album = getLocalAlbum(dataManager,
+                        mType, mPath, entry.bucketId, entry.bucketName);
+                albums.add(album);
+            }
+            if (!mReloadForMove && !mReloadForHide) {
+                boolean hasVideoItem = false;
+                if (!mReloadForWidget) {
+                    MediaSet allVideo = mApplication.getDataManager().
+                            getMediaSet(Path.fromString("/local/video/-1"));
+                    if (allVideo.getMediaItemCount() > 0) {
+                        hasVideoItem = true;
+                        Log.d(TAG, "AlbumsLoader albums.add video !!!");
+                        albums.add(hasCameraItem ? 1 : 0, allVideo);
+                    }
+                }
+                MediaSet allPanoramic = mApplication.getDataManager().
+                        getMediaSet(Path.fromString("/local/image/-2"));
+                if (allPanoramic.getMediaItemCount() > 0) {
+                    albums.add(hasVideoItem ? 2 : 1, allPanoramic);
+                }
+            }
+            if (!mReloadForHide && !mReloadForWallpaper) {
+                List<AlbumFolderInfo> albumsInfo =
+                        GalleryUtils.getAlbumFolderInfo(mApplication.getAndroidContext());
+                for (int i = 0; i < albumsInfo.size(); i++) {
+                    AlbumFolderInfo info = albumsInfo.get(i);
+                    if ((!info.getIsHide() || mReloadForMove) && info.isUserCreate()) {
+                        String path = info.getmPath();
+                        int bucketId = GalleryUtils.getBucketId(path);
+                        if (new File(path).exists() && findBucket(entries, bucketId) == -1) {
+                            albums.add(getLocalAlbum(dataManager, mType, mPath, bucketId,
+                                    info.getmFolderName()));
+                        }
+                    }
+                }
+            }
+            mReloadForMove = false;
+            mReloadForHide = false;
+            mReloadForWidget = false;
+            mReloadForWallpaper = false;
+            return albums;
+        }
+    }
+
+    private BroadcastReceiver mSdCardBroadcastReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+            case Intent.ACTION_MEDIA_MOUNTED:
+                Log.d(TAG, "SdCard is Mounted!");
+                mReloadForSdcard = true;
+                break;
+            case Intent.ACTION_MEDIA_EJECT:
+                Log.d(TAG, "SdCard is Eject!");
+                mReloadForSdcard = false;
+            default:
+                break;
+            }
+        }
+    };
+
+    private void registSDBroadcastReceiver(Context context) {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_MEDIA_MOUNTED);
+        filter.addAction(Intent.ACTION_MEDIA_EJECT);
+        filter.addDataScheme("file");
+        context.registerReceiver(mSdCardBroadcastReceiver, filter);
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+    private MediaSet getLocalAlbum(
+            DataManager manager, int type, Path parent, int id, String name) {
+        synchronized (DataManager.LOCK) {
+            Path path = parent.getChild(id);
+            MediaObject object = manager.peekMediaObject(path);
+            if (object != null) return (MediaSet) object;
+            switch (type) {
+                case MEDIA_TYPE_IMAGE:
+                    return new LocalAlbum(path, mApplication, id, true, name);
+                case MEDIA_TYPE_VIDEO:
+                    return new LocalAlbum(path, mApplication, id, false, name);
+                case MEDIA_TYPE_ALL:
+                    Comparator<MediaItem> comp = DataManager.sDateTakenComparator;
+                    return new LocalMergeAlbum(path, comp, new MediaSet[] {
+                            getLocalAlbum(manager, MEDIA_TYPE_IMAGE, PATH_IMAGE, id, name),
+                            getLocalAlbum(manager, MEDIA_TYPE_VIDEO, PATH_VIDEO, id, name)}, id, mApplication);
+            }
+            throw new IllegalArgumentException(String.valueOf(type));
+        }
+    }
+
+    @Override
+    public synchronized boolean isLoading() {
+        return mIsLoading;
+    }
+
+    @Override
+    // synchronized on this function for
+    //   1. Prevent calling reload() concurrently.
+    //   2. Prevent calling onFutureDone() and reload() concurrently
+    public synchronized long reload() {
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        if (mNotifier.isDirty() || AlbumSetPage.CREATE_ALBUM_RELOAD
+                || AlbumSetPage.MOVE_ALBUM_RELOAD || AlbumSetPage.HIDE_ALBUM_RELOAD || AlbumSetPage.WIDGET_ALBUM_RELOAD || AlbumSetPage.WALLPAPER_ALBUM_RELOAD) {
+            if (mLoadTask != null) mLoadTask.cancel();
+            mIsLoading = true;
+            mLoadTask = mApplication.getThreadPool().submit(new AlbumsLoader(), this);
+            AlbumSetPage.CREATE_ALBUM_RELOAD = false;
+            if (AlbumSetPage.MOVE_ALBUM_RELOAD) {
+                mReloadForMove = true;
+                AlbumSetPage.MOVE_ALBUM_RELOAD = false;
+            }
+            if (mReloadForSdcard && AlbumSetPage.LEAVE_HIDE_RELOAD) {
+                mReloadForFinal = true;
+            }
+            if (AlbumSetPage.HIDE_ALBUM_RELOAD) {
+                mReloadForHide = true;
+                AlbumSetPage.HIDE_ALBUM_RELOAD = false;
+            }
+            if (AlbumSetPage.WIDGET_ALBUM_RELOAD) {
+                mReloadForWidget = true;
+                AlbumSetPage.WIDGET_ALBUM_RELOAD = false;
+            }
+            if (AlbumSetPage.WALLPAPER_ALBUM_RELOAD) {
+                mReloadForWallpaper = true;
+                AlbumSetPage.WALLPAPER_ALBUM_RELOAD = false;
+            }
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+        }
+        if (mLoadBuffer != null) {
+            mAlbums = mLoadBuffer;
+            mLoadBuffer = null;
+            for (MediaSet album : mAlbums) {
+                album.reload();
+            }
+            mDataVersion = nextVersionNumber();
+        }
+        return mDataVersion;
+    }
+
+    @Override
+    public synchronized void onFutureDone(Future<ArrayList<MediaSet>> future) {
+        if (mLoadTask != future) return; // ignore, wait for the latest task
+        mLoadBuffer = future.get();
+        mIsLoading = false;
+        if (mLoadBuffer == null) mLoadBuffer = new ArrayList<MediaSet>();
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                notifyContentChanged();
+            }
+        });
+    }
+
+    // For debug only. Fake there is a ContentObserver.onChange() event.
+    void fakeChange() {
+        mNotifier.fakeChange();
+    }
+
+    // Circular shift the array range from a[i] to a[j] (inclusive). That is,
+    // a[i] -> a[i+1] -> a[i+2] -> ... -> a[j], and a[j] -> a[i]
+    private static <T> void circularShiftRight(T[] array, int i, int j) {
+        T temp = array[j];
+        for (int k = j; k > i; k--) {
+            array[k] = array[k - 1];
+        }
+        array[i] = temp;
+    }
+}

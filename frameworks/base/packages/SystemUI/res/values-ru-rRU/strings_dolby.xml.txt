@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2013-2018 Dolby Laboratories
+
+     This program is protected under international and U.S. copyright laws as
+     an unpublished work. This program is confidential and proprietary to the
+     copyright owners. Reproduction or disclosure, in whole or in part, or the
+     production of derivative works therefrom without the express permission of
+     the copyright owners is prohibited.
+
+                   Copyright (C) 2013-2018 by Dolby Laboratories,
+                               All rights reserved.
+-->
+
+<resources>
+    <string name="accessibility_quick_settings_dolby">DOLBY</string>
+    <string name="accessibility_desc_dolby_dis">Dolby</string>
+    <string name="accessibility_desc_dolby_on">DOLBY ВКЛ.</string>
+    <string name="accessibility_desc_dolby_off">DOLBY ВЫКЛ.</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.7 modify for bug#TABFIVEP-3160 start -->
+    <string name="accessibility_desc_dolby_dynamic">Динамический</string>
+    <string name="accessibility_desc_dolby_movie">Кино</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.7 modify for bug#TABFIVEP-3160 end -->
+    <string name="accessibility_desc_dolby_music">Музыка</string>
+    <!-- yunbo@wind-mobi.com on 2018.9.30 modify for bug#TABFIVEP-1576 st -->
+    <string name="accessibility_desc_dolby_custom">Настраиваемый</string>
+    <!-- yunbo@wind-mobi.com on 2018.9.30 modify for bug#TABFIVEP-1576 end -->
+    <string name="accessibility_desc_dolby_dolby_atmos_off">Dolby Atmos выключено.</string>
+</resources>

@@ -1,0 +1,705 @@
+package com.android.systemui.lenovo.util;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.animation.Animator;
+import android.animation.Animator.AnimatorListener;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.PixelFormat;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
+import android.widget.AdapterView;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+
+import com.android.systemui.R;
+import com.android.systemui.lenovo.view.AppIcon;
+import com.android.systemui.lenovo.view.AppPanel;
+import com.android.systemui.lenovo.view.Dock;
+
+/**
+ * dock栏appicon拖动逻辑
+ */
+ //yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class DragViewDelegate {
+    private static final String TAG = "DragViewDelegate";
+    private boolean DEBUG = true;
+    private ViewGroup mAttachLayer;
+    private AppPanel mAttachView;
+    private HorizontalScrollView mScrollView;
+    private Dock mDock;
+    private FrameLayout mLayoutAppPanel;
+    private ImageView mDragImageView;
+    private Bitmap mDragBitmap;
+
+    private int mDragPointX;  //触摸的坐标点相对长按图标x坐标的偏移量
+    private int mDragPointY;  //触摸的坐标点相对长按图标y坐标的偏移量
+    private boolean hasDisMissed = false; //appicon长按出现的菜单栏是否已经消失
+
+    private static final int DRAG_ANIM_TIME = 200;
+    private WindowManager mWindowManager;
+    private Context mContext;
+    private FrameLayout mWindowFrameLayout;
+    private View mOriginView;
+    private int mOriginViewWidth;  //appIcon原始的宽度
+    private int mIconMoveSpaceWidth;
+    private boolean isShowQuitTipMode = true;  //联想有两种设计方案，一种是直接显示x的图标，一种的在dragview上方显示quit文字
+    private boolean isTaskCountZero = false;  //是否在dragView上头显示quit文字提示
+
+    public DragViewDelegate(ViewGroup attachView) {
+        mContext = attachView.getContext();
+        mIconMoveSpaceWidth = mContext.getResources().getDimensionPixelOffset(R.dimen.dock_app_move_space_width);
+        mAttachLayer = attachView;
+        mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+        mWindowFrameLayout = new FrameLayout(mContext);
+        mWindowFrameLayout.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                //避免出现bug造成整个界面不响应
+                hasDisMissed = false;
+                destroyDragImageView();
+                allAppIconBackOriginWidthAndVisiable();
+                return false;
+            }
+        });
+    }
+
+    public void setHorizontalScrollView(HorizontalScrollView scrollView) {
+        mScrollView = scrollView;
+    }
+
+    public void setDock(Dock dock) {
+        mDock = dock;
+        mContext = mDock.getContext();
+
+    }
+
+    public void init(AppPanel attachView) {
+        mAttachView = attachView;
+    }
+
+    private float mHandleX;
+    public boolean handleTouchEvent(MotionEvent e) {
+        if (mDragImageView != null) {
+            switch (e.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_MOVE:
+                    if (DEBUG) {
+                        Log.d(TAG, "handleTouchEvent: x:" + e.getX() + ";  y:" + e.getY() + ";  mDragPointX:" + mDragPointX);
+                    }
+                    if (!hasDisMissed && Math.abs(e.getX() - mHandleX) > 30 || e.getY() < 0) {
+                        hasDisMissed = true;
+                        mAttachView.disMissAllMenu();
+                    }
+                    int x = (int) (e.getX());      //该x坐标是相对DragAppPanel而言的
+                    int y = (int) (e.getY());    //该y坐标也是相对DragAppPanel而言的
+                    int left = getAppPanelLeft() + x - mDragPointX;
+                    final int height = getWindowHeight();
+                    int top = height + y - mDragPointY;
+                    if (mDragImageView != null) {
+                        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT);
+                        params.width = mDragImageView.getWidth();
+                        params.height = mDragImageView.getHeight();
+                        params.leftMargin = left;
+                        params.topMargin = top;
+                        mDragImageView.setLayoutParams(params);
+                    }
+                    if (shouldCloseApp()) { //如果y坐标移动到了close app的高度，就不要进行下面的的逻辑操作
+                        break;
+                    }
+                    handleDrag(x, y);
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    hasDisMissed = false;
+                    final boolean isExit = shouldCloseApp();
+                    handleDrop();
+                    if (isExit) {
+                        mAttachView.onExitClick((AppIcon) mOriginView);
+                    }
+                    break;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     *
+     * @return 是否需要关闭app
+     */
+    public boolean shouldCloseApp() {
+        if (mDragImageView != null) {
+            final int height = getWindowHeight();
+            if (mDragImageView.getTop() < height - mDragImageView.getHeight()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Bitmap getDragImageBitmap() {
+        return mDragBitmap;
+    }
+
+    public ImageView getDragImageView() {
+        return mDragImageView;
+    }
+
+    public void startDrag(MotionEvent e, final View v) {
+        mIsBackingVisiable = false;
+        mOriginView = v;
+        createDragImageView(e, v);
+        v.postDelayed(new Runnable() {  //添加延时调用，是为了保证AppPanel上面的icon消失前，出现DragImageView
+            @Override
+            public void run() {
+                if (!mIsBackingVisiable) {
+                    v.setVisibility(View.INVISIBLE);
+                }
+            }
+        }, 2);
+
+    }
+
+    public void startBigDrag() {
+        if (mDragImageView != null) {
+            setViewDragStyle(mDragImageView, true);
+        }
+    }
+
+    private void destroyDragImageView() {
+        if (mDragImageView != null) {
+            mDragImageView.clearAnimation();
+            mDragImageView.setVisibility(View.GONE);
+            removeFrameLayout();
+            BitmapDrawable bitmapDrawable = (BitmapDrawable)
+                    mDragImageView.getDrawable();
+            if (bitmapDrawable != null) {
+                final Bitmap bitmap = bitmapDrawable.getBitmap();
+                if (bitmap != null && !bitmap.isRecycled()) {
+                    try {
+                        bitmap.recycle();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            mDragImageView.setImageDrawable(null);
+            mDragImageView = null;
+        }
+    }
+
+    private MotionEvent mOriginEvent;
+    /**
+     * 创建appicon影像
+     * @param e
+     * @param appIcon
+     */
+    private void createDragImageView(MotionEvent e, final View appIcon) {
+        if (DEBUG) {
+            Log.d(TAG, "createDragImageView: v.left=" + appIcon.getLeft() + "; v.top=" + appIcon.getTop() + "; e.x=" + e.getX() + "; e.y=" + e.getY() );
+        }
+        mOriginEvent = e;
+        addWindowFrameLayout(mWindowFrameLayout);
+        final int height = getWindowHeight();
+        appIcon.setPressed(false);
+        appIcon.destroyDrawingCache();
+        appIcon.setDrawingCacheEnabled(true);
+
+        mDragImageView = new ImageView(mAttachView.getContext());
+        AppIcon icon = (AppIcon)appIcon;
+        Bitmap bm = null;
+        if (icon.getTaskCount() == 0) {
+            isTaskCountZero = true;
+        } else {
+            isTaskCountZero = false;
+        }
+        if (isShowQuitTipMode || isTaskCountZero) {
+            bm = Bitmap.createBitmap(appIcon.getDrawingCache());
+        } else {
+            bm = combineBitmap(Bitmap.createBitmap(appIcon.getDrawingCache()), null);
+        }
+        mDragBitmap = bm;
+        mDragImageView.setImageBitmap(bm);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT);
+        params.width = appIcon.getWidth();
+        params.height = appIcon.getHeight();
+        params.leftMargin = appIcon.getLeft() - getScrollX() + getAppPanelLeft();
+        params.topMargin = height - getAppPanelTop();
+        mWindowFrameLayout.addView(mDragImageView, params);
+        mDragImageView.layout(params.leftMargin, params.topMargin, params.leftMargin + mDragImageView.getWidth(),
+                params.topMargin + mDragImageView.getHeight());
+
+        mOriginViewWidth = appIcon.getWidth();
+        mDragPointX = (int) e.getX();
+        mDragPointY = (int) e.getY();
+        // 这里有个很奇怪的bug, 第一次启动时，获取的params.width为-2（即 wrap_content）,第二次获取时，又是正常的宽度，112
+        LinearLayout.LayoutParams iconParams = (LayoutParams) appIcon.getLayoutParams();
+        iconParams.width = appIcon.getWidth() + mIconMoveSpaceWidth;
+        appIcon.setLayoutParams(iconParams);
+    }
+
+    /**
+     * 拼接图片
+     * @param bit1
+     * @param bit2
+     * @return 返回拼接后的Bitmap
+     */
+    private Bitmap combineBitmap(Bitmap bit1,Bitmap bit2){
+        Drawable drawable = mContext.getResources().getDrawable(R.drawable.dockarrow_left);
+        //实际上这是一个BitmapDrawable对象
+        BitmapDrawable bitmapDrawable=(BitmapDrawable)drawable;
+        //可以在调用getBitmap方法，得到这个位图
+        bit2= bitmapDrawable.getBitmap();
+        int width = bit1.getWidth()/* + bit2.getWidth()*/;
+        int height = bit1.getHeight()/* + bit2.getHeight()*/;
+        //创建一个空的Bitmap(内存区域),宽度等于第一张图片的宽度，高度等于两张图片高度总和
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        //将bitmap放置到绘制区域,并将要拼接的图片绘制到指定内存区域
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawBitmap(bit1, 0, 0, null);
+        canvas.drawBitmap(bit2, bit1.getWidth()- bit2.getWidth(), 0, null);
+        return bitmap;
+    }
+
+
+    private void addWindowFrameLayout(View view) {
+        final WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+        layoutParams.type = WindowManager.LayoutParams.TYPE_NAVIGATION_BAR_PANEL;
+        layoutParams.format = PixelFormat.TRANSPARENT;
+        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
+        layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
+        layoutParams.height = WindowManager.LayoutParams.MATCH_PARENT;
+        layoutParams.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN
+                | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
+        mWindowManager.addView(view, layoutParams);
+    }
+
+    public boolean handleInterceptTouchEvent(MotionEvent e) {
+        if (mDragImageView != null) {
+            int x = (int) e.getX();
+            int y = (int) e.getY();
+            switch (e.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_MOVE:
+                    mHandlePostion = -2;
+                    mHandleX = x;
+                    if (DEBUG) {
+                        Log.d(TAG, "Intercept:  x = " + e.getX() + ";  y = " + e.getY());
+                    }
+                    final int count = mAttachView.getChildCount();
+                    for (int i = 0; i < count; i++) {
+                        View child = mAttachView.getChildAt(i);
+                        if (child == mOriginView) {
+                            mCurrentPosition = i;
+                            mDropRect = new Rect(child.getLeft(), child.getTop(), child.getRight(),
+                                    child.getBottom());
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (DEBUG) {
+                        Log.d(TAG, "Intercept:  action="+e.getAction());
+                    }
+                    destroyDragImageView();
+                    allAppIconBackOriginWidthAndVisiable();
+                    break;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static final float ITEM_DRAGVIEW_SCALE = 3.0f;
+    private static final float ITEM_DRAGVIEW_ALPHA = 0.6f;
+
+    private void setViewDragStyle(View v, boolean drag) {
+        if (v != null) {
+            if (drag) {
+                v.setPressed(false);
+                v.setScaleX(ITEM_DRAGVIEW_SCALE);
+                v.setScaleY(ITEM_DRAGVIEW_SCALE);
+                v.setAlpha(ITEM_DRAGVIEW_ALPHA);
+            } else {
+                v.setScaleX(1.0f);
+                v.setScaleY(1.0f);
+                v.setAlpha(1.0f);
+            }
+        }
+    }
+
+    private static final long ITEM_HOVER_DELAY = 100;
+    private int mCurrentPosition = -1;
+    private int mDropPosition = -1;
+    private Rect mDropRect;
+    private Runnable mDelayedOnDragRunnable;
+
+    private int mHandlePostion = -1;
+
+    private Runnable mScrollLeftRunnable = new Runnable() {
+        @Override
+        public void run() {
+            mIsScrollLeft = false;
+            mDock.scrollLeft();
+            handleDrag(handleDragX, handleDragY);
+        }
+    };
+
+    private Runnable mScrollRightRunnable = new Runnable() {
+        @Override
+        public void run() {
+            mIsScrollRight = false;
+            mDock.scrollRight();
+            handleDrag(handleDragX, handleDragY);
+        }
+    };
+
+    private int handleDragX;
+    private int handleDragY;
+    private boolean mIsScrollLeft = false;
+    private boolean mIsScrollRight = false;
+
+    public void handleDrag(final int x, final int y) {
+        handleDragX = x;
+        handleDragY = y;
+        Rect mArrowLeftRect = new Rect();
+        Rect mArrowRightRect = new Rect();
+        mDock.mLeftArrow.getHitRect(mArrowLeftRect);  // 返回整个屏幕的绝对位置
+        mDock.mRightArrow.getHitRect(mArrowRightRect);
+        final int appPanelX = x;
+        if (DEBUG) {
+            Log.d(TAG, "touchX:"+appPanelX+";  "+"touchY:"+y+";  "+"mArrowLeftRect.RightX:"+mArrowLeftRect.right
+                    +";  mArrowRightRect.leftX:"+mArrowRightRect.left+";  ");
+        }
+        if (appPanelX <= mArrowLeftRect.right && mDock.mLeftArrow.getVisibility() == View.VISIBLE) {
+            if (!mIsScrollLeft) {
+                mIsScrollLeft = true;
+                mDock.postDelayed(mScrollLeftRunnable, 600);
+            }
+            if (mIsScrollRight) {
+                mDock.removeCallbacks(mScrollRightRunnable);
+                mIsScrollRight = false;
+            }
+            return;
+        }
+
+        if (appPanelX >= mArrowRightRect.left && mDock.mRightArrow.getVisibility() == View.VISIBLE) {
+            if (!mIsScrollRight) {
+                mIsScrollRight = true;
+                mDock.postDelayed(mScrollRightRunnable, 600);
+            }
+            if (mIsScrollLeft) {
+                mDock.removeCallbacks(mScrollLeftRunnable);
+                mIsScrollLeft = false;
+            }
+            return;
+        }
+        if (mIsScrollLeft) {
+            mDock.removeCallbacks(mScrollLeftRunnable);
+            mIsScrollLeft = false;
+        }
+
+        if (mIsScrollRight) {
+            mDock.removeCallbacks(mScrollRightRunnable);
+            mIsScrollRight = false;
+        }
+
+        final int panelX = x + getScrollX(); // x坐标点相对AppPanel内部的位置
+        final int tempDropPosition = pointToPosition(mCurrentPosition, panelX - mDragPointX + mDragImageView.getWidth()/2, y - mDragPointY + mDragImageView.getWidth()/2);
+        if (DEBUG) {
+            Log.d(TAG, "panelX = " + panelX + "; mCurrentPosition = " + mCurrentPosition + "; tempDropPosition=" + tempDropPosition);
+        }
+        if (mDropPosition != tempDropPosition
+                && tempDropPosition != AdapterView.INVALID_POSITION) {
+            if (mHandlePostion == tempDropPosition) {
+                return;
+            }
+            mHandlePostion = tempDropPosition;
+            mAttachView.removeCallbacks(mDelayedOnDragRunnable);
+
+            mDelayedOnDragRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    mAttachView.removeCallbacks(mDelayedOnDragRunnable);
+                    mDropRect = performDragAndDropSwapping(mCurrentPosition,
+                            tempDropPosition);
+                    final int nextDropPosition = pointToPosition(tempDropPosition, panelX - mDragPointX + mDragImageView.getWidth()/2, y - mDragPointY + mDragImageView.getWidth()/2);
+                    if (nextDropPosition == AdapterView.INVALID_POSITION) {
+                        mCurrentPosition = mDropPosition = tempDropPosition;
+                    }
+                }
+            };
+            mAttachView.postDelayed(mDelayedOnDragRunnable, ITEM_HOVER_DELAY);
+        }
+    }
+
+    public View handleDrop() {
+        final int height = getWindowHeight();
+        mDock.removeCallbacks(mScrollLeftRunnable);
+        mDock.removeCallbacks(mScrollRightRunnable);
+        mAttachView.removeCallbacks(mDelayedOnDragRunnable);
+        int count = mAttachView.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View dragChild = mAttachView.getChildAt(i);
+            if (dragChild.getVisibility() == View.INVISIBLE) {
+                mDropPosition = i;
+                break;
+            }
+        }
+
+        View child = mAttachView.getChildAt(mDropPosition);
+        if (child == null) {
+            //避免出现bug造成整个界面不响应
+            if (mDragImageView != null && mDragImageView.getParent() != null) {
+                hasDisMissed = false;
+                destroyDragImageView();
+                allAppIconBackOriginWidthAndVisiable();
+            }
+            return null;
+        }
+        mDropRect = new Rect(child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
+        Point dropPoint = new Point(mDropRect.left - getScrollX() + getAppPanelLeft(),
+                mDropRect.top);
+        final Point prePoint = new Point(mDragImageView.getLeft(), mDragImageView.getTop());
+        if (mDragImageView != null) {
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT);
+            params.width = mDragImageView.getWidth();
+            params.height = mDragImageView.getHeight();
+            params.leftMargin = dropPoint.x;
+            params.topMargin = height - getAppPanelTop();
+            mDragImageView.setLayoutParams(params);
+        }
+        dropItemAnim(mDragImageView, prePoint, dropPoint);
+        mDropPosition = mCurrentPosition =
+                AdapterView.INVALID_POSITION;
+
+        return mOriginView;
+    }
+
+    /**
+     *
+     * @param draggedChild
+     * @param x     appicon的中心点在AppPanel内部的X坐标
+     * @param y     appicon的中心点在AppPanel内部的Y坐标
+     * @return  返回AppIcon所在的AppPanel的位置
+     */
+    protected int pointToPosition(final int draggedChild, final int x, final int y) {
+        Rect mRect = new Rect();
+        for (int index = 0; index < mAttachView.getChildCount(); index++) {
+            if (index == draggedChild) {
+                continue;
+            }
+            View child = mAttachView.getChildAt(index);
+            child.getHitRect(mRect);
+            if (mRect.contains(x, y)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    protected Rect performDragAndDropSwapping(int from, int to) {
+        final View removedChild = mAttachView.getChildAt(from);
+        if (removedChild == null) {
+            return null;
+        }
+        mAttachView.disMissAllMenu();
+        Rect inRect = new Rect();
+        removedChild.getHitRect(inRect);
+        List<Rect> list = new ArrayList<Rect>();
+
+        if (from != to) {
+            int count = mAttachView.getChildCount();
+            for (int i = 0; i < count; i++) {
+                View child = mAttachView.getChildAt(i);
+                Rect outRect = new Rect();
+                child.getHitRect(outRect);
+                list.add(outRect);
+            }
+
+            mAttachView.removeViewInLayout(removedChild);
+            mAttachView.addView(removedChild, to, removedChild.getLayoutParams());
+            mAttachView.invalidate();
+
+            for (int i = 0; i < count; i++) {
+                View child = mAttachView.getChildAt(i);
+                final Point prePosin = new Point(child.getLeft(), child.getTop());
+                Rect outRect = list.get(i);
+
+                if (i == to) {
+                    child.layout(outRect.left, outRect.top, outRect.right, outRect.bottom);
+                } else {
+                    child.layout(outRect.left, outRect.top, outRect.right, outRect.bottom);
+                    translateChild(child, prePosin, new Point(outRect.left, outRect.top));
+                }
+            }
+        }
+        list.clear();
+        View child = mAttachView.getChildAt(to);
+        Rect rect = new Rect(child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
+        if (from < to) {  //往右滑动的时候，dragView右边的view，是向右移动了mIconMoveSpaceWidth的距离的
+            rect.left -= mIconMoveSpaceWidth;
+            rect.right -= mIconMoveSpaceWidth;
+        }
+        return rect;
+    }
+
+    protected final void translateChild(View v, Point prev, Point now) {
+        TranslateAnimation translate = new TranslateAnimation(Animation.ABSOLUTE, -now.x + prev.x,
+                Animation.ABSOLUTE, 0, Animation.ABSOLUTE, -now.y
+                        + prev.y, Animation.ABSOLUTE, 0);
+        translate.setDuration(DRAG_ANIM_TIME);
+        translate.setFillEnabled(false);
+        translate.setFillAfter(false);
+
+        v.clearAnimation();
+        v.startAnimation(translate);
+    }
+
+    protected final void dropItemAnim(View v, Point prev, Point now) {
+        final int height = getWindowHeight();
+        if (shouldCloseApp()) {
+            performDragAndDropSwapping(mDropPosition, mAttachView.getChildCount() - 1);
+            destroyDragImageView();
+            return;
+        }
+        ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(v, "alpha", v.getAlpha(), 1.0f);
+        ObjectAnimator translationAnimatorX = ObjectAnimator.ofFloat(v, "translationX", -now.x
+                + prev.x, 0);
+        ObjectAnimator translationAnimatorY = ObjectAnimator.ofFloat(v, "translationY", -height + prev.y, 0);
+        ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(v, "scaleX", ITEM_DRAGVIEW_SCALE,
+                1.0f);
+        ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(v, "scaleY", ITEM_DRAGVIEW_SCALE,
+                1.0f);
+        AnimatorSet as = new AnimatorSet();
+        as.setDuration(DRAG_ANIM_TIME);
+        as.addListener(new AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                allAppIconBackOriginWidthAndVisiable();
+
+                mAttachView.postDelayed(new Runnable() {   //添加延时调用，是为了保证AppPanel上面的icon出现后，再销毁DragImageView
+                    @Override
+                    public void run() {
+                        destroyDragImageView();
+                    }
+                }, 2);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+            }
+        });
+        as.playTogether(alphaAnimator, translationAnimatorX, translationAnimatorY, scaleXAnimator, scaleYAnimator);
+        as.start();
+    }
+
+    private int getScrollX() {
+        return mScrollView.getScrollX();
+    }
+
+    /**
+     *
+     * @return  AppPanel离左边屏幕的距离
+     */
+    private int getAppPanelLeft() {
+        if (mLayoutAppPanel == null) {
+            mLayoutAppPanel = (FrameLayout) mAttachLayer
+                    .findViewById(R.id.dock_panel_app_panel_layout);
+        }
+        int[] location = new int[2] ;
+        mDock.getLocationOnScreen(location);
+        return location [0] + mLayoutAppPanel.getLeft();
+    }
+
+    /**
+     *
+     * @return AppPanel离Dock栏的距离
+     */
+    private int getAppPanelTop() {
+        if (mLayoutAppPanel == null) {
+            mLayoutAppPanel = (FrameLayout) mAttachLayer
+                    .findViewById(R.id.dock_panel_app_panel_layout);
+        }
+        return mLayoutAppPanel.getTop();
+    }
+
+
+    private int getWindowHeight() {
+        if (mAttachView != null) {
+            int[] location = new int[2] ;
+            mAttachView.getLocationOnScreen(location);
+            return location [1];  //在android 6.0, nexus7二代(flo), 横屏： windowHeight = 1091
+        } else {
+            return mWindowManager.getDefaultDisplay().getHeight();  //在android 6.0, nexus7二代(flo), 横屏： windowHeight = 1104
+        }
+    }
+
+    private void removeFrameLayout() {
+        if (mWindowFrameLayout != null) {
+            mWindowFrameLayout.removeAllViews();
+            mWindowManager.removeView(mWindowFrameLayout);
+        }
+    }
+
+    private boolean appIconBackOriginWidth(View v) {
+        final LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)v.getLayoutParams();
+        if (params.width != mOriginViewWidth) {
+            params.width = mOriginViewWidth;
+            v.setLayoutParams(params);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean mIsBackingVisiable = false;
+    /**
+     * 所有appIcon返回到原来的位置，并且可见
+     */
+    private void allAppIconBackOriginWidthAndVisiable() {
+        mIsBackingVisiable = true;
+        final int count = mAttachView.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = mAttachView.getChildAt(i);
+            appIconBackOriginWidth(child);
+            child.setVisibility(View.VISIBLE);
+        }
+    }
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

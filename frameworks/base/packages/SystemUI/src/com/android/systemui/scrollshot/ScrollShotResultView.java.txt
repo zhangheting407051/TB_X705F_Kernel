@@ -1,0 +1,237 @@
+package com.android.systemui.scrollshot;
+
+import android.content.BroadcastReceiver;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.PixelFormat;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+
+import com.android.systemui.R;
+import com.android.systemui.scrollshot.cropper.CropImageView;
+
+import java.io.File;
+
+public class ScrollShotResultView {
+    public static final String MIME_TYPE_IMAGE_JPEG = "image/*";
+    public static final String ACTION_NEXTGEN_EDIT = "action_nextgen_edit";
+    private static final String TAG = "ScrollShotResultView";
+
+    private Context mContext;
+    private LinearLayout mLayout;
+    private CropImageView mScrollShotResult;
+    private WindowManager mWindowManager;
+    private Bitmap mBitmap;
+    private Uri mUri;
+    private KeyReceiver mKeyReceiver;
+    private boolean mRegisterFlag = false;
+    private ScrollShotListener mScrollShotListener;
+
+    public ScrollShotResultView(Context context, Bitmap bitmap, File file) {
+        mContext = context;
+        mBitmap = bitmap;
+        //mUri = Uri.fromFile(file);
+        mUri = file2Uri(context,file,bitmap);
+        Log.d(TAG,"Uri = "+String.valueOf(mUri));
+    }
+
+    public void createFloatView() {
+        Log.d(TAG, "ScrollShotResultView");
+        init();
+        LayoutParams wmParams = new LayoutParams();
+        wmParams.type = LayoutParams.TYPE_NAVIGATION_BAR_PANEL;
+        wmParams.format = PixelFormat.TRANSLUCENT;
+        wmParams.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL
+                | LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+                | LayoutParams.FLAG_ALT_FOCUSABLE_IM
+                | LayoutParams.FLAG_FULLSCREEN
+                | LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+
+        wmParams.width = LayoutParams.MATCH_PARENT;
+        wmParams.height = LayoutParams.MATCH_PARENT;
+
+        LayoutInflater inflater = LayoutInflater.from(mContext);
+        mLayout = (LinearLayout) inflater.inflate(
+                R.layout.scroll_shot_navmiss_show, null);
+
+        mScrollShotResult = (CropImageView) mLayout
+                .findViewById(R.id.scrollshot_result);
+
+        mScrollShotResult.setImageBitmap(mBitmap);
+
+        ImageButton mSaveButton = (ImageButton) mLayout.findViewById(R.id.scrollshot_save);
+        mSaveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final Bitmap croppedImage = mScrollShotResult.getCroppedImage();
+                Log.d(TAG, "h = " + mBitmap.getHeight() + " w = " + mBitmap.getWidth()
+                        + " hh = " + mBitmap.getHeight() + " ww =" + croppedImage.getWidth());
+                if (Math.abs(mBitmap.getHeight() - croppedImage.getHeight()) <= 5 &&
+                        Math.abs(mBitmap.getWidth() - croppedImage.getWidth()) <= 5) {
+                    ScrollshotNotification scrollshotNotification =
+                            new ScrollshotNotification(mContext, croppedImage, mUri);
+                    scrollshotNotification.createNotification();
+                    removeView();
+                    refreshGallery(mUri);
+                } else {
+                    removeView();
+                    deleteFile(mContext,mUri);
+                    refreshGallery(mUri);
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            File file = Tools.saveBitmap(croppedImage);
+                            Uri uri = file2Uri(mContext,file,croppedImage);
+                            ScrollshotNotification scrollshotNotification =
+                                    new ScrollshotNotification(mContext, croppedImage, uri);
+                            scrollshotNotification.createNotification();
+                            refreshGallery(uri);
+                        }
+                    }).start();
+                }
+            }
+        });
+
+        ImageButton mDeleteButton = (ImageButton) mLayout.findViewById(R.id.scrollshot_delete);
+        mDeleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                removeView();
+                deleteFile(mContext,mUri);
+                refreshGallery(mUri);
+            }
+        });
+
+        LinearLayout mShareLinearLayout = (LinearLayout) mLayout.findViewById(R.id.scroll_shot_share_button);
+        mShareLinearLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharePhoto(mUri);
+                removeView();
+                refreshGallery(mUri);
+            }
+        });
+
+        mLayout.setFocusableInTouchMode(true);
+        mLayout.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                Log.d(TAG, "keycode " + keyCode + "event " + event.getAction());
+                switch (keyCode) {
+                    case KeyEvent.KEYCODE_BACK:
+                        removeView();
+                        deleteFile(mContext,mUri);
+                        refreshGallery(mUri);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
+
+        mWindowManager.addView(mLayout, wmParams);
+    }
+
+    private void init() {
+        mWindowManager = (WindowManager) mContext
+                .getSystemService(Context.WINDOW_SERVICE);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction("wg.reallytek.hall");
+        mKeyReceiver = new KeyReceiver();
+        mContext.registerReceiver(mKeyReceiver, filter);
+        mRegisterFlag = true;
+    }
+
+    private void removeView() {
+        if (mLayout != null) {
+            mWindowManager.removeView(mLayout);
+        }
+        if (mBitmap != null && !mBitmap.isRecycled()) {
+            mBitmap.recycle();
+            mBitmap = null;
+        }
+        if (mKeyReceiver != null && mRegisterFlag) {
+            mRegisterFlag = false;
+            mContext.unregisterReceiver(mKeyReceiver);
+            Log.d(TAG, "unregisterReceiver mKeyReceiver");
+        }
+        if (mScrollShotListener != null) {
+            mScrollShotListener.onFinish();
+            Log.d(TAG, "mScrollShotListener onFinish");
+        }
+    }
+
+    private void refreshGallery(Uri uri) {
+        Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        //Uri uri = Uri.fromFile(file);
+        intent.setData(uri);
+        mContext.sendBroadcast(intent);
+    }
+
+    private void deleteFile(Context context,Uri uri) {
+        context.getContentResolver().delete(uri, null, null);
+    }
+
+    private void SharePhoto(Uri photoUri) {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.putExtra(Intent.EXTRA_STREAM, photoUri);
+        intent.setType("image/png");
+        intent = Intent.createChooser(intent, null);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+    }
+
+    private void modifyPhoto(Uri photoUri) {
+        Intent intent = new Intent(ACTION_NEXTGEN_EDIT);
+        intent.setDataAndType(photoUri, MIME_TYPE_IMAGE_JPEG)
+                .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+    }
+
+    class KeyReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive");
+            String action = intent.getAction();
+
+            if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+                Log.d(TAG, "screen off");
+                removeView();
+                deleteFile(mContext,mUri);
+                refreshGallery(mUri);
+            } else if ("wg.reallytek.hall".equals(action)){
+                Log.d(TAG, "hall off");
+                removeView();
+                deleteFile(mContext,mUri);
+                refreshGallery(mUri);
+            }
+        }
+    }
+
+    public void setScrollShotListener(ScrollShotListener scrollShotListener) {
+        mScrollShotListener = scrollShotListener;
+    }
+
+    private Uri file2Uri(Context context,File file,Bitmap bitmap){
+        ContentValues contentValues = new ContentValues(1);
+        contentValues.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
+        contentValues.put(MediaStore.Images.Media.WIDTH,bitmap.getWidth());
+        contentValues.put(MediaStore.Images.Media.HEIGHT,bitmap.getHeight());
+        return context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+    }
+}

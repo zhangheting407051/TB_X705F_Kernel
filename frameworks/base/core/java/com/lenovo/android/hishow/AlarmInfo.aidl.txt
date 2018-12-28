@@ -1,0 +1,6 @@
+/*
+ * Create by lishunbo@wind-mobi.com 20180912 for baidu-dock feature
+ */
+package com.lenovo.android.hishow;
+
+parcelable AlarmInfo;

@@ -1,0 +1,59 @@
+package com.android.systemui.scrollshot;
+
+import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.provider.MediaStore;
+import android.telecom.Log;
+import android.content.ContentResolver;
+
+import java.io.File;
+
+import com.android.systemui.R;
+
+public class DeleteScrollshotReceiver extends BroadcastReceiver {
+    private final static String TAG = "DeleteScrollshotReceiver";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Log.d(TAG, "ScrollShot CANCEL_ID = " + ScrollshotNotification.CANCEL_ID);
+        if (!intent.hasExtra(ScrollshotNotification.SCREENSHOT_URI_ID)) {
+            return;
+        }
+
+        // Clear the notification
+        final NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        final Uri uri = Uri.parse(intent.getStringExtra(ScrollshotNotification.SCREENSHOT_URI_ID));
+        nm.cancel(R.id.notification_screenshot);
+
+
+        // And delete the image from the media store
+        new DeleteImageInBackgroundTask(context).execute(uri);
+    }
+
+    class DeleteImageInBackgroundTask extends AsyncTask<Uri, Void, Void> {
+
+        private Context mContext;
+
+        DeleteImageInBackgroundTask(Context context) {
+            mContext = context;
+        }
+
+        @Override
+        protected Void doInBackground(Uri... params) {
+            if (params.length != 1) return null;
+
+            Uri scrollshotUri = params[0];
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.delete(scrollshotUri, null, null);
+            return null;
+        }
+    }
+
+}

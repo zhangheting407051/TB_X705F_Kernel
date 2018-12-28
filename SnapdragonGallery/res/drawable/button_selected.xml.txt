@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle" >
+    <gradient android:startColor="#419BF9" android:endColor="#419BF9" android:angle="180"></gradient>
+    <stroke android:width="0.5dp" android:color="#419BF9"></stroke>
+    <corners android:radius="20dp"></corners>
+</shape>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

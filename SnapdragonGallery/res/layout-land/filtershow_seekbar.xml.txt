@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2013 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:theme="@android:style/Theme.DeviceDefault"
+    android:id="@+id/top"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1B1B1B"
+    android:visibility="visible" >
+
+    <TextView
+        android:id="@+id/filtershow_palette_title"
+        android:layout_width="@dimen/land_category_width"
+        android:layout_height="@dimen/land_category_text_height"
+        android:textColor="#ffffff"
+        android:textSize="24sp"
+        android:background="#202020"
+        android:gravity="center_vertical|center_horizontal"/>
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alignmentMode="alignBounds"
+        android:columnCount="2"
+        android:columnOrderPreserved="false"
+        android:orientation="horizontal"
+        android:useDefaultMargins="true"
+        android:layout_marginTop="200dp"
+        android:layout_below="@id/filtershow_palette_title">
+
+        <TextView
+            android:id="@+id/filtershow_palette_text"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_gravity="left|center_vertical"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="30dp"
+            android:textColor="#ffffff"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/filtershow_palette_value"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:textSize="18sp"
+            android:layout_gravity="right|center_vertical"
+            android:layout_marginEnd="20dp"
+            android:layout_marginTop="20dp"
+            android:textColor="#ffffff" />
+
+        <SeekBar
+            android:id="@+id/primarySeekBar"
+            android:indeterminateTint="#4f92e9"
+            android:progressBackgroundTint="#ffffff"
+            android:progressTint="#4f92e9"
+            android:thumbTint="#ffffff"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_columnSpan="2" />
+    </GridLayout>
+
+</RelativeLayout>

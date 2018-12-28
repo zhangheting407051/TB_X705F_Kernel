@@ -1,0 +1,73 @@
+package com.lenovo.tablet.masterservice.aidl;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ *  TabletMasterSerivce AIDL interface's model.
+ *
+ *  It has a Map.Map<String, Integer>.
+ *
+ *  The key is a package name of app.
+ *
+ *  The value is a flag. the value contain four int ,0,1,2,3.
+ *
+ *  0 = non-controllable
+ *  1 = controllable, not allow.
+ *  2 = controllable, allow.
+ *  3 = white list.
+ *
+ *  author: wufl2@lenovo.com
+ *  date: 2017.11.24
+ *  version: 1.0.2 （follow IMasterService.aidl）
+ * */
+public class ControllableAppList implements Parcelable {
+    private Map<String, Integer> appList = new HashMap<String, Integer>();
+
+    public static final Creator<ControllableAppList> CREATOR = new Creator<ControllableAppList>() {
+
+        @Override
+        public ControllableAppList createFromParcel(Parcel source) {
+            return new ControllableAppList(source);
+        }
+
+        @Override
+        public ControllableAppList[] newArray(int size) {
+            return new ControllableAppList[size];
+        }
+    };
+
+    public ControllableAppList() {
+        //Have no code.
+    }
+
+    private ControllableAppList(Parcel source) {
+        readFromParcel(source);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeMap(appList);
+    }
+
+    public void readFromParcel(Parcel source) {
+        this.appList = source.readHashMap(HashMap.class.getClassLoader());
+    }
+
+    public void setAppList(Map map) {
+        this.appList = map;
+    }
+
+    public Map<String,Integer> getAppList() {
+        return this.appList;
+    }
+}
+

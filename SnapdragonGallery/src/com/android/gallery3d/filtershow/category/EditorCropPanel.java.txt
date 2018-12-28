@@ -1,0 +1,394 @@
+/*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ *       copyright notice, this list of conditions and the following
+ *       disclaimer in the documentation and/or other materials provided
+ *       with the distribution.
+ *     * Neither the name of The Linux Foundation nor the names of its
+ *       contributors may be used to endorse or promote products derived
+ *       from this software without specific prior written permission.
+
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package com.android.gallery3d.filtershow.category;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import java.util.ArrayList;
+import java.util.List;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+import android.app.Activity;
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.View;
+import android.widget.ImageButton;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.LinearLayout;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
+
+import com.android.gallery3d.filtershow.editors.Editor;
+import android.util.Log;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+import org.codeaurora.gallery.R;
+import com.android.gallery3d.filtershow.FilterShowActivity;
+import com.android.gallery3d.filtershow.editors.EditorCrop;
+
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+public class EditorCropPanel extends GeometryPanel implements Editor.ShowSaveButtonListener,FilterShowActivity.HandleOperateListener{
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    private EditorCrop mEditorCrop;
+
+    private int mSelectPosition = 0;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    private int mEditorID;
+    private View mCropView;
+    private List<Integer> mCropAspectList = new ArrayList<Integer>();
+    private List<Integer> mRemoveAspectList = new ArrayList<Integer>();
+    private boolean mTempState = false;
+
+    private final int[] mCropAspectIds = {
+            //R.id.crop_menu_none,
+            R.id.crop_aspect_original,
+            R.id.crop_aspect_1to1,
+            R.id.crop_aspect_4to3,
+            R.id.crop_aspect_3to4,
+            R.id.crop_aspect_7to5,
+            R.id.crop_aspect_5to7
+    };
+
+    private final int[] mCropTextViewIds = {
+            R.id.crop_text_aspect_original,
+            R.id.crop_text_aspect_1to1,
+            R.id.crop_text_aspect_4to3,
+            R.id.crop_text_aspect_3to4,
+            R.id.crop_text_aspect_7to5,
+            R.id.crop_text_aspect_5to7
+    };
+
+    protected LinearLayout[] mLinearLayouts;
+    protected TextView[] mTextViews;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+    private final int[] mCropDrawableIds = {
+            R.drawable.crop_free_background,
+            R.drawable.crop_original_background,
+            R.drawable.crop_one_background
+    };
+
+    private final int[] mCropTextIds = {
+            R.string.aspectNone_effect,
+            R.string.aspectOriginal_effect,
+            R.string.aspect1to1_effect
+    };
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    private Button mCropButton;
+    private Button mStraightenButton;
+    private Button mMirrorButton;
+    private int currentIndex;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            int index = (int) v.getTag();
+            changeSelection(index);
+        }
+    };
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    public void setEditor(int editor) {
+        mEditorID = editor;
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 begin
+        //FilterShowActivity filterShowActivity = (FilterShowActivity) activity;
+        filterShowActivity = (FilterShowActivity) activity;
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 end
+        if (filterShowActivity.isReloadByConfigurationChanged()) {
+            mSelectPosition = filterShowActivity.getEditorCropButtonSelect();
+        }
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        mEditorCrop = (EditorCrop) filterShowActivity.getEditor(mEditorID);
+        if (mEditorCrop == null) return;
+        mEditorCrop.setShowSaveButtonListener(this);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 begin
+        //FilterShowActivity filterShowActivity = (FilterShowActivity) getContext();
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 end
+        if (mEditorCrop != null) {
+            mEditorCrop.reflectCurrentFilter();
+        }
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        initLayouts();
+        initTextViews();
+        if (mSelectPosition == -1) {
+            mSelectPosition = 0;
+            highlightIndex(mSelectPosition);
+        } else {
+            changeSelection(mSelectPosition);
+        }
+        addCropAspectList(mSelectPosition);
+        filterShowActivity.setHandlerOperateListener(this);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        if (isLandscape()) {
+            mMainView = inflater.inflate(R.layout.filtershow_category_geometry_panel,
+                    container, false);
+            return mMainView;
+        }else {
+            mCropView = inflater.inflate(R.layout.filtershow_crop_layout,container, false);
+            mCropView.setVisibility(View.VISIBLE);
+            return mCropView;
+        }
+    }
+
+    protected void initLayouts(){
+        if (isLandscape()) {
+            mLinearLayouts = new LinearLayout[] {
+                    (LinearLayout) mMainView.findViewById(R.id.crop_aspect_original),
+                    (LinearLayout) mMainView.findViewById(R.id.crop_aspect_1to1),
+                    (LinearLayout) mMainView.findViewById(R.id.crop_aspect_4to3),
+                    (LinearLayout) mMainView.findViewById(R.id.crop_aspect_3to4),
+                    (LinearLayout) mMainView.findViewById(R.id.crop_aspect_7to5),
+                    (LinearLayout) mMainView.findViewById(R.id.crop_aspect_5to7)
+            };
+        } else {
+            mLinearLayouts = new LinearLayout[] {
+                    (LinearLayout) mCropView.findViewById(R.id.crop_aspect_original),
+                    (LinearLayout) mCropView.findViewById(R.id.crop_aspect_1to1),
+                    (LinearLayout) mCropView.findViewById(R.id.crop_aspect_4to3),
+                    (LinearLayout) mCropView.findViewById(R.id.crop_aspect_3to4),
+                    (LinearLayout) mCropView.findViewById(R.id.crop_aspect_7to5),
+                    (LinearLayout) mCropView.findViewById(R.id.crop_aspect_5to7)
+            };
+        }
+
+        for (int i = 0; i<mLinearLayouts.length ; i++) {
+            LinearLayout layout = mLinearLayouts[i];
+            layout.setTag(i);
+            layout.setOnClickListener(mOnClickListener);
+        }
+    }
+
+    protected void initTextViews(){
+        if (isLandscape()) {
+            mTextViews = new TextView[] {
+                    (TextView) mMainView.findViewById(R.id.crop_text_aspect_original),
+                    (TextView) mMainView.findViewById(R.id.crop_text_aspect_1to1),
+                    (TextView) mMainView.findViewById(R.id.crop_text_aspect_4to3),
+                    (TextView) mMainView.findViewById(R.id.crop_text_aspect_3to4),
+                    (TextView) mMainView.findViewById(R.id.crop_text_aspect_7to5),
+                    (TextView) mMainView.findViewById(R.id.crop_text_aspect_5to7)
+            };
+        } else {
+            mTextViews = new TextView[] {
+                    (TextView) mCropView.findViewById(R.id.crop_text_aspect_original),
+                    (TextView) mCropView.findViewById(R.id.crop_text_aspect_1to1),
+                    (TextView) mCropView.findViewById(R.id.crop_text_aspect_4to3),
+                    (TextView) mCropView.findViewById(R.id.crop_text_aspect_3to4),
+                    (TextView) mCropView.findViewById(R.id.crop_text_aspect_7to5),
+                    (TextView) mCropView.findViewById(R.id.crop_text_aspect_5to7)
+            };
+        }
+    }
+
+    @Override
+    protected void initButtons() {
+        /*super.initButtons();
+        int size = mButtons.length;
+        for (int i = 0; i < size; i++) {
+            ImageButton view = mButtons[i];
+            view.setImageDrawable(getResources().getDrawable(mCropDrawableIds[i]));
+            // ues tag to store index.
+            view.setTag(i);
+            view.setOnClickListener(mOnClickListener);
+        }*/
+    }
+
+    @Override
+    protected void initTexts() {
+        /*super.initTexts();
+        int size = mTextViews.length;
+        for (int i = 0; i < size; i++) {
+            TextView view = mTextViews[i];
+            view.setText(mCropTextIds[i]);
+        }*/
+    }
+
+    private void changeSelection(int index) {
+        if (index >= 0 && index < mCropAspectIds.length) {
+            //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 begin
+            //FilterShowActivity filterShowActivity = (FilterShowActivity) getContext();
+            //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 end
+            mSelectPosition = index;
+            mEditorCrop.changeCropAspect(mCropAspectIds[index]);
+            addCropAspectList(index);
+            highlightIndex(index);
+            filterShowActivity.showSaveButtonIfNeed();
+        }
+    }
+
+    private void highlightIndex(int index) {
+        int size = mCropAspectIds.length;
+        for (int i = 0; i < size; i++) {
+            View view = mLinearLayouts[i];
+            view.setSelected(index == i);
+        }
+        size = mTextViews.length;
+        for (int i = 0; i < size; i++) {
+            TextView view = mTextViews[i];
+            view.setTextColor(index == i ?
+                    getResources().getColor(R.color.crop_text_selected) :
+                    Color.WHITE);
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        if (mEditorCrop != null) {
+            mEditorCrop.detach();
+        }
+        super.onDetach();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        FilterShowActivity activity = (FilterShowActivity) getActivity();
+        activity.saveEditorCropState(mSelectPosition);
+    }
+
+    @Override
+    protected void initCropButton(){
+        if(!isLandscape()){
+            mCropButton = (Button)mCropView.findViewById(R.id.por_basic_crop);
+            mStraightenButton = (Button)mCropView.findViewById(R.id.por_basic_rotate);
+            mMirrorButton = (Button)mCropView.findViewById(R.id.por_basic_mirror);
+
+            mCropButton.setOnClickListener(mButtonOnClickListener);
+            mStraightenButton.setOnClickListener(mButtonOnClickListener);
+            mMirrorButton.setOnClickListener(mButtonOnClickListener);
+        }
+    }
+
+    private View.OnClickListener mButtonOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            int index = 0;
+            int viewId = view.getId();
+            switch (viewId){
+                case R.id.por_basic_crop: {
+                    index = 0;
+                    break;
+                }
+                case R.id.por_basic_rotate: {
+                    index = 1;
+                    break;
+                }
+                case R.id.por_basic_mirror: {
+                    index = 2;
+                    break;
+                }
+            }
+            if (currentIndex == index) return;
+            currentIndex = index;
+            switchFragement(index);
+            //bug:A6000-5146-huangjian-001 20170315 add begin
+            clearRedoCropAspectList();
+            clearCropAspectData();
+            //bug:A6000-5146-huangjian-001 20170315 add ebd
+        }
+    };
+
+    //bug:A6091-388-huangjian-001 20161228 add begin
+    @Override
+    public void showIfNeedSaveButton(){
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 begin
+        //FilterShowActivity filterShowActivity = (FilterShowActivity) getContext();
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/3/29 end
+        filterShowActivity.showSaveButtonIfNeed();
+    }
+    //bug:A6091-388-huangjian-001 20161228 add end
+
+    //bug:A6000-5146-huangjian-001 20170315 add begin
+    @Override
+    public void handleUndoOperateAction() {
+        recordCropLastAspectData();
+        if (mCropAspectList.isEmpty()) return;
+        mTempState = true;
+        int lastIndex = mCropAspectList.get(mCropAspectList.size() - 1);
+        mLinearLayouts[lastIndex].performClick();
+        mTempState = false;
+    }
+
+    @Override
+    public void handleRedoOperateAction() {
+        if (mRemoveAspectList.isEmpty()) return;
+        mTempState = true;
+        int redoIndex = mRemoveAspectList.get(mRemoveAspectList.size() - 1);
+        mLinearLayouts[redoIndex].performClick();
+        mCropAspectList.add(redoIndex);
+        mRemoveAspectList.remove(mRemoveAspectList.size() - 1);
+        mTempState = false;
+    }
+
+    private void addCropAspectList(int selection) {
+        if (!mTempState) {
+            mCropAspectList.add(selection);
+            clearRedoCropAspectList();
+        }
+    }
+
+    private void clearRedoCropAspectList () {
+        mRemoveAspectList.clear();
+    }
+
+    private void recordCropLastAspectData() {
+        if (mCropAspectList.isEmpty()) return;
+        int lastRecord = mCropAspectList.size() - 1;
+        int index  = mCropAspectList.get(lastRecord);
+        mRemoveAspectList.add(index);
+        if (mCropAspectList.size() == 1) {
+            clearCropAspectData();
+        } else {
+            mCropAspectList.remove(lastRecord);
+        }
+    }
+
+    private void clearCropAspectData() {
+        mCropAspectList.clear();
+    }
+  //bug:A6000-5146-huangjian-001 20170315 add end
+}

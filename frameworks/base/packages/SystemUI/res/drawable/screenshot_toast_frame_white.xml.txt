@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 start -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+       android:shape="rectangle">
+    <solid android:color="#E0FFFFFF" />
+    <corners android:radius="25dp" />
+</shape>
+<!--shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 end -->
+

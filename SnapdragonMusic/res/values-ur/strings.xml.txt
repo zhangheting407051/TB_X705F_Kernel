@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onesong">1 گانا</string>
+    <string name="goto_start">لائبریری</string>
+    <string name="party_shuffle">پارٹی شفل</string>
+    <string name="party_shuffle_off">پارٹی شفل بند ہے</string>
+    <string name="clear_all_playlists">تمام پلے فہرست صاف کریں</string>
+    <string name="delete_item">حذف کریں</string>
+    <string name="play_all">تمام چلائيں</string>
+    <string name="open_in_music">میوزک کھولیں</string>
+    <string name="share">شئیر کرنا</string>
+    <string name="details">تفصیلات</string>
+    <string name="delete_artist_desc"><xliff:g id="artist">%s</xliff:g> کے سبھی گانے مستقل طور پر حذف کر دیں؟</string>
+    <string name="delete_album_desc">پورا البم ‎\"<xliff:g id="album">%s</xliff:g>\"‎ مستقل طور پر حذف کر دیں؟</string>
+    <string name="delete_song_desc">‎\"<xliff:g id="song">%s</xliff:g>\"‎ مستقل طورپر حذف کر دیا گیا؟</string>
+    <string name="delete_confirm_button_text">ٹھیک ہے</string>
+    <string name="scanning">SD کارڈ اسکین کررہا ہے/u2026</string>
+    <string name="scanning_nosdcard">USB ذخیرہ اسکین کررہا ہے/u2026</string>
+    <string name="nowplaying_title">اب چلارہا ہے</string>
+    <string name="partyshuffle_title">پارٹی شفل</string>
+    <string name="artists_title">فن کار</string>
+    <string name="albums_menu">البم</string>
+    <string name="albums_title">البم</string>
+    <string name="tracks_menu">گانے</string>
+    <string name="tracks_title">گانے</string>
+    <string name="folder_menu">فولڈر</string>
+    <string name="folders_title">فولڈر</string>
+    <string name="playlists_menu">پلے لسٹ</string>
+    <string name="playlists_title">پلے لسٹ</string>
+    <string name="videos_title">ویڈيو</string>
+    <string name="all_title">تمام میڈیا</string>
+    <string name="browse_menu">فن کار</string>
+    <string name="search_title">تلاش کرنا</string>
+    <string name="no_tracks_title">کوئی گانے نہیں</string>
+    <string name="no_videos_title">کوئی ویڈیو نہيں</string>
+    <string name="no_playlists_title">کوئی پلے لسٹ نہيں</string>
+    <string name="delete_playlist_menu">حذف کریں</string>
+    <string name="edit_playlist_menu">ترمیم کرنا</string>
+    <string name="rename_playlist_menu">دوبارہ نام دیں</string>
+    <string name="clear_all_playlists_message">کیا آپ تمام پلے فہرست کو حذف کرنا چاہتے ہیں؟</string>
+    <string name="delete_playlist_message">کیا آپ \"<xliff:g id="name">%s</xliff:g>\" کو حذف کرنا چاہتے ہیں؟</string>
+    <string name="delete_playlist_button_ok">ٹھیک ہے</string>
+    <string name="delete_playlist_button_cancel">منسوخ کریں</string>
+    <string name="playlist_deleted_message">پلے لسٹ مٹائی گئی۔</string>
+    <string name="playlist_renamed_message">پلے لسٹ کو نیا نام دیا گيا۔</string>
+    <string name="recentlyadded">حالیہ طور پر شامل کردہ</string>
+    <string name="recentlyadded_title">حالیہ طور پر شامل کردہ</string>
+    <string name="podcasts_listitem">پوڈکاسٹ</string>
+    <string name="podcasts_title">پوڈکاسٹ</string>
+    <string name="audio_db_playlist_name">میری ریکارڈنگ</string>
+    <string name="sdcard_missing_title">کوئی SD کارڈ نہيں</string>
+    <string name="sdcard_missing_title_nosdcard">کوئی USB ذخیرہ نہيں</string>
+    <string name="sdcard_missing_message">آپ کے فون میں SD کارڈ داخل نہیں ہے۔</string>
+    <string name="sdcard_missing_message_nosdcard">آپ کے فون میں USB ذخیرہ نہيں ہے۔</string>
+    <string name="sdcard_busy_title">SD کارڈ دستیاب نہيں ہے</string>
+    <string name="sdcard_busy_title_nosdcard">USB ذخیرہ دستیاب نہيں ہے</string>
+    <string name="sdcard_busy_message">آپ کا SD کارڈ مصروف ہے۔</string>
+    <string name="sdcard_busy_message_nosdcard">آپ کا USB ذخیرہ مصروف۔</string>
+    <string name="sdcard_error_title">SD کارڈ کی غلطی</string>
+    <string name="sdcard_error_title_nosdcard">USB ذخیرے کی غلطی</string>
+    <string name="sdcard_error_message">آپ کے SD کارڈ پر غلطی واقع ہوئی۔</string>
+    <string name="sdcard_error_message_nosdcard">آپ کے USB ذخیرے پر غلطی واقع ہوئی</string>
+    <string name="unknown_artist_name">نامعلوم فنکار</string>
+    <string name="unknown_album_name">نامعلوم البم</string>
+    <string name="unknown_folder_name">نامعلوم پاتھ</string>
+    <string name="unknown_folder_count">نامعلوم شمار</string>
+    <string name="shuffle_on_notif">شفل آن ہے۔</string>
+    <string name="shuffle_off_notif">شفل آف ہے۔</string>
+    <string name="repeat_off_notif">دہرانا آف ہے۔</string>
+    <string name="repeat_current_notif">حالیہ گانا دہرارہا ہے</string>
+    <string name="repeat_all_notif">تمام گانے دہرارہے ہيں۔</string>
+    <string name="ringtone_menu">بطور فون رنگ ٹون استعمال کریں</string>
+    <string name="ringtone_menu_short">بطور رنگ ٹون استعمال کريں</string>
+    <string name="ringtone_set">\"<xliff:g id="name" example="Alarm Bell">%s</xliff:g>\" بطور فون رنگ ٹون سیٹ کریں</string>
+    <string name="ringtone_menu_1">بطور سلاٹ 1 رنگ ٹون استعمال کریں</string>
+    <string name="ringtone_menu_2">بطور سلاٹ 2 رنگ ٹون استعمال کریں</string>
+    <string name="ringtone_menu_sim_name_1">بطور سلاٹ 1 ‎\"<xliff:g id="NAME">%s</xliff:g>\"‎ رنگ ٹون استعمال کریں</string>
+    <string name="ringtone_menu_sim_name_2">بطور سلاٹ 2 ‎\"<xliff:g id="NAME">%s</xliff:g>\"‎ رنگ ٹون استعمال کریں</string>
+    <string name="ringtone_menu_short_1">بطور رنگ ٹون 1 کے استعمال کریں</string>
+    <string name="ringtone_menu_short_2">بطور رنگ ٹون 2 کے استعمال کریں</string>
+    <string name="ringtone_set_1">\"<xliff:g id="name" example="Alarm Bell">%s</xliff:g>\" سلاٹ 1 بطور رنگ ٹون سیٹ کریں۔</string>
+    <string name="ringtone_set_2">\"<xliff:g id="name" example="Alarm Bell">%s</xliff:g>\" سلاٹ 2 بطور رنگ ٹون سیٹ کریں۔</string>
+    <string name="play_selection">چلانا</string>
+    <string name="add_to_playlist">پلے لسٹ میں شامل کریں</string>
+    <string name="queue">حالیہ پلے لسٹ</string>
+    <string name="new_playlist">نیا</string>
+    <string name="new_playlist_name_template">نئی پلے لسٹ <xliff:g id="number">%d</xliff:g></string>
+    <string name="emptyplaylist">منتخب پلے لسٹ خالی ہے۔</string>
+    <string name="create_playlist_create_text">محفوظ کریں</string>
+    <string name="create_playlist_overwrite_text">تحریر کریں</string>
+    <string name="service_start_error_title">پلے بیک میں مسئلہ</string>
+    <string name="service_start_error_msg">گانا چلانے سے قاصر۔</string>
+    <string name="service_start_error_button">ٹھیک ہے</string>
+    <string name="weekpicker_set">ہوگیا</string>
+    <string name="weekpicker_title">وقت مرتب کریں</string>
+    <string name="save_as_playlist">بطور پلے لسٹ محفوظ</string>
+    <string name="clear_playlist">پلے لسٹ صاف کريں</string>
+    <string name="musicbrowserlabel">میوزک</string>
+    <string name="musicshortcutlabel">میوزک پلے لسٹ</string>
+    <string name="mediaplaybacklabel">میوزک</string>
+    <string name="videobrowserlabel">ویڈيو</string>
+    <string name="mediapickerlabel">میوزک</string>
+    <string name="playback_failed">پلئیر اس قسم کی آڈیو فائل کی تائيد نہیں کرتا۔</string>
+    <string name="open_failed">معاف کریں، فائل کو کھولا نہیں جا سکتا ہے۔</string>
+    <string name="cancel">منسوخ کریں</string>
+    <string name="remove_from_playlist">پلے لسٹ سے نکالیں</string>
+    <string name="streamloadingtext"><xliff:g id="host">%s</xliff:g> سے متصل ہورہا ہے</string>
+    <string name="mediasearch"><xliff:g id="term" example="Beethoven">%s</xliff:g> مندرجہ ذیل استعمال کرتاے ہوئے تلاش کریں:</string>
+    <string name="working_artists">فن کار\u2026</string>
+    <string name="working_albums">البم\u2026</string>
+    <string name="working_songs">گانے\u2026</string>
+    <string name="working_folders">فولڈرز\u2026</string>
+    <string name="working_playlists">پلے فہرست\u2026</string>
+    <string name="loading">لوڈ کررہا ہے\u2026</string>
+    <string name="sort_by_track">ٹریک</string>
+    <string name="sort_by_album">البم</string>
+    <string name="sort_by_artist">فن کار</string>
+    <string name="music_picker_title">میوزک ٹریک منتخب کریں</string>
+    <string name="search_settings_description">فن کار، البم اور ٹریک</string>
+    <string name="search_hint">میوزک تلاش کریں</string>
+    <string name="search_hint_video">ویڈیو کی تلاش کریں</string>
+    <string name="fast_scroll_alphabet">\u0020ABCDEFGHIJKLMNOPQRSTUVWXYZ</string>
+    <string name="widget_initial_text">میوزک کے انتخاب کے لئے چھوئيں۔</string>
+    <string name="effectspanel">ایکولائزر</string>
+    <string name="duplicate_playlist_name_alert">\"<xliff:g id="name">%s</xliff:g>\" نام سے ایک پلے فہرست پہلے سے موجود ہے۔ براہ کرم ایک مختلف نام منتخب کریں۔</string>
+    <string name="same_playlist_name_alert">پلے فہرست \"<xliff:g id="name">%s</xliff:g>\" نام تبدیل نہیں کیا گیا ہے۔ براہ کرم ایک مختلف نام منتخب کریں۔</string>
+    <string name="button_ok">ٹھیک ہے</string>
+    <string name="list_empty">پلے فہرست میں کوئی میوزک نہیں۔</string>
+    <string name="enable_gallery_app">ویڈیو پلے نہیں کیا جاسکتا، براہ کرم سیٹنگز میں گیلری ایپ کو اہل کریں۔</string>
+    <string name="close_music">ختم کریں</string>
+    <string name="delete_video_item_message">کیا آپ \"<xliff:g id="name">%s</xliff:g>\" کو حذف کرنا چاہتے ہیں؟</string>
+    <string name="video_deleted_message">ویڈیو فائل حذف کردی گئی۔</string>
+    <string name="more_music">مزید میوزک</string>
+    <string name="more_video">مزید ویڈیو</string>
+    <string name="music_gesture_play">"پلے/موقوف آڈیو"</string>
+    <string name="music_gesture_prev">"پچھلی ٹریک پلے کریں"</string>
+    <string name="music_gesture_next">"اگلی ٹریک پلے کریں"</string>
+    <string name="no_permission_for_drm">"معاف کیجئے گا، Drm فائل کا اشتراک نہیں کیا جاسکتا"</string>
+    <string name="drm_license_info">Drmمزید لائسینس</string>
+    <string name="drm_ringtone_error">CD/SD فائلیں رنگ ٹون کے بطور سیٹ نہیں کر سکتے</string>
+    <string name="drm_right_expired">DRM حق کی مدت ختم</string>
+    <string name="action_consumes_rights">اس میڈیا کو پلے کرنے کے لیے حقوق کا استمعال کیا جائے گا</string>
+    <string name="rights_expired">گانے کے لیے حق کی مدت ختم ہوگئی۔</string>
+    <string name="ring_tone_size_exceed">Drm کی رنگ ٹون کا سائز 300kb سے زائد نہیں ہونا چاہیے۔</string>
+    <string name="cant_set_ringtone_with_count_perm">رنگ ٹون پر اجازت کی شمار کے ساتھ DRM فائل سیٹ نہیں کی جاسکتی۔</string>
+    <string name="navigation_drawer_title">میوزک</string>
+    <string name="action_settings">ترتیبات</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.3 start -->
+    <string name="equalizer_button_text">آواز+</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.3 end -->
+    <string name="exit_button_text">نکلنا</string>
+    <string name="action_settings1">سیٹنگز1</string>
+    <string name="action_settings2">سیٹنگز2</string>
+    <string name="action_one">ایک</string>
+    <string name="action_two">دو</string>
+    <string name="action_three">تین</string>
+    <string name="shuffle_all">سب کو گڈ مڈ کریں</string>
+    <string name="no_music_found">کوئی موسیقی نہیں ملی</string>
+    <string name="song_deleted_error_message">آپ کی درخواست کردہ ٹریک نہیں چلا سکا</string>
+    <string name="song_title">گانے کا نام:</string>
+    <string name="album_title">البم کا نام:</string>
+    <string name="artist_title">فنکار کا نام:</string>
+    <string name="duration_title">دورانیہ: </string>
+    <string name="path_title">پاتھ:</string>
+    <string name="size_title">سائز:</string>
+    <string name="duration_unit">" منٹ"</string>
+    <string name="size_bytes">B</string>
+    <string name="size_kilobytes">kB</string>
+    <string name="size_megabytes">MB</string>
+    <string name="size_gigabytes">GB</string>
+    <string name="favorite">پسندیدہ</string>
+    <string name="no_favorite">کوئی پسندیدہ نہیں ہے</string>
+    <string name="favorite_playlist">میرا پسندیدہ</string>
+    <string name="can_not_create_my_favorite">"اپنی پسندیدہ" پلے لسٹ نہیں بنا سکتا یا اوور رائٹ کر سکتا</string>
+    <string name="add_by_filemanager">فائل مینیجر سے شامل کریں</string>
+    <string name="add_file_failed">اس فائل کو شامل کرنے سے قاصر ہے کیونکہ فارمیٹ تعاون یافتہ نہیں ہے یا میڈیا لائبریری میں نہیں ہے</string>
+    <string name="dialog_title_help">مدد</string>
+    <string name="dialog_content">درکار کردہ اجازتوں کے بِنا یہ ایپلیکیشن کام نہیں کر سکتی۔ براہ کرم ترتیبات میں اجازتیں عنایت کریں۔</string>
+    <string name="dialog_button_quit">باہر نکلیں</string>
+    <string name="dialog_button_settings">ترتیبات</string>
+    <string name="audio_preview_fail_security">سیکورٹی مسائل کی حامل فائل کھولنے میں ناکامی۔</string>
+    <string name="audio_preview_fail_io">فائل نہیں کھول سکتا</string>
+    <string name="audio_preview_fail_illegal_state">غیر قانونی حالت، فائل کھولنے میں ناکامی۔</string>
+    <string name="audio_preview_fail_illegal_argument">غیر قانونی جواز، فائل کھولنے میں ناکامی۔</string>
+    <string name="enable_screen_on">سکرین چالو رکھنے کو فعال کریں</string>
+    <string name="disable_screen_on">سکرین چالو رکھنے کو غیر فعال کریں</string>
+    <string name="albumsongseparator">\n</string>
+    <string name="notification_artist_album">‎<xliff:g id="album">%2$s</xliff:g>\n<xliff:g id="artist">%1$s</xliff:g></string>
+</resources>

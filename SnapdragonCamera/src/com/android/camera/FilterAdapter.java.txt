@@ -1,0 +1,89 @@
+package com.android.camera;
+
+import android.annotation.LayoutRes;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.TextView;
+
+import com.android.camera.ui.ImageViewPlus;
+import com.android.camera.ui.RotateLayout;
+
+import org.codeaurora.snapcam.R;
+
+/**
+ * Created by xiangjuncheng on 2018/3/20.
+ */
+public class FilterAdapter extends BaseAdapter {
+    private Context mContext;
+    private int[] thumbnails;
+    private CharSequence[] entries;
+    private int init;
+    private int resource;
+
+    public FilterAdapter(Context context, int[] thumbnails, CharSequence[] entries, int init, @LayoutRes int resource) {
+        mContext = context;
+        this.thumbnails = thumbnails;
+        this.entries = entries;
+        this.init = init;
+        this.resource = resource;
+    }
+
+    @Override
+    public int getCount() {
+        return thumbnails.length;
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return null;
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return 0;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        final ImageViewPlus[] views = new ImageViewPlus[entries.length];
+        convertView = (RotateLayout) LayoutInflater.from(mContext).inflate(
+                R.layout.filter_mode_view, null, false);
+        ImageViewPlus imageView = (ImageViewPlus) convertView.findViewById(R.id.image);
+//            final int j = i;
+
+//            convertView.setOnTouchListener(new View.OnTouchListener() {
+//                private long startTime;
+//                @Override
+//                public boolean onTouch(View v, MotionEvent event) {
+//                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+//                        startTime = System.currentTimeMillis();
+//                    } else if (event.getAction() == MotionEvent.ACTION_UP) {
+//                        if (System.currentTimeMillis() - startTime < CLICK_THRESHOLD) {
+//                            pref.setValueIndex(j);
+//                            changeFilterModeControlIcon(pref.getValue());
+//                            onSettingChanged(pref);
+//                            for (ImageViewPlus v1 : views) {
+//                                v1.setBorderColor(0x00000000);
+//                            }
+//                            ImageViewPlus image = (ImageViewPlus) v.findViewById(R.id.image);
+//                            image.setBorderColor(0xff33b5e5);
+//                        }
+//                    }
+//                    return true;
+//                }
+//            });
+
+//            views[j] = imageView;
+        imageView.setBorderColor(0x00000000);
+        if (position == init)
+            imageView.setBorderColor(0xff33b5e5);
+        TextView label = (TextView) convertView.findViewById(R.id.label);
+        imageView.setImageResource(thumbnails[position]);
+        label.setText(entries[position]);
+        return convertView;
+    }
+}

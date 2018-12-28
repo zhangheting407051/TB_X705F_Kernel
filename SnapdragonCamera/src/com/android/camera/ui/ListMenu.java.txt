@@ -1,0 +1,650 @@
+/*
+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
+ *
+ * Copyright (C) 2010 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.camera.ui;
+
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Color;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.TextView;
+import android.widget.ImageView;
+import android.widget.ExpandableListView;
+import android.widget.BaseExpandableListAdapter;
+import android.widget.ExpandableListView.OnChildClickListener;
+import android.widget.ExpandableListView.OnGroupClickListener;
+
+import com.android.camera.CameraSettings;
+import com.android.camera.IconListPreference;
+import com.android.camera.ListPreference;
+import com.android.camera.PreferenceGroup;
+import com.android.camera.SDCard;
+import com.android.camera.SettingsManager;
+
+import org.codeaurora.snapcam.R;
+import com.android.camera.CameraSettings;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Arrays;
+//qidongdong@wind-mobi.com on 2018.6.11 start
+import android.widget.ExpandableListView.OnGroupExpandListener;
+import android.widget.RelativeLayout;
+//qidongdong@wind-mobi.com on 2018.6.11 end
+
+/* A popup window that contains several camera settings. */
+public class ListMenu extends ExpandableListView
+        implements ListMenuItem.Listener,
+//        AdapterView.OnItemClickListener,
+        ListSubMenu.Listener,OnChildClickListener,OnGroupClickListener,OnGroupExpandListener {//qidongdong@wind-mobi.com on 2018.3.26
+    @SuppressWarnings("unused")
+    private static final String TAG = "ListMenu";
+    private int mHighlighted = -1;
+    private Listener mListener;
+    private SettingsManager mSettingsManager;
+    private ArrayList<ListPreference> mListItem = new ArrayList<ListPreference>();
+	//bug:A6000-175-zhufeng-002 20161215 modify begin
+    private ArrayList<ArrayList<HashMap<String, Object>>> mChildListItem = new ArrayList<ArrayList<HashMap<String, Object>>>();
+    private MoreSettingAdapter mListItemAdapter;
+    private Resources mRes= getContext().getResources();
+	//bug:A6000-175-zhufeng-002 20161215 modify end
+    // Keep track of which setting items are disabled
+    // e.g. White balance will be disabled when scene mode is set to non-auto
+    private boolean[] mEnabled;
+    private boolean mForCamera2 = false;
+
+    //qidongdong@wind-mobi.com on 2018.7.4 start
+    //modify for TABFIVP-2431
+    private RestorePrefBlankListener mRestorePrefBlankListener;
+    //qidongdong@wind-mobi.com on 2018.7.4 end
+
+    @Override
+    public void onListPrefChanged(ListPreference pref) {
+        // listen from ListSubMenu
+        if (mListener != null) {
+            mListener.onSettingChanged(pref);
+        }
+        if (mSettingsManager != null) {
+            mSettingsManager.onSettingChanged(pref);
+        }
+    }
+
+    static public interface Listener {
+        public void onSettingChanged(ListPreference pref);
+
+        public void onPreferenceClicked(ListPreference pref);
+
+        public void onPreferenceClicked(ListPreference pref, int y);
+
+        public void onListMenuTouched();
+    }
+
+    //qidongdong@wind-mobi.com on 2018.7.4 start
+    //modify for TABFIVP-2431
+    static public interface RestorePrefBlankListener{
+        public void onRestorePrefBlankClick();
+    }
+    //qidongdong@wind-mobi.com on 2018.7.4 end
+
+    static public interface SettingsListener {
+        // notify SettingsManager
+        public void onSettingChanged(ListPreference pref);
+    }
+
+	//bug:A6000-175-zhufeng-003 20161215 modify start
+    private class MoreSettingAdapter extends BaseExpandableListAdapter {
+        LayoutInflater mInflater;
+        String mOnString;
+        String mOffString;
+
+        MoreSettingAdapter() {
+            super();
+            Context context = getContext();
+            mInflater = LayoutInflater.from(context);
+            mOnString = context.getString(R.string.setting_on);
+            mOffString = context.getString(R.string.setting_off);
+        }
+
+/*        private int getSettingLayoutId(ListPreference pref) {
+            return R.layout.list_menu_item;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ListPreference pref = mListItem.get(position);
+            int viewLayoutId = getSettingLayoutId(pref);
+            ListMenuItem view = (ListMenuItem) convertView;
+
+            view = (ListMenuItem)
+                    mInflater.inflate(viewLayoutId, parent, false);
+
+            view.initialize(pref); // no init for restore one
+            view.setSettingChangedListener(ListMenu.this);
+            if (position >= 0 && position < mEnabled.length) {
+                view.setEnabled(mEnabled[position]);
+                if (mForCamera2 && !mEnabled[position]) {
+                    view.overrideSettings(mSettingsManager.getValue(pref.getKey()));
+                }
+            } else {
+                Log.w(TAG, "Invalid input: enabled list length, " + mEnabled.length
+                        + " position " + position);
+            }
+            if (position == mHighlighted)
+                view.setBackgroundColor(getContext().getResources()
+                        .getColor(R.color.setting_color));
+            return view;
+        }
+*/
+        public boolean isEnabled(int position) {
+            if (position >= 0 && position < mEnabled.length) {
+                return mEnabled[position];
+            }
+            return true;
+        }
+
+		@Override
+		public int getGroupCount() {
+			// TODO Auto-generated method stub
+			return mListItem.size();
+		}
+
+		@Override
+		public int getChildrenCount(int groupPosition) {
+			// TODO Auto-generated method stub
+			return mChildListItem.get(groupPosition).size();
+		}
+
+		@Override
+		public Object getGroup(int groupPosition) {
+			// TODO Auto-generated method stub
+			return mListItem.get(groupPosition);
+		}
+
+		@Override
+		public Object getChild(int groupPosition, int childPosition) {
+			// TODO Auto-generated method stub
+			return mChildListItem.get(groupPosition).get(childPosition);
+		}
+
+		@Override
+		public long getGroupId(int groupPosition) {
+			// TODO Auto-generated method stub
+			return groupPosition;
+		}
+
+		@Override
+		public long getChildId(int groupPosition, int childPosition) {
+			// TODO Auto-generated method stub
+			return childPosition;
+		}
+
+		@Override
+		public boolean hasStableIds() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+
+		@Override
+		public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
+			// TODO Auto-generated method stub
+			ListPreference pref = (ListPreference)getGroup(groupPosition);
+
+            //bug:A6090-1127-zhufeng 20161228 modify start
+			if (pref == null) {
+			    return null;
+			}
+            //bug:A6090-1127-zhufeng 20161228 modify end
+            //qidongdong@wind-mobi.com on 2018.6.19 start
+            //modify for bug#TABFIVP-2251
+            if(pref.getKey().equals(CameraSettings.KEY_RESTORE_DEFAULT)){
+                RelativeLayout rLayout = new RelativeLayout(mContext);
+                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT);
+                layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                layoutParams.setMargins(0, 30, 0, 30);
+
+                TextView textview = new TextView(mContext);
+                textview.setGravity(Gravity.CENTER);
+                textview.setPadding(60, 20, 60, 20);
+                textview.setTextSize(15);
+                textview.setTextColor(Color.WHITE);
+                textview.setBackgroundResource(R.drawable.setting_restore_tv_bg);
+                textview.setText(R.string.proxy_defaultView_text);
+
+                //qidongdong@wind-mobi.com on 2018.7.4 start
+                //modify for TABFIVP-2431
+                textview.setOnClickListener(new View.OnClickListener() {
+
+                    @Override
+                    public void onClick(View v) {
+                        // TODO Auto-generated method stub
+                        restoreDefaultClick();
+                    }
+                });
+                //qidongdong@wind-mobi.com on 2018.7.4 end
+
+                rLayout.addView(textview,layoutParams);
+                return rLayout;
+
+            }
+            //qidongdong@wind-mobi.com on 2018.6.19 end
+            //bug:A6090-4023-zhaoyujie 20170323 add begin
+            if (pref.getKey().equals(CameraSettings.KEY_FLASH_MODE)) {
+               TextView textview = new TextView(mContext);
+               textview.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+               return textview;
+            }
+            //bug:A6090-4023-zhaoyujie 20170323 add end
+            //xiangjuncheng@wind-mobi.com 2018/3/26 start
+            if (isTitleItem(pref.getKey())) {
+                TextView textview = new TextView(mContext);
+                textview.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                textview.setPadding(55, 30, 55, 30);
+                textview.setTextSize(15);
+                textview.setTextColor(Color.WHITE);
+                textview.setText(pref.getTitle());
+                setPreferenceEnabled(pref.getKey(),false);
+                return textview;
+            }
+            //xiangjuncheng@wind-mobi.com 2018/3/26 end
+
+            ListMenuItem view = (ListMenuItem)mInflater.inflate(R.layout.list_menu_item, parent, false);
+
+            view.initialize(pref, isExpanded); // no init for restore one
+            view.setSettingChangedListener(ListMenu.this);
+            if (groupPosition >= 0 && groupPosition < mEnabled.length) {
+                view.setEnabled(mEnabled[groupPosition]);
+                if (mForCamera2 && !mEnabled[groupPosition]) {
+                    view.overrideSettings(mSettingsManager.getValue(pref.getKey()));
+                }
+            } else {
+                Log.w(TAG, "Invalid input: enabled list length, " + mEnabled.length
+                        + " position " + groupPosition);
+            }
+
+            if (groupPosition == mHighlighted)
+                view.setBackgroundColor(getContext().getResources()
+                        .getColor(R.color.setting_color));
+            return view;
+		}
+
+        //qidongdong@wind-mobi.com on 2018.7.4 start
+        //modify for TABFIVP-2431
+        private void restoreDefaultClick(){
+            if (mListener != null) {
+                mListener.onPreferenceClicked(null);
+            }
+        }
+        //qidongdong@wind-mobi.com on 2018.7.4 end
+
+		@Override
+		public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView,
+				ViewGroup parent) {
+			// TODO Auto-generated method stub
+			View view = mInflater.inflate(R.layout.list_sub_item, parent, false);
+
+			RadioButton childradio = (RadioButton)view.findViewById(R.id.childradio);
+			TextView textview = (TextView)view.findViewById(R.id.text);
+
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> map = (HashMap<String, Object>)getChild(groupPosition, childPosition);
+			boolean check = (boolean) map.get("check");
+			childradio.setChecked(check);
+		    //bug:A6090-750-zhufeng 20161220 modify start
+            ListPreference pref = mListItem.get(groupPosition);
+            if (pref.getKey().equals(CameraSettings.KEY_CAMERA_SAVEPATH)) {
+
+            		if (pref.getValue().equalsIgnoreCase("" + childPosition)) {
+            			childradio.setChecked(true);
+            		} else {
+            			childradio.setChecked(false);
+            		}
+            		if (childPosition == 1) {
+                		view.setEnabled(SDCard.instance().isWriteable());
+                        //xiangjuncheng@wind-mobi.com 2018/3/8 start
+                        view.setAlpha(SDCard.instance().isWriteable() ? 1f : 0.3f);
+                        //xiangjuncheng@wind-mobi.com 2018/3/8 end
+
+            		}
+            }
+            //bug:A6090-750-zhufeng 20161220 modify end
+			String text = (String) map.get("text");
+			textview.setText(text);
+
+			return view;
+		}
+
+		@Override
+		public boolean isChildSelectable(int groupPosition, int childPosition) {
+			// TODO Auto-generated method stub
+			return true;
+		}
+    }
+	//bug:A6000-175-zhufeng-003 20161215 modify end
+
+    public void setSettingsManager(SettingsManager settingsManager) {
+        mSettingsManager = settingsManager;
+    }
+
+    public void setSettingChangedListener(Listener listener) {
+        mListener = listener;
+    }
+
+    //qidongdong@wind-mobi.com on 2018.7.4 start
+    //modify for TABFIVP-2431
+    public void setRestorePrefBlankListener(RestorePrefBlankListener listener) {
+        mRestorePrefBlankListener = listener;
+    }
+    //qidongdong@wind-mobi.com on 2018.7.4 end
+
+
+    public ListMenu(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    public void initializeForCamera2(String[] keys) {
+        mForCamera2 = true;
+        PreferenceGroup group = mSettingsManager.getPreferenceGroup();
+        List<String> disabledList = mSettingsManager.getDisabledList();
+        // Prepare the setting items.
+        initialize(group, keys);
+/*        for (int i = 0; i < keys.length; ++i) {
+            ListPreference pref = group.findPreference(keys[i]);
+            if (pref != null)
+                mListItem.add(pref);
+        }
+
+        ArrayAdapter<ListPreference> mListItemAdapter = new MoreSettingAdapter();
+        setAdapter(mListItemAdapter);
+        setOnItemClickListener(this);
+        setSelector(android.R.color.transparent);
+        // Initialize mEnabled
+        mEnabled = new boolean[mListItem.size()];
+        for (int i = 0; i < mEnabled.length; i++) {
+            mEnabled[i] = true;
+        }
+*/
+        for (String s: disabledList) {
+            setPreferenceEnabled(s, false);
+        }
+    }
+
+    //xiangjuncheng@wind-mobi.com 2018/3/6 start
+    private boolean isTitleItem(String key) {
+        return CameraSettings.TITLE_IMAGE.equals(key)
+                || CameraSettings.TITLE_CAMERA.equals(key)
+                || CameraSettings.TITLE_SOUND.equals(key)
+                || CameraSettings.TITLE_LOCATION.equals(key)
+                || CameraSettings.TITLE_SAVEPATH.equals(key)
+                || CameraSettings.TITLE_SELFIE.equals(key);
+    }
+    //xiangjuncheng@wind-mobi.com 2018/3/6 end
+
+	//bug:A6000-175-zhufeng-004 20161215 modify start
+    public void initialize(PreferenceGroup group, String[] keys) {
+        // Prepare the setting items.
+        for (int i = 0; i < keys.length; ++i) {
+            ListPreference pref = group.findPreference(keys[i]);
+            if (pref != null) {
+                mListItem.add(pref);
+                //xiangjuncheng@wind-mobi.com 2018/3/6 start
+                ArrayList<HashMap<String, Object>> listItem =
+                        new ArrayList<HashMap<String, Object>>();
+                if (isTitleItem(keys[i])) {
+                    mChildListItem.add(listItem);
+                    continue;
+                }
+                //xiangjuncheng@wind-mobi.com 2018/3/6 end
+    	        CharSequence[] entries = pref.getEntries();
+    	        boolean[] checked = new boolean[entries.length];
+		        int mIndex = pref.findIndexOfValue(pref.getValue());
+    	        // Prepare the ListView.
+    	        for (int j = 0; j < entries.length; ++j) {
+    	            HashMap<String, Object> map = new HashMap<String, Object>();
+    	            map.put("text", entries[j].toString());
+    	            if (mIndex == j) {
+    	            	checked[j] = true;
+    	            } else {
+    	            	checked[j] = false;
+    	            }
+    	            map.put("check", checked[j]);
+    	            listItem.add(map);
+    	        }
+    	        mChildListItem.add(listItem);
+            }
+        }
+
+    	//bug:A6000-175-zhufeng 20161219 modify start
+        ListPreference prefBtn = group.findPreference(CameraSettings.KEY_RESTORE_DEFAULT);
+        mListItem.add(prefBtn);
+    	//bug:A6000-175-zhufeng 20161219 modify end
+
+        mListItemAdapter = new MoreSettingAdapter();
+        setAdapter(mListItemAdapter);
+		setOnChildClickListener(this);
+		setOnGroupClickListener(this);
+		//qidongdongdong@wind-mobi.com on 2018.3.23 start
+        //modify for Feature-10054 only expand one item
+		setOnGroupExpandListener(this);
+		//qidongdongdong@wind-mobi.com on 2018.3.23 end
+        //setOnItemClickListener(this);
+        setSelector(android.R.color.transparent);
+        // Initialize mEnabled
+        mEnabled = new boolean[mListItem.size()];
+        for (int i = 0; i < mEnabled.length; i++) {
+            mEnabled[i] = true;
+        }
+    }
+	//bug:A6000-175-zhufeng-004 20161215 modify end
+    // When preferences are disabled, we will display them grayed out. Users
+    // will not be able to change the disabled preferences, but they can still
+    // see
+    // the current value of the preferences
+    public void setPreferenceEnabled(String key, boolean enable) {
+        int count = mEnabled == null ? 0 : mEnabled.length;
+        for (int j = 0; j < count; j++) {
+            ListPreference pref = mListItem.get(j);
+            if (pref != null && key.equals(pref.getKey())) {
+                mEnabled[j] = enable;
+                break;
+            }
+        }
+    }
+
+    public void onSettingChanged(ListPreference pref) {
+        if (mListener != null) {
+            mListener.onSettingChanged(pref);
+        }
+    }
+
+    // Scene mode can override other camera settings (ex: flash mode).
+    public void overrideSettings(final String... keyvalues) {
+        int count = mEnabled == null ? 0 : mEnabled.length;
+        for (int i = 0; i < keyvalues.length; i += 2) {
+            String key = keyvalues[i];
+            String value = keyvalues[i + 1];
+            for (int j = 0; j < count; j++) {
+                ListPreference pref = mListItem.get(j);
+                if (pref != null && key.equals(pref.getKey())) {
+                    // Change preference
+                    if (value != null)
+                        pref.setValue(value);
+                    // If the preference is overridden, disable the preference
+                    boolean enable = value == null;
+                    mEnabled[j] = enable;
+                    int offset = getFirstVisiblePosition();
+                    if (offset >= 0) {
+                        int indexInView = j - offset;
+                        if (getChildCount() > indexInView && indexInView >= 0) {
+                            getChildAt(indexInView).setEnabled(enable);
+                        }
+                    }
+                }
+            }
+        }
+        mListItemAdapter.notifyDataSetChanged();
+//        reloadPreference();
+    }
+
+    public void resetHighlight() {
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            View v = getChildAt(i);
+            v.setBackground(null);
+        }
+        mHighlighted = -1;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_MOVE) {
+            mListener.onListMenuTouched();
+            resetHighlight();
+        }
+        return super.onTouchEvent(ev);
+    }
+
+/*
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position,
+            long id) {
+        if (mListener != null) {
+            resetHighlight();
+            ListPreference pref = mListItem.get(position);
+            mHighlighted = position;
+            view.setBackgroundColor(getContext().getResources().getColor(R.color.setting_color));
+            mListener.onPreferenceClicked(pref, (int) view.getY());
+        }
+
+    }
+
+    public void reloadPreference() {
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            ListPreference pref = mListItem.get(i);
+            if (pref != null) {
+                ListMenuItem listMenuItem =
+                        (ListMenuItem) getChildAt(i);
+                listMenuItem.reloadPreference();
+            }
+        }
+    }
+*/
+//bug:A6000-175-zhufeng-005 20161215 modify start
+	@Override
+	public boolean onGroupClick(ExpandableListView parent, View v, int groupPosition, long id) {
+		// TODO Auto-generated method stub
+		ListPreference pref = (ListPreference)mListItemAdapter.getGroup(groupPosition);
+
+		if (!mEnabled[groupPosition]) {
+			return true;
+		}
+    	//bug:A6000-175-zhufeng 20161219 modify start
+        if (pref.getKey().equals(CameraSettings.KEY_RESTORE_DEFAULT)) {
+            //qidongdong@wind-mobi.com on 2018.7.4 start
+            //modify for TABFIVP-2431
+//            if (mListener != null) {
+//	            mListener.onPreferenceClicked(pref);
+            if (mRestorePrefBlankListener != null) {
+                mRestorePrefBlankListener.onRestorePrefBlankClick();
+            //qidongdong@wind-mobi.com on 2018.7.4 end
+	        }
+	        return true;
+        }
+    	//bug:A6000-175-zhufeng 20161219 modify end
+
+		if (pref.getEntryValues().length == 2) {
+			String entry = pref.getEntry();
+			if (((mRes.getString(R.string.setting_on)).equalsIgnoreCase(entry))
+				|| ((mRes.getString(R.string.pref_camera_shuttersound_entry_enable)).equalsIgnoreCase(entry))
+				|| ((mRes.getString(R.string.setting_off)).equalsIgnoreCase(entry))
+				|| ((mRes.getString(R.string.pref_camera_shuttersound_entry_disable)).equalsIgnoreCase(entry))) {
+
+		        int mIndex = pref.findIndexOfValue(pref.getValue());
+		        mIndex = (2 - mIndex)/2;
+				pref.setValueIndex(mIndex);
+		        if (mListener != null) {
+		            mListener.onSettingChanged(pref);
+		        }
+		        if (mSettingsManager != null) {
+		            mSettingsManager.onSettingChanged(pref);
+		        }
+		        return true;
+
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
+		ListPreference pref = (ListPreference)mListItemAdapter.getGroup(groupPosition);
+
+        if (pref.getKey().equals(CameraSettings.KEY_CAMERA_SAVEPATH)) {
+    		if (childPosition == 1 && !SDCard.instance().isWriteable()) {
+    			return true;
+    		}
+        }
+        CharSequence[] entries = pref.getEntries();
+        for (int j = 0; j < entries.length; ++j) {
+    		HashMap<String, Object> map = (HashMap<String, Object>)mListItemAdapter.getChild(groupPosition, j);
+    		map.put("check", false);
+        }
+
+		HashMap<String, Object> map = (HashMap<String, Object>)mListItemAdapter.getChild(groupPosition, childPosition);
+        map.put("check", true);
+		pref.setValueIndex(childPosition);
+        if (mListener != null) {
+            mListener.onSettingChanged(pref);
+        }
+        if (mSettingsManager != null) {
+            mSettingsManager.onSettingChanged(pref);
+        }
+        //xiangjuncheng@wind-mobi.com 2018/3/8 start
+        collapseGroup(groupPosition);
+        //xiangjuncheng@wind-mobi.com 2018/3/8 end
+        // TODO Auto-generated method stub
+		return false;
+	}
+	//bug:A6000-175-zhufeng-005 20161215 modify end
+
+	//qidongdong@wind-mobi.com on 2018.3.26 start
+	//modify for Feature-10054 only expand one item
+    @Override
+    public void onGroupExpand(int groupPosition) {
+        // TODO Auto-generated method stub
+        int count = mListItemAdapter.getGroupCount();
+        for(int i = 0;i < count;i++){
+            if(i != groupPosition){
+                collapseGroup(i);
+            }
+        }
+    }
+    //qidongdong@wind-mobi.com on 2018.3.26 end
+}

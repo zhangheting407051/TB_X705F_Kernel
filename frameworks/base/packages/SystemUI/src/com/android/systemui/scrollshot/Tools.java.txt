@@ -1,0 +1,470 @@
+/*Transsion Top Secret*/
+/**
+ * Copyright(C) 2016 Transsion Inc
+ * Author licheng
+ * Description
+ */
+
+
+package com.android.systemui.scrollshot;
+
+import android.content.Context;
+
+import com.android.systemui.R;
+
+import android.app.Instrumentation;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.os.Environment;
+import android.os.SystemClock;
+import android.util.Log;
+import android.view.MotionEvent;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.view.Surface;
+import android.graphics.Color;
+import java.util.ArrayList;
+import java.lang.Math;
+//shiyaru@wind-mobi.com add 2018.7.12 start
+import android.app.ActivityManager;
+import android.provider.Settings;
+import java.util.List;
+import android.app.WallpaperManager;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+//shiyaru@wind-mobi.com add 2018.7.12 end
+
+public class Tools {
+
+    private static final String TAG = "Tools";
+    private static final String SCREENSHOT_FILE_NAME_TEMPLATE = "Screenshot";
+    private static final String SCREENSHOTS_DIR_NAME = "Screenshots";
+
+    public static float fromDpToPx(float dp) {
+        return dp * Resources.getSystem().getDisplayMetrics().density;
+    }
+
+    public static void drag(float fromX, float toX, float fromY, float toY,
+                            int stepCount) {
+        Log.d(TAG, "drag fromX " + fromX + " toX " + toX + " fromY "
+                + fromY + " toY " + toY + " stepCount " + stepCount);
+        Instrumentation inst = new Instrumentation();
+        long downTime = SystemClock.uptimeMillis();
+        long eventTime = SystemClock.uptimeMillis();
+        float y = fromY;
+        float x = fromX;
+        float yStep = (toY - fromY) / stepCount;
+        float xStep = (toX - fromX) / stepCount;
+        MotionEvent event = MotionEvent.obtain(downTime, eventTime,
+                MotionEvent.ACTION_DOWN, fromX, fromY, 0);
+        try {
+            inst.sendPointerSync(event);
+        } catch (SecurityException ignored) {
+        }
+        for (int i = 0; i < stepCount; ++i) {
+            y += yStep;
+            x += xStep;
+            eventTime = SystemClock.uptimeMillis();
+            event = MotionEvent.obtain(downTime, eventTime,
+                    MotionEvent.ACTION_MOVE, x, y, 0);
+            try {
+                inst.sendPointerSync(event);
+            } catch (SecurityException ignored) {
+            }
+        }
+        eventTime = SystemClock.uptimeMillis();
+        event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP,
+                x, y, 0);
+        try {
+            inst.sendPointerSync(event);
+        } catch (SecurityException ignored) {
+        }
+    }
+
+    public static void down(final float fromX, final float fromY) {
+        Instrumentation inst = new Instrumentation();
+        long downTime = SystemClock.uptimeMillis();
+        long eventTime = SystemClock.uptimeMillis();
+        float y = fromY;
+        float x = fromX;
+        MotionEvent event = MotionEvent.obtain(downTime, eventTime,
+                MotionEvent.ACTION_DOWN, fromX, fromY, 0);
+        try {
+            inst.sendPointerSync(event);
+        } catch (SecurityException ignored) {
+        }
+        Log.d(TAG, "down ");
+        eventTime = SystemClock.uptimeMillis();
+        event = MotionEvent.obtain(downTime, eventTime,
+                MotionEvent.ACTION_MOVE, fromX, fromY, 0);
+        try {
+            inst.sendPointerSync(event);
+        } catch (SecurityException ignored) {
+        }
+        Log.d(TAG, "move ");
+        eventTime = SystemClock.uptimeMillis();
+        event = MotionEvent.obtain(downTime, eventTime,
+                MotionEvent.ACTION_CANCEL, fromX, fromY, 0);
+        try {
+            inst.sendPointerSync(event);
+        } catch (SecurityException ignored) {
+        }
+        Log.d(TAG, "cancel ");
+    }
+
+    public static File saveBitmap(Bitmap bitmap) {
+        File screenshotDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), SCREENSHOTS_DIR_NAME);
+        screenshotDir.mkdirs();
+        String imageDate = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault())
+                .format(new Date(System.currentTimeMillis()));
+        String mImageFileName = String.format(SCREENSHOT_FILE_NAME_TEMPLATE + "_%s.png", imageDate);
+        String fileDirPath = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES).toString();
+        Log.d(TAG, "filepath" + fileDirPath);
+        File file = new File(fileDirPath + "/" + "Screenshots" + "/" + mImageFileName);
+        if (!file.exists()) {
+            try {
+                if (!file.createNewFile()) {
+                    return null;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        FileOutputStream out;
+        try {
+            out = new FileOutputStream(file);
+            if (bitmap.compress(Bitmap.CompressFormat.PNG, 70, out)) {
+                out.flush();
+                out.close();
+            }
+        } catch (IOException e) {
+            Log.d(TAG, "exception = " + e);
+        }
+        return file;
+    }
+
+    public static Bitmap scaleBitmap(Bitmap origin, float ratio) {
+        if (origin == null) {
+            return null;
+        }
+        int width = origin.getWidth();
+        int height = origin.getHeight();
+        Matrix matrix = new Matrix();
+        matrix.preScale(ratio, ratio);
+        Bitmap newBM = Bitmap.createBitmap(origin, 0, 0, width, height, matrix, false);
+        if (newBM.equals(origin)) {
+            return newBM;
+        }
+        origin.recycle();
+        return newBM;
+    }
+
+    public static Bitmap mergeBitmap(Bitmap foreBitmap, Bitmap secondBitmap) {
+        if (null == foreBitmap || null == secondBitmap || foreBitmap.isRecycled()
+                || secondBitmap.isRecycled()) {
+            return null;
+        }
+        int imageW = foreBitmap.getWidth();
+        int imageH = foreBitmap.getHeight() + secondBitmap.getHeight();
+        Bitmap newBmp = Bitmap.createBitmap(imageW, imageH, Bitmap.Config.RGB_565);
+        Canvas cv = new Canvas(newBmp);
+        cv.drawBitmap(foreBitmap, 0, 0, null);
+        cv.drawBitmap(secondBitmap, 0, foreBitmap.getHeight(), null);
+        cv.save(Canvas.ALL_SAVE_FLAG);
+        cv.restore();
+        return newBmp;
+    }
+
+    public static Bitmap mergeBitmap(int screenW, int screenH, int newImageW,
+                               int newImageH, Bitmap foreground, int foreY, Bitmap background, int backY) {
+        if (null == background || null == foreground || background.isRecycled()
+                || foreground.isRecycled()) {
+            return null;
+        }
+        Bitmap newBmp = Bitmap.createBitmap(newImageW, newImageH,
+                Bitmap.Config.RGB_565);
+        Canvas cv = new Canvas(newBmp);
+        Rect mSrcRect = new Rect(0, 0, screenW, foreY);
+        Rect mDestRect = new Rect(0, 0, screenW, foreY);
+        cv.drawBitmap(foreground, mSrcRect, mDestRect, null);
+        mSrcRect = new Rect(0, backY, screenW, screenH);
+        mDestRect = new Rect(0, foreY, screenW, newImageH);
+        cv.drawBitmap(background, mSrcRect, mDestRect, null);
+        cv.save(Canvas.ALL_SAVE_FLAG);
+        cv.restore();
+        return newBmp;
+    }
+
+    public static float getDegreesForRotation(int value) {
+        switch (value) {
+            case Surface.ROTATION_90:
+                return 360f - 90f;
+            case Surface.ROTATION_180:
+                return 360f - 180f;
+            case Surface.ROTATION_270:
+                return 360f - 270f;
+        }
+        return 0f;
+    }
+
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition  2018.6.1 start
+    public static boolean isEquals(Bitmap fore, Bitmap back) {
+        int[] foreArray = formatBitmap(fore);
+        int[] backArray = formatBitmap(back);
+        if (foreArray.length != backArray.length) {
+            return false;
+        }
+        for (int i = 0; i < foreArray.length; i++) {
+            if (foreArray[i] != backArray[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static int[] formatBitmap(Bitmap bitmap) {
+        int startX = (int)(bitmap.getWidth()/8);
+        int compareX = (int)(3*bitmap.getWidth()/4);
+        int[] linePic = new int[bitmap.getHeight()];
+        for (int y = 0; y < bitmap.getHeight(); y++) {
+            linePic[y] = 0;
+            for (int x = 0; x < compareX; x++) {
+                linePic[y] += bitmap.getPixel(x + startX, y);
+            }
+        }
+        return linePic;
+    }
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition  2018.6.1 end
+
+    //shiyaru@wind-mobi.com modify scollscreenshot stopping condition  2018.6.12 start
+    public static boolean isLastCenterEquals(Bitmap fore, Bitmap lastCenter) {
+        if (fore.getHeight() < lastCenter.getHeight()) {
+            return false;
+        }
+        Bitmap temp = Bitmap.createBitmap(fore, 0, (fore.getHeight() - lastCenter.getHeight()), fore.getWidth(), lastCenter.getHeight());
+        if (compareBitmap(temp, lastCenter)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean compareBitmap(Bitmap fore, Bitmap back) {
+        if (fore.getHeight() != back.getHeight()) {
+            return false;
+        }
+        int[] fore_pixels = new int[fore.getWidth()];
+        int[] back_pixels = new int[back.getWidth()];
+        for (int i = 0; i < fore.getHeight(); i++) {
+            fore.getPixels(fore_pixels, 0, fore.getWidth(), 0, i, fore.getWidth(), 1);
+            back.getPixels(back_pixels, 0, back.getWidth(), 0, i, back.getWidth(), 1);
+            if (!comparePixelGray(fore_pixels, back_pixels)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean comparePixelGray(int[] fore_pixels, int[] back_pixels) {
+        if (fore_pixels.length != back_pixels.length) {
+            return false;
+        }
+        for(int i = 0;i < fore_pixels.length;i ++) {
+            int gray_fore = (Color.red(fore_pixels[i]) + (Color.green(fore_pixels[i])) + (Color.blue(fore_pixels[i]))) / 3;
+            int gray_back = (Color.red(back_pixels[i]) + (Color.green(back_pixels[i])) + (Color.blue(back_pixels[i]))) / 3;
+            if (Math.abs(gray_back - gray_fore) > 7) {
+                return false;
+            }
+        }
+        return true;
+    }
+    //shiyaru@wind-mobi.com modify scollscreenshot stopping condition  2018.6.12 end
+
+    //shiyaru@wind-mobi.com remove bitmap duplication 2018.6.13 start
+    public static Bitmap removeDupl(Bitmap bitmap, int height) {
+        if (bitmap.getHeight() < (height * 2)) {
+            return bitmap;
+        }
+        Bitmap bitmap1 = Bitmap.createBitmap(bitmap, 0, (bitmap.getHeight() - (height * 2)), bitmap.getWidth(), height);
+        Bitmap bitmap2 = Bitmap.createBitmap(bitmap, 0, (bitmap.getHeight() - height), bitmap.getWidth(), height);
+        Bitmap temp = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), (bitmap.getHeight() - (height * 2)));
+        return mergeBitmap(temp, removeDuplAndMerge(bitmap1, bitmap2));
+    }
+
+    /**
+     * 1. compare the last row of the fore bitmap with each row of back bitmap,and return a list
+     * 2. shorten the list
+     * 3. get two bitmap repeating pixel lines
+     * 4. clipping the bitmap to remove duplicate parts
+     */
+    public static Bitmap removeDuplAndMerge(Bitmap fore, Bitmap back) {
+        Bitmap fore_compare = Bitmap.createBitmap(fore, fore.getWidth() / 16, 0, (fore.getWidth() * 7 / 8), fore.getHeight());
+        Bitmap back_compare = Bitmap.createBitmap(back, back.getWidth() / 16, 0, (back.getWidth() * 7 / 8), back.getHeight());
+
+        ArrayList<Integer> lineList = new ArrayList<>();
+        ArrayList<Integer> line = new ArrayList<>();
+        // init lineList
+        lineList = compareLastRowBitmap(fore_compare, back_compare);
+
+        // shorten the list
+        int lastIndex = 2;
+        if (lineList.size() > 10) {
+            line = compareLastIndexRowBitmap(fore_compare, back_compare, lineList, lastIndex);
+        } else {
+            line = lineList;
+        }
+
+        // get two bitmap repeating pixel lines
+        int line_index = -1;
+        line_index = getCutIndex(fore_compare, back_compare, line);
+
+        // clipping the bitmap to remove duplicate parts
+        if (line_index == (back.getHeight() - 1)) {
+            return fore;
+        }
+        if (line_index > 0 && line_index < (back.getHeight() - 1)) {
+            back = Bitmap.createBitmap(back, 0, line_index + 1, back.getWidth(), (back.getHeight() - line_index - 1));
+        }
+        return mergeBitmap(fore, back);
+    }
+
+    /**
+     * compare the last row of the fore bitmap with each row of back bitmap,and return a list
+     */
+    public static ArrayList<Integer> compareLastRowBitmap(Bitmap fore, Bitmap back) {
+        ArrayList<Integer> mList = new ArrayList<>();
+        int[] pixels_fore_1 = new int[fore.getWidth()];
+        int[] pixels_back_1 = new int[back.getWidth()];
+        //last row pixels and gray
+        fore.getPixels(pixels_fore_1, 0, fore.getWidth(), 0, (fore.getHeight() - 1), fore.getWidth(), 1);
+
+        //compare forebitmap last row to backbitmap each row --> lineList
+        for (int i = back.getHeight() - 1; i >= 0; i --) {
+            back.getPixels(pixels_back_1, 0, back.getWidth(), 0, i, back.getWidth(), 1);
+            if (comparePixelGray(pixels_fore_1, pixels_back_1)) {
+                mList.add(Integer.valueOf(i));
+            }
+        }
+        return mList;
+    }
+
+    /**
+     * travelsing and shorten the list
+     * compare the last index row of the fore bitmap with the corresponding row of back bitmap
+     */
+    public static ArrayList<Integer> compareLastIndexRowBitmap(Bitmap fore, Bitmap back, ArrayList<Integer> list, int lastIndex) {
+        if (fore.getHeight() < lastIndex || list == null) {
+            return null;
+        }
+        if (list.size() <= 10) {
+            return list;
+        }
+        int[] pixels_fore_index = new int[fore.getWidth()];
+        int[] pixels_back_index = new int[back.getWidth()];
+        //last index row pixels and gray
+        fore.getPixels(pixels_fore_index, 0, fore.getWidth(), 0, (fore.getHeight() - lastIndex), fore.getWidth(), 1);
+
+        //compare forebitmap last index row to backbitmap each row --> lineList
+        for (int i = list.size() - 1; i >= 0; i --) {
+            if((list.get(i).intValue() + 1) < lastIndex) {
+                break;
+            }
+            back.getPixels(pixels_back_index, 0, back.getWidth(), 0, (list.get(i).intValue() + 1 - lastIndex), back.getWidth(), 1);
+            if (!comparePixelGray(pixels_fore_index, pixels_back_index)) {
+                list.remove(i);
+            }
+        }
+        return compareLastIndexRowBitmap(fore, back, list, lastIndex + 1);
+    }
+
+    /**
+     * return two bitmap repeating pixel lines
+     */
+    public static int getCutIndex(Bitmap fore, Bitmap back, ArrayList<Integer> lineList) {
+        if (lineList == null) {
+            return -1;
+        }
+        // int cutIndex;
+        int bigger_index = -1;
+        float bigger = 0;
+        for (int i = 0; i < lineList.size(); i ++) {
+            float percent = getBitmapSimilarPercent(fore, back, lineList.get(i).intValue());
+            if (percent > bigger ) {
+                bigger = percent;
+                bigger_index = lineList.get(i).intValue();
+            }
+            if (percent == 1.0) {
+                bigger_index = lineList.get(i).intValue();
+                return bigger_index;
+            }
+        }
+        if (bigger > 0.95) {
+            return bigger_index;
+        } else {
+            return  -1;
+        }
+    }
+
+    /**
+     * return similar percentages of two bitmap
+     */
+    private static float getBitmapSimilarPercent(Bitmap bitmap2, Bitmap bitmap1, int index) {
+        if (bitmap1.getWidth() != bitmap2.getWidth()) {
+            return -1;
+        }
+        int width = bitmap2.getWidth();
+        int[] pixels_target = new int[width];
+        int[] pixels_source = new int[width];
+        int count = 0;
+        int height = Math.min((bitmap2.getHeight() - 1), index);
+        height = Math.max(height, 1);
+        for (int i = 1; i <= height; i ++) {
+            bitmap2.getPixels(pixels_target, 0, width, 0, ((bitmap2.getHeight() - 1) - i), width, 1);
+            bitmap1.getPixels(pixels_source, 0, width, 0, (index - i), width, 1);
+            if (comparePixelGray(pixels_target, pixels_source)) {
+                count = count + 1;
+            }
+        }
+        return (float)count / (float)height;
+    }
+    //shiyaru@wind-mobi.com remove bitmap duplication 2018.6.13 end
+
+    //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+    public static boolean isHome(Context mContext) {
+        ActivityManager mActivityManager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningTaskInfo> rti = mActivityManager.getRunningTasks(1);
+        String packageName = rti.get(0).topActivity.getPackageName();
+        return packageName.equals("com.tblenovo.launcher");
+    }
+
+    public static boolean isTileHome(Context mContext) {
+        int mode = Settings.System.getInt(mContext.getContentResolver(), Settings.System.LAUNCHER_DRAWER_ENABLE, 0);
+        return (mode == 0);
+    }
+
+    public static void setWallpaperBitmap(WallpaperManager wallpaperManager, Bitmap wallpaperBitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        wallpaperBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        InputStream isBm = new ByteArrayInputStream(baos.toByteArray());
+        if (isBm != null) {
+            try {
+                wallpaperManager.setSystemStream(isBm);
+            } catch (IOException e) {
+                Log.w(TAG, "cannot write stream to wallpaper", e);
+            }
+        }
+    }
+    //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+}

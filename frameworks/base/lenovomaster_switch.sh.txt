@@ -1,0 +1,10 @@
+#!/bin/bash
+
+local_path=`pwd`
+switch_filename=$local_path"/frameworks/base/core/java/com/lenovo/system/LenovoMasterSwitchManager.java"
+echo $switch_filename
+if $1; then
+sed -i '/BUILD_LENOVOMASTER_SWITCH_ON/s/false/true/' $switch_filename
+else
+sed -i '/BUILD_LENOVOMASTER_SWITCH_ON/s/true/false/' $switch_filename
+fi

@@ -1,0 +1,44 @@
+/**
+ *hanweiwei@wind-mobi.com 2018.02.26 begin
+*/
+package com.android.server.countrycode;
+
+import android.content.Context;
+import com.android.server.SystemService;
+import android.os.Binder;
+import android.util.Log;
+import android.wind.WindCountryCodeUtils;
+
+/**
+ * CameraService is the system_server analog to the camera service running in mediaserver.
+ *
+ * @hide
+ */
+public class CountryCodeService extends SystemService {
+
+    private static final String TAG = "CountryCodeService";
+
+    private Context mContext;
+
+    public CountryCodeService(Context context) {
+        super(context);
+        mContext = context;
+    }
+
+    @Override
+    public void onStart() {
+        WindCountryCodeUtils.initConfigs();
+        WindCountryCodeUtils.registerListener(mContext);
+
+        //publishBinderService("countrycodeservice", new Binder(){});
+    }
+
+
+
+}
+
+/**
+ *hanweiwei@wind-mobi.com 2018.02.26 end
+*/
+
+

@@ -1,0 +1,210 @@
+package com.android.systemui.statusbar.phone;
+
+
+import android.app.ActivityManager;
+import android.content.Context;
+import android.content.pm.UserInfo;
+import android.graphics.PixelFormat;
+import android.os.UserHandle;
+import android.os.UserManager;
+import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
+import android.util.Log;
+import android.view.InputDevice;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import com.android.systemui.statusbar.phone.ProductivityModeDialog.Callback;
+
+import java.util.ArrayList;
+import java.util.List;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class BookuiModeUtils{
+    private final static String TAG = "BookuiModeUtils";
+    private final static int KEYBOARDCODE = 1344;
+    private View view = null;
+    private WindowManager mWindowManager = null;
+    private WindowManager.LayoutParams mWindowLayoutParams = null;
+    private List<InputDevice> mInputKeyBoardDevices = new ArrayList<InputDevice>();
+    public void inputDeviceChange(boolean isAdd,Context context) {
+        if (mWindowManager == null) {
+            mWindowManager = (WindowManager) context
+                    .getSystemService(Context.WINDOW_SERVICE);
+        }
+        if (isAdd) {
+            boolean isProductivityMode = false;
+            try {
+                isProductivityMode = Settings.Secure.getIntForUser(
+                        context.getContentResolver(), "bookui_mode_on", UserHandle.USER_CURRENT) == 1 ? true
+                        : false;
+            } catch (SettingNotFoundException e) {
+                e.printStackTrace();
+            }
+            if (view != null) {
+                mWindowManager.removeView(view);
+                view = null;
+            }
+            if (!isProductivityMode) {
+                boolean isNeedShowAgain = true;
+                try {
+                    isNeedShowAgain = Settings.System.getIntForUser(
+                            context.getContentResolver(),
+                            "no_need_show_again_productivity_mode", UserHandle.USER_CURRENT) == 0 ? true
+                            : false;
+                } catch (SettingNotFoundException e) {
+                    e.printStackTrace();
+                }
+                android.util.Log.d(TAG,
+                        "connec====isNeedShowAgain====="
+                                + isNeedShowAgain);
+                if (!isNeedShowAgain) {
+                    int switchModeType = 0;
+                    try {
+                        switchModeType = Settings.System.getIntForUser(
+                                context.getContentResolver(),
+                                "switch_mode_type_productivity", UserHandle.USER_CURRENT);
+                    } catch (SettingNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    if (switchModeType == 1) {
+                        Settings.Secure.putIntForUser(
+                                context.getContentResolver(),
+                                "bookui_mode_on", 1, UserHandle.USER_CURRENT);
+                    }
+                } else {
+                    MyCallback myCallback = new MyCallback();
+                    view = ProductivityModeDialog
+                            .getSwitchToProductivityModeDialog(
+                                    context, myCallback);
+                    mWindowLayoutParams = new WindowManager.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            0,
+                            0,
+                            WindowManager.LayoutParams.TYPE_SYSTEM_DIALOG,
+                            WindowManager.LayoutParams.FLAG_FULLSCREEN
+                                    | WindowManager.LayoutParams.FLAG_DIM_BEHIND
+                                    | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+                                    | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                            PixelFormat.RGBA_8888);
+                    mWindowLayoutParams.dimAmount = 0.5f;
+                    mWindowManager.addView(view,
+                            mWindowLayoutParams);
+                }
+            }
+        } else {
+            boolean isProductivityMode = false;
+            try {
+                isProductivityMode = Settings.Secure.getIntForUser(
+                        context.getContentResolver(), "bookui_mode_on", UserHandle.USER_CURRENT) == 1 ? true
+                        : false;
+            } catch (SettingNotFoundException e) {
+                e.printStackTrace();
+            }
+            if (view != null) {
+                mWindowManager.removeView(view);
+                view = null;
+            }
+            if (isProductivityMode) {
+                boolean isNeedShowAgain = true;
+                try {
+                    isNeedShowAgain = Settings.System.getIntForUser(
+                            context.getContentResolver(),
+                            "no_need_show_again_normal_mode", UserHandle.USER_CURRENT) == 0 ? true
+                            : false;
+                } catch (SettingNotFoundException e) {
+                    e.printStackTrace();
+                }
+                android.util.Log.d(TAG,
+                        "discon====isNeedShowAgain====="
+                                + isNeedShowAgain);
+                if (!isNeedShowAgain) {
+                    int switchModeType = 0;
+                    try {
+                        switchModeType = Settings.System.getIntForUser(
+                                context.getContentResolver(),
+                                "switch_mode_type_normal", UserHandle.USER_CURRENT);
+                    } catch (SettingNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    android.util.Log.d(TAG,
+                            "discon====switchModeType====="
+                                    + switchModeType);
+                    if (switchModeType == 2) {
+                        Settings.Secure.putIntForUser(
+                                context.getContentResolver(),
+                                "bookui_mode_on", 0, UserHandle.USER_CURRENT);
+                    }
+
+                } else {
+                    MyCallback myCallback = new MyCallback();
+                    view = ProductivityModeDialog
+                            .getSwitchToNormalDialog(context,
+                                    myCallback);
+                    mWindowLayoutParams = new WindowManager.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            0,
+                            0,
+                            WindowManager.LayoutParams.TYPE_SYSTEM_DIALOG,
+                            WindowManager.LayoutParams.FLAG_FULLSCREEN
+                                    | WindowManager.LayoutParams.FLAG_DIM_BEHIND
+                                    | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+                                    | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                            PixelFormat.RGBA_8888);
+                    mWindowLayoutParams.dimAmount = 0.5f;
+                    mWindowManager.addView(view,
+                            mWindowLayoutParams);
+                }
+            }
+        }
+
+    }
+
+    public boolean isKeyBoardDevice(int deviceId) {
+        boolean isKeyBoardDevice = false;
+        InputDevice device = InputDevice.getDevice(deviceId);
+        if (device != null && !device.isVirtual() && device.isFullKeyboard()){
+            mInputKeyBoardDevices.add(device);
+            isKeyBoardDevice = true;
+        }
+        if (device == null && mInputKeyBoardDevices.size() > 0) {
+            int index = -1;
+            for (int i=0; i<mInputKeyBoardDevices.size(); i++) {
+                if(mInputKeyBoardDevices.get(i).getId() == deviceId) {
+                    isKeyBoardDevice = true;
+                    index = i;
+                    break;
+                }
+            }
+            if (index != -1) {
+                mInputKeyBoardDevices.remove(index);
+            }
+
+        }
+        return isKeyBoardDevice;
+    }
+
+    private class MyCallback implements Callback {
+
+        public void dissmissDialog() {
+            if (view != null) {
+                mWindowManager.removeView(view);
+                mWindowManager = null;
+                mWindowLayoutParams = null;
+                view = null;
+            }
+        }
+
+    }
+
+    public boolean isKidMode(Context context) {
+        UserInfo info = UserManager.get(context).getUserInfo(ActivityManager.getCurrentUser());
+        if (info.isRestricted()/* || info.isKid()*/) {
+            return true;
+        }
+        return false;
+    }
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

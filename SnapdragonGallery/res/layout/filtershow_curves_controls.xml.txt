@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/filtershow_curves_controls"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0D0D0D">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/curves_channel_rgb"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/curves_channel_rgb"
+            android:textSize="18sp"
+            android:textColor="#ffffff"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:focusable="true"
+            android:background="@drawable/button_selected"
+        />
+
+        <Button
+            android:id="@+id/curves_channel_red"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/curves_channel_red"
+            android:textSize="18sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/curves_channel_green"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/curves_channel_green"
+            android:textSize="18sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/curves_channel_blue"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/curves_channel_blue"
+            android:textSize="18sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
+        <ImageButton
+            android:id="@+id/slider_cancel"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/cancel"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:background="?android:attr/actionBarItemBackground" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginLeft="140dp">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <ImageView
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:src="@drawable/edit_btn_output_rest"/>
+                <TextView
+                    android:id="@+id/curves_output"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/output_text"
+                    android:textColor="#ffffff"
+                    android:layout_centerHorizontal="true"
+                    android:layout_centerInParent="true"
+                    android:textSize="16sp"/>
+
+            </RelativeLayout>
+            <TextView
+                android:layout_width="68dp"
+                android:layout_height="wrap_content"
+                android:text="@string/output"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical|center_horizontal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginLeft="240dp">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <ImageView
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:src="@drawable/edit_btn_output_rest"/>
+                <TextView
+                    android:id="@+id/curves_input"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/input_text"
+                    android:textColor="#ffffff"
+                    android:layout_centerHorizontal="true"
+                    android:layout_centerInParent="true"
+                    android:textSize="16sp"/>
+
+            </RelativeLayout>
+            <TextView
+                android:layout_width="69dp"
+                android:layout_height="wrap_content"
+                android:text="@string/input"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical|center_horizontal"/>
+        </LinearLayout>
+        <ImageButton
+            android:id="@+id/slider_save"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/done"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:background="?android:attr/actionBarItemBackground"
+            android:layout_marginLeft="100dp" />
+    </LinearLayout>
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

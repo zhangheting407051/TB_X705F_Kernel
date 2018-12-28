@@ -1,0 +1,34 @@
+
+package com.android.systemui.lenovo.bean;
+
+import android.content.Intent;
+import android.content.pm.ResolveInfo;
+import android.graphics.drawable.Drawable;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class TaskDescription {
+    private ResolveInfo resolveInfo;
+    private int taskId; // application task id for curating apps
+    private String packageName; // used to override animations (see onClick())
+
+    public TaskDescription(int _taskId, int _persistentTaskId, int _stackId,
+            ResolveInfo _resolveInfo, Intent _intent,
+            String _packageName, CharSequence _description, CharSequence label) {
+        taskId = _taskId;
+        resolveInfo = _resolveInfo;
+        packageName = _packageName;
+    }
+
+    public int getTaskId() {
+        return taskId;
+    }
+
+    public ResolveInfo getResolveInfo() {
+        return resolveInfo;
+    }
+
+    public String getPackageName () {
+        return packageName;
+    }
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

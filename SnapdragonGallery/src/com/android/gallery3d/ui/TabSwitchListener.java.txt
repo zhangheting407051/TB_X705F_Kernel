@@ -1,0 +1,6 @@
+package com.android.gallery3d.ui;
+
+public interface TabSwitchListener {
+    public void switchTab(int pageType);
+    public void switchPageOnlyView(int pageType);
+}

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onesong">1 música</string>
+    <string name="goto_start">Biblioteca</string>
+    <string name="party_shuffle">Misturar</string>
+    <string name="party_shuffle_off">Misturar desativado</string>
+    <string name="clear_all_playlists">Apagar todas as listas de reprodução</string>
+    <string name="delete_item">Excluir</string>
+    <string name="play_all">Reproduzir tudo</string>
+    <string name="open_in_music">Abrir música</string>
+    <string name="share">Compartilhar</string>
+    <string name="details">Detalhes</string>
+    <string name="delete_artist_desc">Apagar permanentemente todas as músicas de <xliff:g id="artist">%s</xliff:g>?</string>
+    <string name="delete_album_desc">Apagar permanentemente todo o álbum \"<xliff:g id="album">%s</xliff:g>\"?</string>
+    <string name="delete_song_desc">Apagar permanentemente \"<xliff:g id="song">%s</xliff:g>\"?</string>
+    <string name="delete_confirm_button_text">OK</string>
+    <string name="scanning">Examinando cartão SD\u2026</string>
+    <string name="scanning_nosdcard">Examinando armazenamento USB\u2026</string>
+    <string name="nowplaying_title">Em execução</string>
+    <string name="partyshuffle_title">Misturar</string>
+    <string name="artists_title">Artistas</string>
+    <string name="albums_menu">Álbuns</string>
+    <string name="albums_title">Álbuns</string>
+    <string name="tracks_menu">Músicas</string>
+    <string name="tracks_title">Músicas</string>
+    <string name="folder_menu">Pastas</string>
+    <string name="folders_title">Pastas</string>
+    <string name="playlists_menu">Listas de reprodução</string>
+    <string name="playlists_title">Listas de reprodução</string>
+    <string name="videos_title">Vídeos</string>
+    <string name="all_title">Todas as mídias</string>
+    <string name="browse_menu">Artistas</string>
+    <string name="search_title">Pesquisar</string>
+    <string name="no_tracks_title">Nenhuma música</string>
+    <string name="no_videos_title">Sem vídeos</string>
+    <string name="no_playlists_title">Nenhuma lista de reprodução</string>
+    <string name="delete_playlist_menu">Excluir</string>
+    <string name="edit_playlist_menu">Editar</string>
+    <string name="rename_playlist_menu">Renomear</string>
+    <string name="clear_all_playlists_message">Deseja limpar todas as listas de reprodução?</string>
+    <string name="delete_playlist_message">Deseja apagar \"<xliff:g id="name">%s</xliff:g>\"?</string>
+    <string name="delete_playlist_button_ok">OK</string>
+    <string name="delete_playlist_button_cancel">Cancelar</string>
+    <string name="playlist_deleted_message">Lista de reprodução excluída.</string>
+    <string name="playlist_renamed_message">Lista de reprodução renomeada.</string>
+    <string name="recentlyadded">Adicionado recentemente</string>
+    <string name="recentlyadded_title">Adicionado recentemente</string>
+    <string name="podcasts_listitem">Podcasts</string>
+    <string name="podcasts_title">Podcasts</string>
+    <string name="audio_db_playlist_name">Minhas gravações</string>
+    <string name="sdcard_missing_title">Nenhum cartão SD</string>
+    <string name="sdcard_missing_title_nosdcard">Nenhum armazenamento USB</string>
+    <string name="sdcard_missing_message">Seu telefone não possui um cartão SD inserido.</string>
+    <string name="sdcard_missing_message_nosdcard">Seu telefone não tem armazenamento USB.</string>
+    <string name="sdcard_busy_title">O cartão SD não está disponível</string>
+    <string name="sdcard_busy_title_nosdcard">Armazenamento USB indisponível</string>
+    <string name="sdcard_busy_message">Seu cartão SD está ocupado.</string>
+    <string name="sdcard_busy_message_nosdcard">O armazenamento USB está ocupado.</string>
+    <string name="sdcard_error_title">Erro do cartão SD</string>
+    <string name="sdcard_error_title_nosdcard">Erro do armazenamento USB</string>
+    <string name="sdcard_error_message">Ocorreu um erro no seu cartão SD.</string>
+    <string name="sdcard_error_message_nosdcard">Ocorreu um erro no seu armazenamento USB.</string>
+    <string name="unknown_artist_name">Artista desconhecido</string>
+    <string name="unknown_album_name">Álbum desconhecido</string>
+    <string name="unknown_folder_name">Caminho desconhecido</string>
+    <string name="unknown_folder_count">Contagem desconhecida</string>
+    <string name="shuffle_on_notif">Misturar está ativado.</string>
+    <string name="shuffle_off_notif">Misturar está desativado.</string>
+    <string name="repeat_off_notif">Repetição desativada.</string>
+    <string name="repeat_current_notif">Repetir música atual.</string>
+    <string name="repeat_all_notif">Repetir todas as músicas.</string>
+    <string name="ringtone_menu">Usar como toque do telefone</string>
+    <string name="ringtone_menu_short">Usar como toque</string>
+    <string name="ringtone_set">\"<xliff:g id="name">%s</xliff:g>\" definido como toque do telefone.</string>
+    <string name="ringtone_menu_1">Usar como toque do slot 1</string>
+    <string name="ringtone_menu_2">Usar como toque do slot 2</string>
+    <string name="ringtone_menu_sim_name_1">Usar como toque \"<xliff:g id="NAME">%s</xliff:g>\" do slot 1</string>
+    <string name="ringtone_menu_sim_name_2">Usar como toque \"<xliff:g id="NAME">%s</xliff:g>\" do slot 2</string>
+    <string name="ringtone_menu_short_1">Use como toque 1</string>
+    <string name="ringtone_menu_short_2">Use como toque 2</string>
+    <string name="ringtone_set_1">\"<xliff:g id="name" example="Alarm Bell">%s</xliff:g>\" definido como ringtone do slot 1.</string>
+    <string name="ringtone_set_2">\"<xliff:g id="name" example="Alarm Bell">%s</xliff:g>\" definido como ringtone do slot 2.</string>
+    <string name="play_selection">Reproduzir</string>
+    <string name="add_to_playlist">Adicionar à lista de reprodução</string>
+    <string name="queue">Lista de reprodução atual</string>
+    <string name="new_playlist">Novo</string>
+    <string name="new_playlist_name_template">Nova lista de reprodução <xliff:g id="number">%d</xliff:g></string>
+    <string name="emptyplaylist">A lista de reprodução selecionada está vazia.</string>
+    <string name="create_playlist_create_text">Salvar</string>
+    <string name="create_playlist_overwrite_text">Sobrescrever</string>
+    <string name="service_start_error_title">Problema de reprodução</string>
+    <string name="service_start_error_msg">Não foi possível reproduzir a música.</string>
+    <string name="service_start_error_button">OK</string>
+    <string name="weekpicker_set">Feito</string>
+    <string name="weekpicker_title">Definir hora</string>
+    <string name="save_as_playlist">Salvar como lista de reprodução</string>
+    <string name="clear_playlist">Limpar lista de reprodução</string>
+    <string name="musicbrowserlabel">Música</string>
+    <string name="musicshortcutlabel">Lista de reprodução de músicas</string>
+    <string name="mediaplaybacklabel">Música</string>
+    <string name="videobrowserlabel">Vídeos</string>
+    <string name="mediapickerlabel">Música</string>
+    <string name="playback_failed">O player não é compatível com este tipo de arquivo de áudio.</string>
+    <string name="open_failed">Não é possível abrir o arquivo.</string>
+    <string name="cancel">Cancelar</string>
+    <string name="remove_from_playlist">Remover da lista de reprodução</string>
+    <string name="streamloadingtext">Conectando a <xliff:g id="host">%s</xliff:g>\u2026</string>
+    <string name="mediasearch">Pesquisar por <xliff:g id="term">%s</xliff:g> usando:</string>
+    <string name="working_artists">Artistas\u2026</string>
+    <string name="working_albums">Álbuns\u2026</string>
+    <string name="working_songs">Músicas\u2026</string>
+    <string name="working_folders">Pastas\u2026</string>
+    <string name="working_playlists">Listas de reprodução\u2026</string>
+    <string name="loading">Carregando\u2026</string>
+    <string name="sort_by_track">Faixas</string>
+    <string name="sort_by_album">Álbuns</string>
+    <string name="sort_by_artist">Artistas</string>
+    <string name="music_picker_title">Escolher faixa de música</string>
+    <string name="search_settings_description">Artistas, álbuns e faixas</string>
+    <string name="search_hint">Pesquisar Músicas</string>
+    <string name="search_hint_video">Pesquisar vídeos</string>
+    <string name="fast_scroll_alphabet">\u0020ABCDEFGHIJKLMNOPQRSTUVWXYZ</string>
+    <string name="widget_initial_text">Toque para escolher a música.</string>
+    <string name="effectspanel">Equalizador</string>
+    <string name="duplicate_playlist_name_alert">Já há uma playlist com o nome \"<xliff:g id="name">%s</xliff:g>\". Selecione um nome diferente.</string>
+    <string name="same_playlist_name_alert">O nome da playlist \"<xliff:g id="name">%s</xliff:g>\" não foi alterado. Selecione um nome diferente.</string>
+    <string name="button_ok">OK</string>
+    <string name="list_empty">Nenhuma música na lista de reprodução.</string>
+    <string name="enable_gallery_app">O vídeo não pode ser reproduzido, ative o aplicativo Galeria em Configurações.</string>
+    <string name="close_music">Fim</string>
+    <string name="delete_video_item_message">Deseja apagar \"<xliff:g id="name">%s</xliff:g>\"?</string>
+    <string name="video_deleted_message">Arquivo de vídeo excluído.</string>
+    <string name="more_music">Mais música</string>
+    <string name="more_video">Mais vídeo</string>
+    <string name="music_gesture_play">"Reproduzir/pausar áudio"</string>
+    <string name="music_gesture_prev">"Reproduzir faixa anterior"</string>
+    <string name="music_gesture_next">"Reproduzir próxima faixa"</string>
+    <string name="no_permission_for_drm">Desculpe, o arquivo Drm não pode ser compartilhado</string>
+    <string name="drm_license_info">Informações sobre a licença do DRM</string>
+    <string name="drm_ringtone_error">Não é possível definir arquivos CD/SD como ringtone</string>
+    <string name="drm_right_expired">Direitos DRM expirados</string>
+    <string name="action_consumes_rights">Os direitos serão comprados para a reprodução desta mídia.</string>
+    <string name="rights_expired">Direitos expirados para a música.</string>
+    <string name="ring_tone_size_exceed">O tamanho do toque DRM não pode exceder 300 KB.</string>
+    <string name="cant_set_ringtone_with_count_perm">Não é possível definir o arquivo DRM com permissão de contagem para o toque.</string>
+    <string name="navigation_drawer_title">"Música"</string>
+    <string name="action_settings">Configurações</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.3 start -->
+    <string name="equalizer_button_text">Audio+</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.3 end -->
+    <string name="exit_button_text">Sair</string>
+    <string name="action_settings1">Configurações 1</string>
+    <string name="action_settings2">Configurações 2</string>
+    <string name="action_one">Um</string>
+    <string name="action_two">Dois</string>
+    <string name="action_three">Três</string>
+    <string name="shuffle_all">EMBARALHAR TUDO</string>
+    <string name="no_music_found">Nenhuma música encontrada</string>
+    <string name="song_deleted_error_message">Não foi possível reproduzir a faixa que você pediu</string>
+    <string name="song_title">SongName:</string>
+    <string name="album_title">AlbumName:</string>
+    <string name="artist_title">ArtistName:</string>
+    <string name="duration_title">Duração: </string>
+    <string name="path_title">Caminho:</string>
+    <string name="size_title">Tamanho:</string>
+    <string name="duration_unit">"Min"</string>
+    <string name="size_bytes">B</string>
+    <string name="size_kilobytes">kB</string>
+    <string name="size_megabytes">MB</string>
+    <string name="size_gigabytes"> GB</string>
+    <string name="favorite">Favorito</string>
+    <string name="no_favorite">Nenhum favorito</string>
+    <string name="favorite_playlist">Meu favorito</string>
+    <string name="can_not_create_my_favorite">Não é possível criar ou substituir playlist \"Meu favorito\"</string>
+    <string name="add_by_filemanager">Adicionar pelo gerenciador de arquivos</string>
+    <string name="add_file_failed">Não é possível adicionar este arquivo uma vez que o formato não é suportado ou não está na biblioteca de mídia</string>
+    <string name="dialog_title_help">Ajuda</string>
+    <string name="dialog_content">Esse aplicativo não pode funcionar sem as permissões requeridas. Conceda as permissões nas Configurações.</string>
+    <string name="dialog_button_quit">Encerrar</string>
+    <string name="dialog_button_settings">Configurações</string>
+    <string name="audio_preview_fail_security">Falha ao abrir arquivo com problemas de segurança.</string>
+    <string name="audio_preview_fail_io">Não é possível abrir arquivo</string>
+    <string name="audio_preview_fail_illegal_state">Estado ilegal; falha ao abrir arquivo.</string>
+    <string name="audio_preview_fail_illegal_argument">Argumento ilegal; falha ao abrir arquivo.</string>
+    <string name="enable_screen_on">Ativar Manter tela ligada</string>
+    <string name="disable_screen_on">Desativar Manter tela ligada</string>
+    <string name="albumsongseparator">\n</string>
+    <string name="notification_artist_album"><xliff:g id="album">%2$s</xliff:g>\n<xliff:g id="artist">%1$s</xliff:g></string>
+</resources>

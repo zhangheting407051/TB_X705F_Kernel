@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- qidongdong@wind-mobi.com on 2018.3.22 start -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" >
+    <corners android:radius="12dp"/>
+    <solid android:color="#FFFFFFFF"/>
+</shape>
+<!-- qidongdong@wind-mobi.com on 2018.3.22 end -->

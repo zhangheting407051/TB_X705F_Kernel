@@ -1,0 +1,467 @@
+/*Transsion Top Secret*/
+/**
+ * Copyright(C) 2016 Transsion Inc
+ * Author licheng
+ * Description
+ */
+package com.android.systemui.scrollshot;
+
+import java.io.File;
+
+import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.Looper;
+import android.telephony.TelephonyManager;
+import android.view.SurfaceControl;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Rect;
+import android.os.AsyncTask;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
+import android.view.WindowManager;
+import android.widget.TextView;
+import android.view.LayoutInflater;
+import android.view.WindowManager.LayoutParams;
+import android.widget.RelativeLayout;
+import android.view.Gravity;
+import android.graphics.PixelFormat;
+//shiyaru@wind-mobi.com add 2018.6.25 start
+import android.view.View;
+import android.view.MotionEvent;
+//shiyaru@wind-mobi.com add 2018.6.25 end
+
+import com.android.systemui.R;
+import com.android.systemui.scrollshot.Tools;
+
+import android.net.Uri;
+import android.provider.Settings;
+import com.android.systemui.scrollshot.JudgeScrollShotService;
+import android.os.SystemClock;
+import java.util.ArrayList;
+//shiyaru@wind-mobi.com add 2018.5.30 start
+import com.android.systemui.lenovo.screenshot.AreaScreenshotView;
+//shiyaru@wind-mobi.com add 2018.5.30 end
+//shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+import android.app.WallpaperManager;
+import android.graphics.Color;
+//shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+
+public class ScrollShot {
+
+    private static final String TAKE_SCROLL_SHOT = "android.intent.action.take_scroll_shot";
+    private static final String STOP_SCROLL_SHOT = "android.intent.action.stop_scroll_shot";
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 start
+    private static final int MAX_SCREEN_SHOT_COUNT = 5;
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 end
+    //shiyaru@wind-mobi.com add 2018.6.25 start
+    private static final int SCROLL_WITDH_VERTICAL = 100;
+    private static final int SCROLL_WITDH_HORIZONTAL = 170;
+    //shiyaru@wind-mobi.com add 2018.6.25 end
+    private static final String TAG = "ScrollShot";
+
+    private Context mContext;
+    private ScrollShotListener mScrollShotListener;
+    private Display mDisplay;
+    private WindowManager mWindowManager;
+    private DisplayMetrics mDisplayMetrics;
+    private Matrix mDisplayMatrix;
+    private int mScrollShotHeightY;
+    private int mTotalScrollShotHeightY;
+    private int mCount;
+    private Bitmap mForeBitmap;
+    private float[] mDims;
+    private RelativeLayout mLayout;
+    private TextView mScrollShotTipTv;
+    //shiyaru@wind-mobi.com add 2018.6.25 start
+    private LayoutParams wmParams;
+    //shiyaru@wind-mobi.com add 2018.6.25 end
+    private TakeScrollShotReceiver mTakeScrollShotReceiver;
+    private static ScrollShot sInstance = null;
+    private boolean mRegisterFlag = false;
+    private boolean mAddViewFlag = false;
+
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 start
+    private Bitmap mLastCenter;
+    private Bitmap backBitmap;
+    private float mScreenWidth;
+    private float mScreenHeight;
+    private float mScrollAreaStart;
+    private float mScrollAreaEnd;
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 end
+    //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+    private WallpaperManager mWallpaperManager;
+    private Bitmap mWallpaper;
+    private boolean mIsHome = false;
+    //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+
+    private Handler mHandler = new Handler(Looper.getMainLooper());
+
+    private Runnable mRunnable = new Runnable() {
+
+        public void run() {
+            if (mForeBitmap != null){
+                Log.d(TAG, "mForeBitmap　!=　null");
+                new ProgressTask().execute();
+            }else{
+                unregisterBroadcast();
+                onDestroy();
+                stopService();
+            }
+        }
+    };
+
+    private ScrollShot() {
+    }
+
+    public synchronized static ScrollShot getInstance() {
+        if (sInstance == null) {
+            sInstance = new ScrollShot();
+        }
+        return sInstance;
+    }
+
+    //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+    public void setWallpaper(Bitmap wallpaper) {
+        this.mWallpaper = wallpaper;
+    }
+    //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+
+    public void handleScrollShot(Context context, ScrollShotListener scrollShotListener) {
+        mContext = context;
+        mScrollShotListener = scrollShotListener;
+        onCreate();
+        //add for force exit
+        mHandler.postDelayed(mRunnable, 5000);
+        start();
+    }
+
+    private void start() {
+        mForeBitmap = getTopBitmap(takePic());
+        //shiyaru@wind-mobi.com modify scollscreenshot stopping condition  2018.6.12 start
+        mLastCenter = getTopBitmap(mForeBitmap);
+        //shiyaru@wind-mobi.com modify scollscreenshot stopping condition  2018.6.12 start
+        createFloatView();
+        startScroll();
+    }
+
+    private void onCreate() {
+        registerBroadcast();
+        mWindowManager = (WindowManager) mContext
+                .getSystemService(Context.WINDOW_SERVICE);
+        mDisplay = mWindowManager.getDefaultDisplay();
+        mDisplayMetrics = new DisplayMetrics();
+        mDisplay.getRealMetrics(mDisplayMetrics);
+        mDisplayMatrix = new Matrix();
+        mDims = new float[]{mDisplayMetrics.widthPixels,
+                mDisplayMetrics.heightPixels};
+        Log.d(TAG, "dims0 = " + mDims[0] + " dims1 = " + mDims[1]);
+        mTotalScrollShotHeightY = 0;
+        mScrollShotHeightY = 0;
+        mCount = 0;
+        //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 start
+        mScreenWidth = mDims[0];
+        mScreenHeight = mDims[1];
+        mScrollAreaStart = mScreenHeight / 4;
+        mScrollAreaEnd = 3 * mScreenHeight / 4;
+        //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 end
+        //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+        mIsHome = Tools.isHome(mContext);
+        mWallpaperManager = (WallpaperManager) mContext.getSystemService(Context.WALLPAPER_SERVICE);
+        //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+    }
+
+    private void registerBroadcast() {
+        mTakeScrollShotReceiver = new TakeScrollShotReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(TAKE_SCROLL_SHOT);
+        filter.addAction(STOP_SCROLL_SHOT);
+        filter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+        filter.addAction("com.android.deskclock.ALARM_ALERT");
+        if (mTakeScrollShotReceiver != null) {
+            mContext.registerReceiver(mTakeScrollShotReceiver, filter);
+            mRegisterFlag = true;
+        }
+    }
+
+    private void stopService(){
+        if (mScrollShotListener != null) {
+            mScrollShotListener.onFinish();
+            Log.d(TAG, "mScrollShotListener1 onFinish");
+        }
+        //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+        if (mIsHome && mWallpaper != null) {
+            Tools.setWallpaperBitmap(mWallpaperManager, mWallpaper);
+            mWallpaper.recycle();
+            mWallpaper = null;
+        }
+        //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+    }
+
+    private void unregisterBroadcast() {
+        if (mTakeScrollShotReceiver != null && mRegisterFlag) {
+            mRegisterFlag = false;
+            mContext.unregisterReceiver(mTakeScrollShotReceiver);
+        }
+    }
+
+    private void onDestroy() {
+
+        if (mLayout != null && mAddViewFlag) {
+            mAddViewFlag = false;
+            mWindowManager.removeView(mLayout);
+        }
+    }
+
+    public void judgeScrollShot(Context context) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Tools.down(Tools.fromDpToPx(50), Tools.fromDpToPx(270));
+                Intent intent = new Intent();
+                intent.setAction("android.intent.action.can_scroll_shot");
+                intent.putExtra("canScrollShot", true);
+                context.sendBroadcast(intent);
+            }
+        }).start();
+    }
+
+    //截屏获取图片
+    private Bitmap takePic() {
+        float degrees = Tools.getDegreesForRotation(mDisplay.getRotation());
+        boolean requiresRotation = (degrees > 0);
+        //shiyaru@wind-mobi.com modify landscape scrollscreenshot UI issue 2018.6.6 start
+        mDims = new float[]{mDisplayMetrics.widthPixels, mDisplayMetrics.heightPixels};
+        //shiyaru@wind-mobi.com modify landscape scrollscreenshot UI issue 2018.6.6 end
+        if (requiresRotation) {
+            mDisplayMatrix.reset();
+            mDisplayMatrix.preRotate(-degrees);
+            mDisplayMatrix.mapPoints(mDims);
+            mDims[0] = Math.abs(mDims[0]);
+            mDims[1] = Math.abs(mDims[1]);
+        }
+        // Take the screenshot
+        Bitmap screenBitmap = SurfaceControl.screenshot((int) mDims[0], (int) mDims[1]);
+        if (screenBitmap == null) {
+            Log.d(TAG, "error");
+            return null;
+        }
+        if (requiresRotation) {
+            // Rotate the screenshot to the current orientation
+            Bitmap ss = Bitmap.createBitmap(mDisplayMetrics.widthPixels,
+                    mDisplayMetrics.heightPixels, Bitmap.Config.RGB_565);
+            Canvas c = new Canvas(ss);
+            c.translate(ss.getWidth() / 2, ss.getHeight() / 2);
+            c.rotate(degrees);
+            c.translate(-mDims[0] / 2, -mDims[1] / 2);
+            c.drawBitmap(screenBitmap, 0, 0, null);
+            c.setBitmap(null);
+            // Recycle the previous bitmap
+            screenBitmap.recycle();
+            screenBitmap = ss;
+        }
+        // Optimizations
+        screenBitmap.setHasAlpha(false);
+        screenBitmap.prepareToDraw();
+        return screenBitmap;
+    }
+
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 start
+    private void startScroll() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 start
+                if (mScreenWidth > mScreenHeight) {
+                    Tools.drag(SCROLL_WITDH_HORIZONTAL, SCROLL_WITDH_HORIZONTAL, (int)mScrollAreaEnd, (int)mScrollAreaStart,
+                            (int)((mScrollAreaEnd - mScrollAreaStart)/4));
+                } else {
+                    Tools.drag(SCROLL_WITDH_VERTICAL, SCROLL_WITDH_VERTICAL, (int)mScrollAreaEnd, (int)mScrollAreaStart,
+                            (int)((mScrollAreaEnd - mScrollAreaStart)/4));
+                }
+                //shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 end
+                Intent intent = new Intent();
+                intent.setAction(TAKE_SCROLL_SHOT);
+                mContext.sendBroadcast(intent);
+            }
+        }).start();
+    }
+    //shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 start
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 start
+    private void createFloatView() {
+        wmParams = new LayoutParams();
+        wmParams.type = LayoutParams.TYPE_SYSTEM_ERROR;
+        //wmParams.format = PixelFormat.RGBA_8888;
+        wmParams.format = PixelFormat.TRANSLUCENT;
+        wmParams.flags = LayoutParams.FLAG_NOT_FOCUSABLE
+                | LayoutParams.FLAG_NOT_TOUCH_MODAL
+                | LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+
+        if (mScreenWidth > mScreenHeight) {
+            wmParams.width = (int)mScreenWidth - SCROLL_WITDH_HORIZONTAL - 1;
+            wmParams.x = SCROLL_WITDH_HORIZONTAL + 1;
+        } else {
+            wmParams.width = (int)mScreenWidth - SCROLL_WITDH_VERTICAL - 1;
+            wmParams.x = SCROLL_WITDH_VERTICAL + 1;
+        }
+        wmParams.height = LayoutParams.MATCH_PARENT;
+        wmParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+
+        LayoutInflater inflater = LayoutInflater.from(mContext);
+        mLayout = (RelativeLayout) inflater.inflate(
+                R.layout.scroll_shot_tip_layout, null);
+        mScrollShotTipTv = (TextView) mLayout
+                .findViewById(R.id.scrollshot_tip_tv);
+        //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+        if (mIsHome) {
+            mScrollShotTipTv.setBackground(mContext.getDrawable(R.drawable.screenshot_toast_frame_white));
+            mScrollShotTipTv.setTextColor(Color.BLACK);
+        }
+        //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+        mLayout.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                wmParams.flags = LayoutParams.FLAG_FULLSCREEN
+                                | LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+                mWindowManager.updateViewLayout(mLayout, wmParams);
+                if (mScrollShotTipTv!=null){
+                    mScrollShotTipTv.setText(mContext.getString(R.string.scroll_shot_save_tip));
+                }
+                return false;
+            }
+        });
+        mWindowManager.addView(mLayout, wmParams);
+        mAddViewFlag = true;
+    }
+
+    class ProgressTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            mForeBitmap = Tools.removeDupl(mForeBitmap, mLastCenter.getHeight());
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            if (mScrollShotTipTv!=null){
+                mScrollShotTipTv.setVisibility(View.GONE);
+            }
+            unregisterBroadcast();
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            super.onPostExecute(result);
+            onDestroy();
+            backBitmap = getBottomBitmap(takePic());
+            mForeBitmap = Tools.mergeBitmap(mForeBitmap, backBitmap);
+            //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 start
+            if (mForeBitmap!=null && !mForeBitmap.isRecycled()) {
+                AreaScreenshotView areaScreenshotView = AreaScreenshotView.getAreaScreenshotView(mContext);
+                areaScreenshotView.setScreenBitmap(mForeBitmap);
+                areaScreenshotView.addScreenshotView();
+            }
+            //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.30 end
+            //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 start
+            if (mIsHome && mWallpaper != null) {
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mIsHome = false;
+                        Tools.setWallpaperBitmap(mWallpaperManager, mWallpaper);
+                        mWallpaper.recycle();
+                        mWallpaper = null;
+                    }
+                }, 500);
+            }
+            //shiyaru@wind-mobi.com fix TABFIVEP-3148 2018.7.12 end
+        }
+    }
+
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 start
+    //shiyaru@wind-mobi.com modify scollscreenshot stopping condition 2018.6.12 start
+    private void startScrollAndMerge() {
+        backBitmap = getCenterBitmap(takePic());
+        if (mLastCenter != null) {
+            if (mCount > MAX_SCREEN_SHOT_COUNT || Tools.isLastCenterEquals(mLastCenter, backBitmap)) {
+                if (mScrollShotTipTv!=null){
+                    mScrollShotTipTv.setText(mContext.getString(R.string.scroll_shot_save_tip));
+                }
+                if (mCount > MAX_SCREEN_SHOT_COUNT) {
+                    mForeBitmap = Tools.mergeBitmap(mForeBitmap, backBitmap);
+                }
+                mHandler.postDelayed(mRunnable, 600);
+                return;
+            } else {
+                mForeBitmap = Tools.mergeBitmap(mForeBitmap, backBitmap);
+            }
+        } else {
+            mForeBitmap = Tools.mergeBitmap(mForeBitmap, backBitmap);
+        }
+        mCount ++;
+        mLastCenter = backBitmap;
+        startScroll();
+    }
+    //shiyaru@wind-mobi.com modify scollscreenshot stopping condition 2018.6.12 end
+    //shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 end
+
+    private Bitmap getTopBitmap(Bitmap screenBitmap) {
+        Bitmap topBitmap = Bitmap.createBitmap(screenBitmap, 0, 0, (int)mScreenWidth, (int)(mScrollAreaEnd));
+        return topBitmap;
+    }
+
+    private Bitmap getCenterBitmap(Bitmap screenBitmap) {
+        Bitmap centerBitmap = Bitmap.createBitmap(screenBitmap, 0, (int)(mScrollAreaStart), (int)mScreenWidth, (int)(mScrollAreaEnd - mScrollAreaStart));
+        return centerBitmap;
+    }
+
+    private Bitmap getBottomBitmap(Bitmap screenBitmap) {
+        Bitmap bottomBitmap = Bitmap.createBitmap(screenBitmap, 0, (int)(mScrollAreaEnd), (int)mScreenWidth, (int)(mScreenHeight - mScrollAreaEnd));
+        return bottomBitmap;
+    }
+    //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 end
+
+    class TakeScrollShotReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mHandler.removeCallbacks(mRunnable);
+            if (TAKE_SCROLL_SHOT.equals(intent.getAction())) {
+                Log.d(TAG, "TAKE_SCROLL_SHOT onReceive");
+                //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 start
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        startScrollAndMerge();
+                    }
+                }, 1000);
+                //shiyaru@wind-mobi.com add scollscreenshot stopping condition 2018.6.1 end
+            } else if (STOP_SCROLL_SHOT.equals(intent.getAction())||"com.android.deskclock.ALARM_ALERT"
+                    .equals(intent.getAction())) {
+
+                Log.d(TAG, "STOP_SCROLL_SHOT onReceive");
+                unregisterBroadcast();
+                onDestroy();
+                stopService();
+            }
+            TelephonyManager tm =
+                    (TelephonyManager) context.getSystemService(Service.TELEPHONY_SERVICE);
+            switch (tm.getCallState()) {
+                case TelephonyManager.CALL_STATE_RINGING:
+                    Log.d(TAG, "phone ring onReceive");
+                    unregisterBroadcast();
+                    onDestroy();
+                    stopService();
+                    break;
+            }
+        }
+    }
+}

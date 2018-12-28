@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 start -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="50dp">
+        <TextView
+            android:id="@+id/scrollshot_tip_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/scroll_shot_tip"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:layout_marginRight="@dimen/scrollshot_tip_margin_right"
+            android:textSize="16sp"
+            android:textColor="#ffffff"
+            android:background="@drawable/screenshot_toast_frame"/>
+    </RelativeLayout>
+</RelativeLayout>
+<!--shiyaru@wind-mobi.com click on the screen to stop scrolling  2018.6.25 end -->

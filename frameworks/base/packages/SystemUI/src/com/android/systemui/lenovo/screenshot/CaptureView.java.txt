@@ -1,0 +1,406 @@
+package com.android.systemui.lenovo.screenshot;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.DashPathEffect;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathEffect;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+
+@SuppressLint("DrawAllocation")
+public class CaptureView extends View {
+
+    //captureRect grow mode
+    public static final int GROW_NONE             = (1 << 0);
+    public static final int GROW_LEFT_EDGE      = (1 << 1);
+    public static final int GROW_RIGHT_EDGE     = (1 << 2);
+    public static final int GROW_TOP_EDGE       = (1 << 3);
+    public static final int GROW_BOTTOM_EDGE    = (1 << 4);
+    public static final int GROW_MOVE             = (1 << 5);
+
+    /* 截图框外部半透明区域paint */
+    private Paint mOutsideCapturePaint = new Paint();
+    /* 截图框线条 paint */
+    private Paint mLineCapturePaint = new Paint();
+    /* 截图框圆点 paint */
+    private Paint mCirclePaint = new Paint();
+    /* 截图框线上棱形 paint */
+    private Paint mPrismaticPaint = new Paint();
+    /* 截图范围的完整 rect */
+    private Rect mScreenRect;
+    /* 截图捕捉框 rect */
+    private Rect mCaptureRect;
+    /* 2016-01-14 modified by wangyifa redesign the flow of screenshot */
+    private PathEffect mLineCaptureEffect; //the dot line style
+    /* 点击区域有效判断范围 */
+    private float mEffectiveRange;
+    private int mMotionEdge;
+    private float mLastX, mLastY;
+    private float mCaptureLineWidth;//方框线宽 1.0dip
+    private float m16Dip,m1Dip;//16dip
+    private float mWidthRect;
+
+    private static final int CAPTURE_PAINT_COLOR  = 0xFFFFFFFF;//color modified wangyf28
+    private static final int CIRCLE_COLOR              =0XFF32CD32;
+    private static final int PRISMATIC_COLOR        = 0xFFFFFFFF;
+
+    private CaptureView mCaptureView;
+    private boolean isFirstTouch = true;
+
+    private enum ActionMode {
+        None, Move, Grow ,Edgegrow
+    }
+    private ActionMode mMode = ActionMode.None;
+    public CaptureView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mEffectiveRange = dip2pix(context, 50f);///*2016-01-18 modified by wangyifa the former value is 16f*/
+        mCaptureLineWidth = dip2pix(context, 1.0f);
+        m16Dip = dip2pix(context,16.0f);
+        m1Dip = dip2pix(context,1.0f);
+        mWidthRect = dip2pix(context,5.0f);
+        mLineCapturePaint.setStrokeWidth(mCaptureLineWidth);
+        mLineCapturePaint.setStyle(Paint.Style.STROKE);
+        mLineCapturePaint.setAntiAlias(true);
+        mLineCapturePaint.setColor(CAPTURE_PAINT_COLOR);
+        mLineCaptureEffect=new DashPathEffect(new float[]{3,6},1);
+        mLineCapturePaint.setPathEffect(mLineCaptureEffect);
+        /* 设置截图框外部透明度 50% */
+        mOutsideCapturePaint.setARGB(102, 0, 0, 0);//128
+        mCirclePaint.setColor(CIRCLE_COLOR);
+        mCirclePaint.setAntiAlias(true);
+        mPrismaticPaint.setColor(PRISMATIC_COLOR);
+        mPrismaticPaint.setAntiAlias(true);
+    }
+
+    /*2016-01-14 modified by wangyifa change the init layout of capture rect*/
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right,
+            int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+            mScreenRect = new Rect(left, top, right, bottom);
+            mCaptureRect = new Rect(left, top, right, bottom);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        drawCaptureOutsize(canvas);
+        if(mCaptureRect == null) return;
+        drawCaptureRect(canvas);
+        if(mMode == ActionMode.None) {
+            drawFourCiecles(canvas);
+            drawPrismatic(canvas);
+        }
+        if (mMode == ActionMode.Grow) {
+            //拉伸状态时的框体局部样式
+            drawPrismatic(canvas);
+        }
+        if(mMode == ActionMode.Edgegrow) {
+            drawFourCiecles(canvas);
+        }
+        if(mMode == ActionMode.Move) {
+
+        }
+    }
+
+    /** 绘制捕捉框外围暗色部分 */
+    private void drawCaptureOutsize(Canvas canvas) {
+        if(mCaptureRect == null) {
+            canvas.drawRect(mScreenRect, mOutsideCapturePaint);
+        } else {
+            canvas.drawRect(mScreenRect.left, mScreenRect.top, mCaptureRect.left, mScreenRect.bottom, mOutsideCapturePaint);
+            canvas.drawRect(mCaptureRect.right, mScreenRect.top, mScreenRect.right, mScreenRect.bottom, mOutsideCapturePaint);
+            canvas.drawRect(mCaptureRect.left, mScreenRect.top, mCaptureRect.right, mCaptureRect.top, mOutsideCapturePaint);
+            canvas.drawRect(mCaptureRect.left, mCaptureRect.bottom, mCaptureRect.right, mScreenRect.bottom, mOutsideCapturePaint);
+        }
+    }
+
+    /** 绘制捕捉框本身 */
+    private void drawCaptureRect(Canvas canvas) {
+        Path path = new Path();
+        path.addRect(new RectF(mCaptureRect), Path.Direction.CW);
+        canvas.drawPath(path, mLineCapturePaint);
+    }
+
+    /*2016-01-14 modified by wangyifa redesign the logic of draw dot*/
+    private void drawFourCiecles(Canvas canvas) {
+        canvas.drawRect(mCaptureRect.left-m1Dip, mCaptureRect.top-m1Dip, mCaptureRect.left+mWidthRect, mCaptureRect.top+2*m16Dip, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.left+mWidthRect, mCaptureRect.top-m1Dip, mCaptureRect.left+2*m16Dip, mCaptureRect.top+mWidthRect, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.right-2*m16Dip, mCaptureRect.top-m1Dip, mCaptureRect.right+m1Dip, mCaptureRect.top+mWidthRect, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.right-mWidthRect, mCaptureRect.top+mWidthRect, mCaptureRect.right+m1Dip, mCaptureRect.top+2*m16Dip, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.right-mWidthRect, mCaptureRect.bottom-2*m16Dip, mCaptureRect.right+m1Dip, mCaptureRect.bottom+m1Dip, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.right-2*m16Dip, mCaptureRect.bottom-mWidthRect, mCaptureRect.right-mWidthRect, mCaptureRect.bottom+m1Dip, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.left-m1Dip, mCaptureRect.bottom-2*m16Dip, mCaptureRect.left+mWidthRect, mCaptureRect.bottom+m1Dip, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.left+mWidthRect, mCaptureRect.bottom-mWidthRect, mCaptureRect.left+2*m16Dip, mCaptureRect.bottom+m1Dip, mPrismaticPaint);
+    }
+
+    /*2016-01-14 modified by wangyifa redesign the logic of draw line*/
+    private void drawPrismatic(Canvas canvas) {
+        int xMiddle = mCaptureRect.left + mCaptureRect.width() / 2;
+        int yMiddle = mCaptureRect.top + mCaptureRect.height() / 2;
+        canvas.drawRect(mCaptureRect.left-m1Dip, yMiddle-m16Dip, mCaptureRect.left+mWidthRect, yMiddle+m16Dip, mPrismaticPaint);
+        canvas.drawRect(xMiddle-m16Dip, mCaptureRect.top-m1Dip, xMiddle+m16Dip, mCaptureRect.top+mWidthRect, mPrismaticPaint);
+        canvas.drawRect(mCaptureRect.right-mWidthRect, yMiddle-m16Dip, mCaptureRect.right+m1Dip, yMiddle+m16Dip, mPrismaticPaint);
+        canvas.drawRect(xMiddle-m16Dip, mCaptureRect.bottom-mWidthRect, xMiddle+m16Dip, mCaptureRect.bottom+m1Dip, mPrismaticPaint);
+    }
+
+    /*2016-01-14 modified by wangyifa redesign the touch event based on the new design*/
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+            int grow = getGrow(event.getX(), event.getY());
+            if (grow != GROW_NONE) {
+                mCaptureView = CaptureView.this;
+                mMotionEdge = grow;
+                mLastX = event.getX();
+                mLastY = event.getY();
+                mCaptureView.setMode(grow);
+            }
+            break;
+        case MotionEvent.ACTION_CANCEL:
+        case MotionEvent.ACTION_UP:
+            if(isFirstTouch) {
+                isFirstTouch = false;
+            }
+            if (mCaptureView != null) {
+                setMode(GROW_NONE);
+                mCaptureView = null;
+            }
+            /* Lenovo-sw ligr3 added 2015-05-18 begin, for check size when action up or cancel */
+            //captureRect size check
+            if (mCaptureRect.width() <= 70) {
+                mCaptureRect.inset((int)(-(70 - mCaptureRect.width()) / 2F), 0);
+            }
+            if (mCaptureRect.height() <= 70) {
+                mCaptureRect.inset(0, (int)(-(70 - mCaptureRect.height()) / 2F));
+            }
+
+            //captureRect
+            // make sure the caputureRect is not bigger than screendRect
+            if (mCaptureRect.left < mScreenRect.left) {
+                mCaptureRect.left = mScreenRect.left;
+            } else if (mCaptureRect.right > mScreenRect.right) {
+                mCaptureRect.right = mScreenRect.right;
+            }
+            if (mCaptureRect.top < mScreenRect.top) {
+                mCaptureRect.top = mScreenRect.top;
+            } else if (mCaptureRect.bottom > mScreenRect.bottom) {
+                mCaptureRect.bottom = mScreenRect.bottom;
+            }
+            /* Lenovo-sw ligr3 added 2015-05-18 end, for check size when action up or cancel */
+            break;
+        case MotionEvent.ACTION_MOVE:
+            if (mCaptureView != null) {
+                if (isFirstTouch) {
+                    int initGrow = getInitGrow(event.getX() - mLastX,
+                            event.getY() - mLastY);
+                    mMotionEdge = initGrow;
+                    mCaptureView.setMode(initGrow);
+                } else {
+                }
+                handleMotion(mMotionEdge, event.getX() - mLastX, event.getY()
+                        - mLastY);
+                mLastX = event.getX();
+                mLastY = event.getY();
+            }
+            break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    /**
+     * @param mode
+     */
+    private void setMode(int grow) {
+        ActionMode mode = null;
+        switch (grow) {
+        case GROW_NONE:
+            mode = ActionMode.None;
+            break;
+        case (GROW_NONE | GROW_LEFT_EDGE):
+        case (GROW_NONE | GROW_RIGHT_EDGE):
+        case (GROW_NONE | GROW_TOP_EDGE):
+        case (GROW_NONE | GROW_BOTTOM_EDGE):
+            mode = ActionMode.Edgegrow;
+            break;
+        case (GROW_MOVE):
+            mode = ActionMode.Move;
+            break;
+        default:
+            mode = ActionMode.Grow;
+            break;
+        }
+        if (!mode.equals(mMode)) {
+            mMode = mode;
+            invalidate();
+        }
+    }
+
+    /** 获取第一次点击时的拉伸状态*/
+    private int getInitGrow(float dx, float dy) {
+          int grow = GROW_NONE;
+            if(dx<0 && dy<0) {
+                grow |= (GROW_LEFT_EDGE|GROW_TOP_EDGE);
+            } else if(dx<0 && dy>0) {
+                grow |= (GROW_LEFT_EDGE|GROW_BOTTOM_EDGE);
+            } else if(dx>0 && dy<0) {
+                grow |= (GROW_RIGHT_EDGE|GROW_TOP_EDGE);
+            } else if(dx>0 && dy>0) {
+                grow |= (GROW_RIGHT_EDGE|GROW_BOTTOM_EDGE);
+            } else if(dx==0 && dy<0) {
+                grow |= GROW_TOP_EDGE;
+            } else if(dx==0 && dy>0) {
+                grow |= GROW_BOTTOM_EDGE;
+            } else if(dx<0 && dy==0) {
+                grow |= GROW_LEFT_EDGE;
+            } else if(dx>0 && dy==0) {
+                grow |= GROW_RIGHT_EDGE;
+            }
+            return grow;
+    }
+
+    /**
+     *  获取拉伸状态
+     */
+    private int getGrow(float x, float y) {
+        int grow = GROW_NONE;
+        int left = mCaptureRect.left;
+        int top = mCaptureRect.top;
+        int right = mCaptureRect.right;
+        int bottom = mCaptureRect.bottom;
+
+        boolean isVerticalIn = (y >= top - mEffectiveRange) && (y < bottom + mEffectiveRange);
+        boolean isHorizIn = (x >= left - mEffectiveRange) && (x < right + mEffectiveRange);
+        if ((Math.abs(left - x) < mEffectiveRange) && isVerticalIn) {
+            grow |= GROW_LEFT_EDGE;
+        }
+
+        if ((Math.abs(right - x) < mEffectiveRange) && isVerticalIn) {
+            grow |= GROW_RIGHT_EDGE;
+        }
+
+        if ((Math.abs(top - y) < mEffectiveRange) && isHorizIn) {
+            grow |= GROW_TOP_EDGE;
+        }
+
+        if ((Math.abs(bottom - y) < mEffectiveRange) && isHorizIn) {
+            grow |= GROW_BOTTOM_EDGE;
+        }
+
+        if (grow == GROW_NONE && mCaptureRect.contains((int) x, (int) y)) {
+            grow = GROW_MOVE;
+        }
+        return grow;
+    }
+
+    private float dip2pix(Context context, float dipValue) {
+        final  float scale = context.getResources().getDisplayMetrics().density;
+        return (dipValue * scale + 0.5f);
+    }
+
+    /**
+     * @param grow
+     * @param dx
+     * @param dy
+     */
+    private void handleMotion(int grow, float dx, float dy) {
+        if (grow == GROW_NONE) {
+            return;
+        } else if (grow == GROW_MOVE) {
+            moveBy(dx, dy);
+        } else {
+            growBy(grow, dx, dy);
+        }
+    }
+
+    /** move the captureRect */
+    private void moveBy(float dx, float dy) {
+        Rect oldRect = new Rect(mCaptureRect);
+        mCaptureRect.offset((int) dx, (int) dy);
+        mCaptureRect.offset(Math.max(0, mScreenRect.left - mCaptureRect.left), Math.max(0, mScreenRect.top - mCaptureRect.top));
+        mCaptureRect.offset(Math.min(0, mScreenRect.right - mCaptureRect.right), Math.min(0, mScreenRect.bottom - mCaptureRect.bottom));
+        oldRect.union(mCaptureRect);
+        oldRect.inset(-100, -100);
+        invalidate(oldRect);
+    }
+
+    private void growBy(int grow, float dx, float dy) {
+        float minWidth = 70F;        //captureRect min width
+        float minHeight = 70F;      //captureRect min height
+        RectF r = new RectF(mCaptureRect);
+        switch (grow-1) {
+        case GROW_LEFT_EDGE:
+            r.left += dx;
+            break;
+        case GROW_RIGHT_EDGE:
+            r.right += dx;
+            break;
+        case GROW_TOP_EDGE:
+            r.top += dy;
+            break;
+        case GROW_BOTTOM_EDGE:
+            r.bottom += dy;
+            break;
+        case GROW_LEFT_EDGE | GROW_TOP_EDGE:
+            r.left += dx;
+            r.top += dy;
+            break;
+        case GROW_LEFT_EDGE | GROW_BOTTOM_EDGE:
+            r.left +=dx;
+            r.bottom += dy;
+            break;
+        case GROW_RIGHT_EDGE | GROW_TOP_EDGE:
+            r.right += dx;
+            r.top += dy;
+            break;
+        case GROW_RIGHT_EDGE | GROW_BOTTOM_EDGE:
+            r.right += dx;
+            r.bottom += dy;
+            break;
+        default:
+            break;
+        }
+
+        //captureRect size check
+        if (r.width() <= minWidth) {
+            r.inset(-(minWidth - r.width()) / 2F, 0F);
+        }
+        if (r.height() <= minHeight) {
+            r.inset(0F, -(minHeight - r.height()) / 2F);
+        }
+
+        //captureRect
+        if (r.left < mScreenRect.left) {
+            r.left = mScreenRect.left;
+        } else if (r.right > mScreenRect.right) {
+            r.right = mScreenRect.right;
+        }
+        if (r.top < mScreenRect.top) {
+            r.top = mScreenRect.top;
+        } else if (r.bottom > mScreenRect.bottom) {
+            r.bottom = mScreenRect.bottom;
+        }
+
+        mCaptureRect.set((int) r.left, (int) r.top, (int) r.right,
+                (int) r.bottom);
+        invalidate();
+    }
+
+    public Rect getCaptureRect() {
+        return mCaptureRect;
+    }
+
+    public void resetCatureStatus() {
+        mCaptureRect = mScreenRect;
+        isFirstTouch = true;
+    }
+}

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="150dp"
+    android:background="@color/land_filtershow_background"
+    android:clickable="true"
+    android:id="@+id/image_straighten"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/por_basic_crop"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/crop"
+            android:textSize="16sp"
+            android:textColor="#ffffff"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:focusable="true"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/por_basic_rotate"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/rotate"
+            android:textSize="16sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_selected"
+        />
+
+        <Button
+            android:id="@+id/por_basic_mirror"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/mirror"
+            android:textSize="16sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2">
+
+            <TextView
+                android:id="@+id/straighten_reset"
+                android:layout_width="36dp"
+                android:layout_height="25dp"
+                android:layout_marginLeft="@dimen/por_straighten_reset_magrin_left"
+                android:background="@color/land_filtershow_background"
+                android:clickable="true"
+                android:layout_centerVertical="true"
+                android:text="@string/reset_effect"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <com.android.gallery3d.filtershow.ui.FilterShowWheelView
+                android:id="@+id/wheel_view"
+                android:layout_width="300dp"
+                android:layout_height="100dp"
+                android:background="#ff0000"
+                android:layout_gravity="center_horizontal"
+                android:layout_centerInParent="true"
+                android:clickable="true"
+                custom:scaleText="0°"
+                custom:scaleTextColor="@color/wheel_pointer_default"
+                custom:scaleTextSize="14sp"
+            />
+
+            <ImageView
+                android:id="@+id/straighten_ccw"
+                android:layout_width="27dp"
+                android:layout_height="20dp"
+                android:clickable="true"
+                android:layout_marginLeft="50dp"
+                android:layout_toRightOf="@id/wheel_view"
+                android:layout_centerVertical="true"
+                android:src="@drawable/edit_btn_rotate_rest"/>
+    </RelativeLayout>
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->

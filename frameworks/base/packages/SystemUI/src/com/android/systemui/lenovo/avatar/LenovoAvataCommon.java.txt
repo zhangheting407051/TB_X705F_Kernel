@@ -1,0 +1,135 @@
+package com.android.systemui.lenovo.avatar;
+
+public class LenovoAvataCommon {
+    public static final boolean OPENAVATAR = true;
+
+    public class LenovoAvataCategory {
+        public static final String CATEGORY_NOTIFICATION_SWITCHPANNEL = "notification_switchpannel";
+        public static final String CATEGORY_NOTIFICATION_PANNEL = "notification_pannel";
+        public static final String CATEGORY_RECENTS_PANNEL = "recents_pannel";
+        /*Lenovo-sw chentq2 add 2014-11-19 begin*/
+        public static final String CATEGORY_NOTIFICATION_PANNEL_SWITCH = "CATEGORY_NOTIFICATION_PANNEL_SWITCH";
+        /*Lenovo-sw chentq2 add 2014-11-19 end*/
+        public static final String CATEGORY_NOTIFICATION_PANNEL_NOTIFI_SET = "notification_settings";
+        public static final String CATEGORY_NOTIFICATION_PANNEL_NOTIFI = "CATEGORY_NOTIFICATION_PANNEL_NOTIFI";
+        private LenovoAvataCategory() {}
+    }
+
+    public class LenovoAvataAction{
+        public static final String ACTION_ONCLICK = "onClick";
+        public static final String ACTION_ONLONGCLICK = "onLongClick";
+
+        public static final String ACTION_PANNELOPENED = "onPanelFullyOpened";
+        public static final String ACTION_NOTIFICATION_SWIP = "nofiticationswip";
+        public static final String ACTION_NOTIFICATION_CLICK = "nofiticationclick";
+        public static final String ACTION_NOTIFICATION_LONGCLICK = "nofiticationlongclick";
+        public static final String ACTION_NOTIFICATION_CLEANALL = "notificationcleanall";
+        public static final String ACTION_PANNELDARWOPEN = "notificationdrawopen";
+        public static final String ACTION_NOTIFICATION_SHIELD_CLICK = "notificationshieldclick";
+        public static final String ACTION_NOTIFICATION_DELETE_CLICK = "notificationdeleteclick";
+        public static final String ACTION_SETTING = "notificationsetting";
+        public static final String ACTION_DATE = "notificationdate";
+        public static final String ACTION_ICONDETAIL = "icondetail";
+        public static final String ACTION_BRIGHTCHECK = "brightcheck";
+        public static final String ACTION_BRIGHT_SETTING = "brightsetting";
+        public static final String ACTION_BRIGHT_CLICK = "brightclick";
+        public static final String ACTION_BRIGHT_LONGCLICK = "brightlongclick";
+
+        public static final String ACTION_RECENTS_TASK_LONG_CLICK_HOMEKEY = "recents_homekey_longpressed";
+        public static final String ACTION_RECENTS_SWIPCLEAN_THUMBNAIL = "recents_swipclean_by_thumbnail";
+        public static final String ACTION_RECENTS_SWIPCLEAN_ICON = "recents_swipclean_by_icon";
+        public static final String ACTION_RECENTS_SWIPLOCK_THUMBNAIL = "recents_swiplock_by_thumbnail";
+        public static final String ACTION_RECENTS_SWIPLOCK_ICON = "recents_swiplock_by_icon";
+        public static final String ACTION_RECENTS_CLEANBTN = "recents_cleanbtn_onclick";
+        public static final String ACTION_RECENTS_CLEANBTN_LONG = "recents_cleanbtn_longclick";
+        public static final String ACTION_RECENTS_ONCLICK_THUMBNAIL = "recents_itemonclick_on_thumbnail";
+        public static final String ACTION_RECENTS_ONCLICK_ICON = "recents_itemonclick_on_icon";
+        public static final String ACTION_RECENTS_ONLONGCLICK_THUMBNAIL = "recents_itemonlongclick_on_thumbnail";
+        public static final String ACTION_RECENTS_ONLONGCLICK_ICON = "recents_itemonlongclick_on_icon";
+        public static final String ACTION_RECENTS_ONCLICK_TASKLOCK = "recents_itemonclick_on_tasklock";
+
+        public static final String ACTION_NOTIFICATIONSETTING_SWAP = "switchswap";
+        /*Lenovo-sw chentq2 add 2014-11-19 begin*/
+        public static final String ACTION_CLICK_SWICH = "ACTION_CLICK_SWICH";
+        public static final String ACTION_LONG_CLICK_SWICH = "ACTION_LONG_CLICK_SWICH";
+        /*Lenovo-sw chentq2 add 2014-11-19 end*/
+        /* Lenovo-sw ligr3 added 2014-11-20 begin, for screenshot */
+        public static final String ACTION_NOTIFICATIONSETTING_SCREEN_SHARE = "screenshot.Share";
+        public static final String ACTION_NOTIFICATIONSETTING_SCREEN_ALLSCREEN = "screenshot.Fullscreen";
+        public static final String ACTION_NOTIFICATIONSETTING_SCREEN_SCRAWL = "screenshot.EnterPaintMode";
+        public static final String ACTION_NOTIFICATIONSETTING_SCREEN_TOOL = "screenshot.SelectTool";
+        public static final String ACTION_NOTIFICATIONSETTING_SCREEN_SCRAWL_BACK = "screenshot.BackToCut";
+        public static final String ACTION_NOTIFICATION_SET_ENABLE_FOR_APP = "settings_set_app_notifi_enable";
+        /* Lenovo-sw ligr3 added 2014-11-20 end, for screenshot */
+
+        /* Lenovo-sw aihui1 added 2014-11-21 begin, for notification settings */
+        public static final String ACTION_NOTIFICATION_SET_CLICK_COLLASP = "settings_click_collasp";
+        public static final String ACTION_NOTIFICATION_SET_SORT_BY_HAND = "settings_set_sort_by_hand";
+        public static final String ACTION_NOTIFICATION_SET_SORT_BY_TIME = "settings_set_sort_by_time";
+        public static final String ACTION_NOTIFICATION_SET_NOTIFI_ON_LOCK_SCREEN = "settings_lock_screen_notification";
+        public static final String ACTION_NOTIFICATION_SET_POWER_SHOW_STYLE = "settings_battery_style";
+        public static final String ACTION_NOTIFICATION_SET_SHOW_CURRENT_NET_SPEED = "settings_show_current_net_speed";
+        public static final String ACTION_NOTIFICATION_SET_SHOW_NOTIFI_ON_SCREEN_SHOT = "settings_show_notifi_on_screen_shot";
+        public static final String ACTION_NOTIFICATION_SET_SHOW_WLAN_ON_STATUS_BAR = "settings_show_wlan_on_statusbar";
+        public static final String ACTION_NOTIFICATION_SET_SHOW_TODAY_EVENTS = "settings_show_today_events";
+        /* Lenovo-sw aihui1 added 2014-11-21 end, for screenshot */
+
+        public static final String ACTION_RUN_APPLICATION_BY_HEAD_SET_PLUGIN = "head_set_plug_in";
+        public static final String ACTION_RUN_APPLICATION_BY_HEAD_SET_PLUGOUT = "head_set_plug_out";
+
+        private LenovoAvataAction() {}
+    }
+
+    public class LenovoAvataRecentsPannelLabel {
+        public static final String LABEL_RECENTS_TASK_LONG_CLICK_HOMEKEY = "recents_homekey_longpressed";
+        public static final String LABEL_RECENTS_SWIPCLEAN_THUMBNAIL = "recents_swipclean_by_thumbnail";
+        public static final String LABEL_RECENTS_SWIPCLEAN_ICON = "recents_swipclean_by_icon";
+        public static final String LABEL_RECENTS_SWIPLOCK_THUMBNAIL = "recents_swiplock_by_thumbnail";
+        public static final String LABEL_RECENTS_SWIPLOCK_ICON = "recents_swiplock_by_icon";
+        public static final String LABEL_RECENTS_CLEANBTN = "recents_cleanbtn_onclick";
+        public static final String LABEL_RECENTS_CLEANBTN_LONG = "recents_cleanbtn_longclick";
+        public static final String LABEL_RECENTS_ONCLICK_THUMBNAIL = "recents_itemonclick_on_thumbnail";
+        public static final String LABEL_RECENTS_ONCLICK_ICON = "recents_itemonclick_on_icon";
+        public static final String LABEL_RECENTS_ONLONGCLICK_THUMBNAIL = "recents_itemonlongclick_on_thumbnail";
+        public static final String LABEL_RECENTS_ONLONGCLICK_ICON = "recents_itemonlongclick_on_icon";
+        public static final String LABEL_RECENTS_ONCLICK_TASKLOCK = "recents_itemonclick_on_tasklock";
+    }
+
+    public class LenovoAvataSwitchPannelLabel {
+        public static final String LABEL_WIFI = "wifi";
+        public static final String LABEL_AIRPLANE = "airplane";
+        public static final String LABEL_APN = "apn";
+        public static final String LABEL_AUTOROATE = "autoroate";
+        public static final String LABEL_BLUETOOTH = "bluetooth";
+        public static final String LABEL_BRIGHTNESS = "brightness";
+        public static final String LABEL_CARMODE = "carmode";
+        public static final String LABEL_CHILD = "child";
+        public static final String LABEL_DOLBY = "dolby";
+        public static final String LABEL_FEEDBACK = "feedback";
+        public static final String LABEL_FLASHLIGHT = "flashlight";
+        public static final String LABEL_FREECALL = "freecall";
+        public static final String LABEL_GPS = "gps";
+        public static final String LABEL_GUEST = "guest";
+        public static final String LABEL_LOCKSREEN = "lockscreen";
+        public static final String LABEL_MOBILEDATA = "mobiledata";
+        public static final String LABEL_MORE = "more";
+        public static final String LABEL_MULTWINDOW = "multwindow";
+        public static final String LABEL_SETTING = "setting";
+        public static final String LABEL_POWERSAVING = "powersaving";
+        public static final String LABEL_PROFILES = "profiles";
+        public static final String LABEL_SCREENSHOT = "screenshot";
+        public static final String LABEL_SHAKEUNLOCK = "shakeunlock";
+        public static final String LABEL_SLEEP = "sleep";
+        public static final String LABEL_SMARTROLL = "smartroll";
+        public static final String LABEL_WIDETOUCH = "widetouch";
+        public static final String LABEL_NFC = "nfc";
+        public static final String LABEL_REBOOT = "reboot";
+        public static final String LABEL_SHUTDOWN = "shutdown";
+        public static final String LABEL_SMARTBRIGHT = "smartbright";
+        public static final String LABEL_NOTIFICATIONSETTING = "notificationsetting";
+        private LenovoAvataSwitchPannelLabel() {}
+    }
+
+    private LenovoAvataCommon() {}
+
+}

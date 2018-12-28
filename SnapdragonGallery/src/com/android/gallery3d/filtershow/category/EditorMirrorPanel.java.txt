@@ -1,0 +1,221 @@
+
+package com.android.gallery3d.filtershow.category;
+
+import android.app.Activity;
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.android.gallery3d.filtershow.FilterShowActivity;
+import com.android.gallery3d.filtershow.editors.EditorMirror;
+
+import org.codeaurora.gallery.R;
+
+public class EditorMirrorPanel extends GeometryPanel implements FilterShowActivity.HandleOperateListener{
+    private static final String TAG = EditorMirrorPanel.class.getSimpleName();
+
+    private final int[] mMirrorAspectIds = {
+            R.id.mirror_left_right,
+            R.id.mirror_up_down,
+    };
+
+    private LinearLayout[] mLinearLayouts;
+    private TextView[] mTextViews;
+    private ImageView[] mImageViews;
+    private Button mCropButton;
+    private Button mStraightenButton;
+    private Button mMirrorButton;
+    private View mMirrorView;
+    private EditorMirror mEditorMirror;
+
+    private int currentIndex = 2;
+    private int mEditorID;
+    private int mSelectPosition = -1;//bug:A6091-802-huangjian-001 20170117 modify
+
+    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            int index = (int) v.getTag();
+            changeSelection(index);
+        }
+    };
+
+    public void setEditor(int editor) {
+        mEditorID = editor;
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        filterShowActivity = (FilterShowActivity) activity;
+        mSelectPosition = filterShowActivity.getEditorMirrorSelect();
+        if (filterShowActivity.isReloadByConfigurationChanged()) {
+            //mSelectPosition = filterShowActivity.getEditorCropButtonSelect();
+        }
+        mEditorMirror = (EditorMirror) filterShowActivity.getEditor(mEditorID);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (mEditorMirror != null) {
+            mEditorMirror.reflectCurrentFilter();
+        }
+        initTextViews();
+        initImageViews();
+        filterShowActivity.setHandlerOperateListener(this);
+    }
+
+    //bug:A6091-1916-huangjian-001 20170422 add begin
+    private void initImageViews() {
+        if (isLandscape()) {
+            mImageViews = new ImageView[] {
+                    (ImageView) mMainView.findViewById(R.id.img_mirror_lr),
+                    (ImageView) mMainView.findViewById(R.id.img_mirror_ud),
+            };
+            changeSelection(mSelectPosition);
+        } else {
+            mImageViews = new ImageView[] {
+                    (ImageView) mMirrorView.findViewById(R.id.img_mirror_lr),
+                    (ImageView) mMirrorView.findViewById(R.id.img_mirror_ud),
+            };
+        }
+        for (int i = 0; i< mImageViews.length ; i++) {
+            ImageView img = mImageViews[i];
+            img.setTag(i);
+            img.setOnClickListener(mOnClickListener);
+        }
+    }
+    //bug:A6091-1916-huangjian-001 20170422 add end
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        if (isLandscape()) {
+            mMainView = inflater.inflate(R.layout.filtershow_category_geometry_panel,
+                    container, false);
+            return mMainView;
+        }else {
+            mMirrorView = inflater.inflate(R.layout.filtershow_mirror_layout, container, false);
+            mMirrorView.setVisibility(View.VISIBLE);
+            return mMirrorView;
+        }
+    }
+
+    protected void initTextViews(){
+        if (isLandscape()) {
+            mTextViews = new TextView[] {
+                    (TextView) mMainView.findViewById(R.id.mirror_text_left_right),
+                    (TextView) mMainView.findViewById(R.id.mirror_text_up_down),
+            };
+        } else {
+            mTextViews = new TextView[] {
+                    (TextView) mMirrorView.findViewById(R.id.mirror_text_left_right),
+                    (TextView) mMirrorView.findViewById(R.id.mirror_text_up_down),
+            };
+        }
+    }
+
+    @Override
+    protected void initButtons() {
+    }
+
+    @Override
+    protected void initTexts() {
+    }
+
+    private void changeSelection(int index) {
+        if (mEditorMirror == null) return;
+        if (index >= 0 && index < mMirrorAspectIds.length) {
+            mSelectPosition = index;
+            mEditorMirror.aspectOrientation(index == 0);
+            highlightIndex(index);
+            filterShowActivity.showSaveButtonIfNeed();
+        }
+    }
+
+    private void highlightIndex(int index) {
+        int size = mMirrorAspectIds.length;
+        for (int i = 0; i < size; i++) {
+            View view = mImageViews[i];
+            view.setSelected(index == i);
+        }
+        size = mTextViews.length;
+        for (int i = 0; i < size; i++) {
+            TextView view = mTextViews[i];
+            view.setTextColor(index == i ?
+                    getResources().getColor(R.color.crop_text_selected) :
+                    Color.WHITE);
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        if (mEditorMirror != null) {
+            mEditorMirror.detach();
+        }
+        super.onDetach();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        FilterShowActivity activity = (FilterShowActivity) getActivity();
+        //activity.saveEditorCropState(mSelectPosition);
+    }
+
+    @Override
+    protected void initCropButton(){
+        if(!isLandscape()){
+            mCropButton = (Button)mMirrorView.findViewById(R.id.por_basic_crop);
+            mStraightenButton = (Button)mMirrorView.findViewById(R.id.por_basic_rotate);
+            mMirrorButton = (Button)mMirrorView.findViewById(R.id.por_basic_mirror);
+
+            mCropButton.setOnClickListener(mButtonOnClickListener);
+            mStraightenButton.setOnClickListener(mButtonOnClickListener);
+            mMirrorButton.setOnClickListener(mButtonOnClickListener);
+        }
+    }
+
+    private View.OnClickListener mButtonOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            int index = 0;
+            int viewId = view.getId();
+            switch (viewId){
+                case R.id.por_basic_crop: {
+                    index = 0;
+                    break;
+                }
+                case R.id.por_basic_rotate: {
+                    index = 1;
+                    break;
+                }
+                case R.id.por_basic_mirror: {
+                    index = 2;
+                    break;
+                }
+            }
+            if (currentIndex == index) return;
+            currentIndex = index;
+            switchFragement(index);
+        }
+    };
+
+    @Override
+    public void handleRedoOperateAction() {
+    }
+
+    @Override
+    public void handleUndoOperateAction() {
+    }
+}

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:theme="@android:style/Theme.DeviceDefault"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/toolbar_height"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/filtershow_exit"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/actionBarItemBackground"
+        android:scaleType="fitCenter"
+        android:src="@drawable/cancel"
+        android:layout_gravity="left|center_vertical"
+        android:gravity="center"
+        android:layout_marginStart="@dimen/toolbar_exit_padding_left" />
+
+    <TextView
+        android:id="@+id/filtershow_done"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:layout_marginEnd="13dp"
+        android:textSize="17sp"
+        android:text="@string/save"
+        android:textAllCaps="true"
+        android:layout_gravity="center_vertical|right"
+        android:gravity="center"
+        android:textColor="#ffffff" />
+
+</FrameLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

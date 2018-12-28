@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- qidongdong@wind-mobi.com on 2018.7.9 start -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/panorama_dialog_bg"
+    android:divider="@drawable/panorama_hint_divider"
+    android:orientation="vertical"
+    android:minWidth="560dp"
+    android:showDividers="middle" >
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:paddingBottom="13dp"
+        android:paddingTop="13dp"
+        android:text="@string/pano_dialog_title"
+        android:textSize="23sp"
+        android:textColor="#FF000000" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/tv_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="27dp"
+            android:paddingLeft="26dp"
+            android:paddingRight="26dp"
+            android:text="@string/pano_tips_summary"
+            android:textSize="23sp"
+            android:textColor="#FF000000" />
+
+        <CheckBox
+            android:id="@+id/cb_nohint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="15dp"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="15dp"
+            android:textSize="18sp"
+            android:textColor="#FFAAAAAA"
+            android:hint="@string/no_more_remind" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/bt_close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="23sp"
+        android:background="@null"
+        android:text="@string/dialog_dismiss"
+        android:textColor="@color/panorama_dialog_close" />
+
+</LinearLayout>
+<!-- qidongdong@wind-mobi.com on 2018.7.9 end -->

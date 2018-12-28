@@ -1,0 +1,105 @@
+
+package com.android.gallery3d.filtershow.category;
+
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.database.DataSetObserver;
+import android.util.AttributeSet;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.util.Log;
+import org.codeaurora.gallery.R;
+/*Create by xiangkezhu@wind-mobi.com fix feature#10896 20180413*/
+public class CategoryTrack2 extends LinearLayout {
+
+    private CategoryAdapter mAdapter;
+    private int mItemHeight = 225;
+    private int mPadding = 10;
+    private int mElemSize;
+    private DataSetObserver mDataSetObserver = new DataSetObserver() {
+        @Override
+        public void onChanged() {
+            super.onChanged();
+            if (getChildCount() != mAdapter.getCount()) {
+                fillContent();
+            } else {
+                invalidate();
+            }
+        }
+        @Override
+        public void onInvalidated() {
+            super.onInvalidated();
+            fillContent();
+        }
+    };
+
+    public CategoryTrack2(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.CategoryTrack);
+        mElemSize = a.getDimensionPixelSize(R.styleable.CategoryTrack_iconSize, 0);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int itemWidth = 320;
+        int childCount = getChildCount();
+        if(childCount > 0){
+            for(int i = 0;i < childCount;i++){
+                View view = getChildAt(i);
+                view.measure(MeasureSpec.makeMeasureSpec(itemWidth,MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(mItemHeight,MeasureSpec.EXACTLY));
+            }
+            int row = (childCount + 1)/2;
+            int height = row*mItemHeight +mPadding *(row -1);
+            setMeasuredDimension(width,height);
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        int childCount = getChildCount();
+        if(childCount > 0){
+            for(int i = 0;i < childCount;i++){
+                View view = getChildAt(i);
+                if(i % 2 == 0){
+                    int y = i/2*(mItemHeight + mPadding);
+                    view.layout(0,y,view.getMeasuredWidth(),view.getMeasuredHeight()+y);
+                }else{
+                    int x = view.getMeasuredWidth() + mPadding;
+                    int y = i/2*(mItemHeight + mPadding);
+                    view.layout(x,y,view.getMeasuredWidth()+x,view.getMeasuredHeight()+y);
+                }
+            }
+        }
+    }
+    public void setAdapter(CategoryAdapter adapter) {
+        mAdapter = adapter;
+        mAdapter.registerDataSetObserver(mDataSetObserver);
+        fillContent();
+    }
+
+    public void fillContent() {
+        removeAllViews();
+        mAdapter.setItemWidth(mElemSize);
+        mAdapter.setItemHeight(LayoutParams.MATCH_PARENT);
+        int n = mAdapter.getCount();
+        for (int i = 0; i < n; i++) {
+            View view = mAdapter.getView(i, null, this);
+            addView(view, i);
+        }
+        requestLayout();
+    }
+
+    @Override
+    public void invalidate() {
+        for (int i = 0; i < this.getChildCount(); i++) {
+            View child = getChildAt(i);
+            child.invalidate();
+        }
+    }
+
+}
+

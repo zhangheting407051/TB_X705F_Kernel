@@ -1,0 +1,15 @@
+package com.android.systemui.wantjoin.lockscreenicon;
+
+import android.content.pm.UserInfo;
+import android.view.View;
+
+/**
+ * Created by Admin on 2016/11/15.
+ */
+
+public interface OnSelectUserListener {
+    /**
+     * 选择回调接口
+     */
+    void selected(UserInfo userInfo, View view);
+}

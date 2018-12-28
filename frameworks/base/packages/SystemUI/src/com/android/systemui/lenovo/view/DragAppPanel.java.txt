@@ -1,0 +1,73 @@
+
+package com.android.systemui.lenovo.view;
+
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
+
+import com.android.systemui.lenovo.util.DragViewDelegate;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class DragAppPanel extends FrameLayout {
+	private DragViewDelegate mDragDelegate;
+
+    public DragAppPanel(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mDragDelegate = new DragViewDelegate(this);
+    }
+
+    public void init(AppPanel attachView) {
+        if (mDragDelegate != null) {
+            mDragDelegate.init(attachView);
+        }
+    }
+
+    public void startDrag(MotionEvent e, final View v) {
+        if (mDragDelegate != null) {
+            mDragDelegate.startDrag(e, v);
+        }
+    }
+
+    public void setHorizontalScrollView(HorizontalScrollView scrollView) {
+        if (mDragDelegate != null) {
+            mDragDelegate.setHorizontalScrollView(scrollView);
+        }
+    }
+
+    public void setDock(Dock dock) {
+        if (mDragDelegate != null) {
+            mDragDelegate.setDock(dock);
+        }
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (mDragDelegate != null) {
+            if (mDragDelegate.handleInterceptTouchEvent(ev)) {
+                return true;
+            }
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (mDragDelegate != null) {
+            if (mDragDelegate.handleTouchEvent(event)) {
+                return true;
+            }
+        }
+        return super.onTouchEvent(event);
+    }
+
+    public void startBigDrag() {
+        if (mDragDelegate != null) {
+            mDragDelegate.startBigDrag();
+        }
+    }
+
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

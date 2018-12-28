@@ -1,0 +1,118 @@
+/* ----------|----------------------|----------------------|----------------- */
+/* 05/26/2015| jian.pan1            | PR1000246            |[5.0][Gallery] No timestamp for video
+ /* ----------|----------------------|----------------------|----------------- */
+package com.android.gallery3d.ui;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.Typeface;
+import android.text.TextPaint;
+import android.text.TextUtils;
+
+import com.android.photos.data.GalleryBitmapPool;
+import com.android.gallery3d.util.ThreadPool;
+import com.android.gallery3d.util.ThreadPool.JobContext;
+
+public class TimeLineVideoTimeMaker {
+
+    private static final String TAG = "TimeLineVideoTimeMaker";
+
+    private static final int BORDER_SIZE = 0;
+
+    private final TimeLineSlotRenderer.LabelSpec mSpec;
+    private final TextPaint mTitlePaint;
+
+    private int mBitmapWidth;
+    private int mBitmapHeight;
+
+    public TimeLineVideoTimeMaker(Context context, TimeLineSlotRenderer.LabelSpec spec) {
+        mSpec = spec;
+        mTitlePaint = getTextPaint(spec.videoTimeSize, spec.videoTimeColor, false);
+    }
+
+    public static int getBorderSize() {
+        return BORDER_SIZE;
+    }
+
+    private static TextPaint getTextPaint(int textSize, int color, boolean isBold) {
+        TextPaint paint = new TextPaint();
+        paint.setTextSize(textSize);
+        paint.setAntiAlias(true);
+        paint.setColor(color);
+        // paint.setShadowLayer(2f, 0f, 0f, Color.LTGRAY);
+        if (isBold) {
+            paint.setTypeface(Typeface.defaultFromStyle(Typeface.BOLD));
+        }
+        return paint;
+    }
+
+    public synchronized void setVideoTimeSize(int width, int height) {
+        int borders = 2 * BORDER_SIZE;
+        mBitmapWidth = width + borders;
+        mBitmapHeight = height + borders;
+    }
+
+    public ThreadPool.Job<Bitmap> requestVideoTime(String time) {
+        return new AlbumLabelJob(time);
+    }
+
+    static void drawText(Canvas canvas, int x, int y, String text, int lengthLimit, TextPaint p) {
+        // The TextPaint cannot be used concurrently
+        synchronized (p) {
+            text = TextUtils.ellipsize(text, p, lengthLimit, TextUtils.TruncateAt.END).toString();
+            canvas.drawText(text, x, y - p.getFontMetricsInt().ascent, p);
+        }
+    }
+
+    private class AlbumLabelJob implements ThreadPool.Job<Bitmap> {
+        private final String mVideoTime;
+
+        public AlbumLabelJob(String time) {
+            mVideoTime = time;
+        }
+
+        @Override
+        public Bitmap run(JobContext jc) {
+            TimeLineSlotRenderer.LabelSpec s = mSpec;
+
+            String time = mVideoTime;
+            if (TextUtils.isEmpty(time))
+                time = "00:01";
+
+            Bitmap bitmap = null;
+            synchronized (this) {
+                bitmap = GalleryBitmapPool.getInstance().get(mBitmapWidth, mBitmapHeight);
+            }
+
+            if (bitmap == null) {
+                int borders = 2 * BORDER_SIZE;
+                bitmap = Bitmap.createBitmap(mBitmapWidth + borders, mBitmapHeight + borders,
+                        Config.ARGB_8888);
+            }
+
+            Canvas canvas = new Canvas(bitmap);
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.SRC);
+            canvas.translate(BORDER_SIZE, BORDER_SIZE);
+
+            // draw time
+            if (jc.isCancelled())
+                return null;
+
+            int x = 0;
+            int y = 0;
+            x = s.videoTimePadding;
+            y = mBitmapHeight - s.videoTimeSize >> 1;
+            drawText(canvas, x, y, time, mBitmapWidth - x, mTitlePaint);
+
+            return bitmap;
+        }
+    }
+
+    public void recycleLabel(Bitmap label) {
+        GalleryBitmapPool.getInstance().put(label);
+    }
+}

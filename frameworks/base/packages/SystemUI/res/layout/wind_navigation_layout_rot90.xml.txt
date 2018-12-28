@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2016 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!-- yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start -->
+<!-- yunbo@wind-mobi.com modify  20180611 st -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:systemui="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- modefy by wanglu@wind-mobi.com navigationbar 20171227 start-->
+    <ImageView
+        android:id="@+id/hide_navigation_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="5dp"
+        android:layout_marginLeft="10dp"
+        android:background="@drawable/hide_navigation_bar_selector"
+        android:src="@drawable/hide_navigation_bar_img"/>
+    <!-- modefy by wanglu@wind-mobi.com navigationbar 20171227 end-->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/empty_layout"
+            android:layout_width="40dp"
+            android:layout_height="match_parent"
+            android:visibility="invisible"
+            android:orientation="horizontal"/>
+
+        <FrameLayout
+            android:id="@+id/nav_buttons"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:id="@+id/ends_group"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:orientation="horizontal"/>
+
+            <LinearLayout
+                android:id="@+id/center_group"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:gravity="center"
+                android:orientation="horizontal"/>
+
+        </FrameLayout>
+
+        <include layout="@layout/split_line"/>
+
+        <FrameLayout
+            android:id="@+id/dock_view"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"/>
+
+        <include layout="@layout/split_line"/>
+
+        <include layout="@layout/menu_ime"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_non_bookui_menu_ime"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <include layout="@layout/non_book_ui_menu_ime"/>
+    </LinearLayout>
+
+    <com.android.systemui.statusbar.policy.DeadZone
+        android:id="@+id/deadzone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"
+        systemui:decayTime="@integer/navigation_bar_deadzone_decay"
+        systemui:holdTime="@integer/navigation_bar_deadzone_hold"
+        systemui:maxSize="@dimen/navigation_bar_deadzone_size_max"
+        systemui:minSize="@dimen/navigation_bar_deadzone_size"
+        systemui:orientation="horizontal"/>
+
+</FrameLayout>
+    <!-- yunbo@wind-mobi.com modify  20180611 end -->
+    <!-- yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end -->

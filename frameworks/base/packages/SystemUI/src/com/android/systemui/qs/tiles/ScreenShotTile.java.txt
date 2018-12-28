@@ -1,0 +1,109 @@
+package com.android.systemui.qs.tiles;
+
+import java.io.File;
+
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Environment;
+import android.os.SystemProperties;
+import android.provider.Settings;
+import android.service.quicksettings.Tile;
+import android.widget.Switch;
+import com.android.internal.logging.MetricsLogger;
+import com.android.systemui.Dependency;
+import com.android.systemui.R;
+import com.android.systemui.plugins.ActivityStarter;
+import com.android.systemui.plugins.qs.QSTile.BooleanState;
+import com.android.systemui.qs.GlobalSetting;
+import com.android.systemui.qs.QSHost;
+import com.android.systemui.qs.tileimpl.QSTileImpl;
+//shiyaru@wind-mobi.com modify add by 2018.5.20 start
+import com.android.systemui.lenovo.screenshot.TakeScreenshot;
+//shiyaru@wind-mobi.com modify add by 2018.5.20 end
+
+
+
+public class ScreenShotTile extends QSTileImpl<BooleanState> {
+    private final Icon mIcon = ResourceIcon.get(R.drawable.lenovo_widget_btn_screenshot);
+    private static final String VALUE_MEDIA_PATH = Environment.getExternalStorageDirectory().toString() + "/Pictures/Screenshots";
+    private boolean mListening;
+    private final ActivityStarter mActivityStarter;
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.20 start
+    private TakeScreenshot mTakeScreenshot;
+    //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.20 end
+
+    public ScreenShotTile(QSHost host) {
+        super(host);
+        mActivityStarter = Dependency.get(ActivityStarter.class);
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.20 start
+        mTakeScreenshot = TakeScreenshot.getTakeScreenshot(mContext);
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.20 end
+        File file = new File(VALUE_MEDIA_PATH);
+        if(!file.exists()) {
+            file.mkdirs();
+        }
+    }
+
+    public void handleSetListening(boolean listening) {
+        mListening = listening;
+    }
+
+    @Override
+    public BooleanState newTileState() {
+        return new BooleanState();
+    }
+
+    @Override
+    public int getMetricsCategory() {
+        return 270;
+    }
+
+    @Override
+    protected void handleClick() {
+        getHost().collapsePanels();
+
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.20 start
+        mTakeScreenshot.takeScreenshot(false);
+        //shiyaru@wind-mobi.com modify scrollscreenshot bitmap preview 2018.5.20 end
+    }
+
+    @Override
+    protected void handleLongClick() {
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        String regionProp = SystemProperties.get("ro.lenovo.region", "prc");
+        if(regionProp.equals("prc")){
+            intent.setComponent(new ComponentName("org.codeaurora.gallery",
+                       "com.android.gallery3d.app.GalleryActivity"));
+        } else {
+            intent.setComponent(new ComponentName("com.google.android.apps.photos",
+                       "com.google.android.apps.photos.home.HomeActivity"));
+        }
+        intent.putExtra("QS_channel", true);
+       // mHost.startActivityDismissingKeyguard(intent);
+        mActivityStarter.postStartActivityDismissingKeyguard(intent, 0);
+    }
+
+    @Override
+    protected void handleUpdateState(BooleanState state, Object arg) {
+        state.value = true;
+        state.label = mContext.getString(R.string.widget_text_screenshot);
+        state.icon = mIcon;
+        if (state.slash == null) {
+            state.slash = new SlashState();
+        }
+        state.contentDescription = state.label;
+        state.expandedAccessibilityClassName = Switch.class.getName();
+    }
+
+    @Override
+    public Intent getLongClickIntent() {
+        return null;
+    }
+
+    @Override
+    public CharSequence getTileLabel() {
+        return mContext.getString(R.string.widget_text_screenshot);
+    }
+}

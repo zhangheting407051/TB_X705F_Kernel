@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/land_category_width"
+    android:layout_height="@dimen/land_category_geometry_height"
+    android:background="@color/land_main_panel_background"
+    android:clickable="true"
+    android:id="@+id/image_crop"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="34dp"
+        android:layout_marginTop="@dimen/land_category_geometry_mirror_margintop"
+        android:background="#202020"
+        android:clickable="false"
+        android:gravity="left"
+        android:text="@string/weight"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"></TextView>
+
+
+    <LinearLayout
+        android:layout_marginTop="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/crop_aspect_original"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:layout_weight="1">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/crop_free_background"
+                android:layout_gravity="center_horizontal"/>
+
+            <TextView
+                android:id="@+id/crop_text_aspect_original"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:layout_marginTop="@dimen/land_category_geometry_mirror_margintop"
+                android:textSize="16sp"
+                android:text="@string/aspectOriginal_effect"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/crop_aspect_1to1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:layout_weight="1">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/crop_1to1_background"
+                android:layout_gravity="center_horizontal"/>
+
+            <TextView
+                android:id="@+id/crop_text_aspect_1to1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:layout_marginTop="@dimen/land_category_geometry_mirror_margintop"
+                android:textSize="16sp"
+                android:text="@string/aspect1to1_effect"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/crop_aspect_4to3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:layout_weight="1">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/crop_4to3_background"
+                android:layout_gravity="center_horizontal"/>
+
+            <TextView
+                android:id="@+id/crop_text_aspect_4to3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:layout_marginTop="@dimen/land_category_geometry_mirror_margintop"
+                android:textSize="16sp"
+                android:text="@string/aspect4to3_effect"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/crop_aspect_3to4"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:layout_weight="1">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/crop_3to4_background"
+                android:layout_gravity="center_horizontal"/>
+
+            <TextView
+                android:id="@+id/crop_text_aspect_3to4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:layout_marginTop="@dimen/land_category_geometry_mirror_margintop"
+                android:textSize="16sp"
+                android:text="@string/aspect3to4_effect"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/crop_aspect_7to5"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:layout_weight="1">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/crop_7to5_background"
+                android:layout_gravity="center_horizontal"/>
+
+            <TextView
+                android:id="@+id/crop_text_aspect_7to5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:layout_marginTop="@dimen/land_category_geometry_mirror_margintop"
+                android:textSize="16sp"
+                android:text="@string/aspect7to5_effect"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/crop_aspect_5to7"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:layout_weight="1">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/crop_5to7_background"
+                android:layout_gravity="center_horizontal"/>
+
+            <TextView
+                android:id="@+id/crop_text_aspect_5to7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:layout_marginTop="@dimen/land_category_geometry_mirror_margintop"
+                android:textSize="16sp"
+                android:text="@string/aspect5to7_effect"
+                android:textColor="#ffffff"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"/>
+        </LinearLayout>
+    </LinearLayout>
+
+
+</LinearLayout>

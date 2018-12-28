@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Normal layout -->
+<!--shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 start -->
+<com.android.systemui.lenovo.screenshot.AreaScreenshotRelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:systemui="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#d8000000" >
+
+    <!-- shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 start -->
+    <View
+        android:id="@+id/screenshot_background_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+    <!--shiyaru@wind-mobi.com fix TABFIVEP-2894 2018.6.27 end -->
+
+    <!-- shiyaru@wind-mobi.com fix TABFIVEP-2930 2018.7.6 start -->
+    <!-- 顶部工具栏 -->
+    <RelativeLayout
+        android:id="@+id/screenshot_title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="5dp"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:visibility="invisible" >
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:background="@drawable/pic_button_redefine_clickstyle"
+            android:text="@string/screenshot_cancel"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/lenovo_screenshot_text_size_button" />
+        <Button
+            android:id="@+id/btn_confirm"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:background="@drawable/pic_button_redefine_clickstyle"
+            android:text="@string/screenshot_area"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/lenovo_screenshot_text_size_button"
+            android:layout_alignParentEnd="true" />
+        <Button
+            android:id="@+id/btn_save_share"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:background="@drawable/pic_button_redefine_clickstyle"
+            android:text="@string/scroll_shot_share_button"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/lenovo_screenshot_text_size_button"
+            android:layout_toStartOf="@id/btn_confirm" />
+    </RelativeLayout>
+    <!--shiyaru@wind-mobi.com fix TABFIVEP-2930 2018.7.6 end -->
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/framelayout_bottom_btns"
+        android:layout_below="@+id/screenshot_title_bar"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:padding="5dp" >
+
+        <FrameLayout
+            android:id="@+id/screenshot_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" >
+
+            <!-- 显示图片 -->
+
+            <ImageView
+                android:id="@+id/iv_screen"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/darker_gray"
+                android:scaleType="fitXY" />
+
+            <!-- 涂鸦View -->
+
+            <com.android.systemui.lenovo.screenshot.DrawableView
+                android:id="@+id/screenshot_drawable_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="invisible" />
+
+            <!-- 自定义的截图View -->
+
+            <com.android.systemui.lenovo.screenshot.CaptureView
+                android:id="@+id/capture"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="visible" />
+
+            <RelativeLayout
+                android:id="@+id/layout_guide"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:background="#B2000000"
+                android:orientation="vertical"
+                android:visibility="gone" >
+
+                <ImageView
+                    android:id="@+id/iv_guide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:src="@drawable/lenovo_screenshot_guide" />
+
+                <TextView
+                    android:id="@+id/tv_guide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignBottom="@+id/iv_guide"
+                    android:layout_centerInParent="true"
+                    android:layout_marginBottom="25dip"
+                    android:text="@string/screenshot_tip"
+                    android:textColor="#ffffff"
+                    android:textSize="@dimen/lenovo_screenshot_text_size_guide" />
+            </RelativeLayout>
+        </FrameLayout>
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/framelayout_bottom_btns"
+        android:layout_width="match_parent"
+        android:layout_height="85dp"
+        android:layout_alignParentBottom="true"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:layout_marginBottom="30dp" >
+
+        <LinearLayout
+            android:id="@+id/screenshot_edit_btns"
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            android:visibility="invisible">
+            <!--fix Bug#TABFIVEP-1940 mahui01@wind-mobi.com 2018/7/9 begin-->
+            <ImageView
+                android:id="@+id/screenshot_btn_switch"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerVertical="true"
+                android:contentDescription="@string/screenshot_btn_switch_label"
+                android:background="?android:attr/selectableItemBackground" />
+
+            <ImageView
+                android:id="@+id/screenshot_btn_toolpanel"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="60dp"
+                android:contentDescription="@string/screenshot_btn_toolpanel_label"
+                android:background="?android:attr/selectableItemBackground" />
+
+            <ImageView
+                android:id="@+id/screenshot_btn_undo"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="60dp"
+                android:contentDescription="@string/screenshot_btn_undo_label"
+                android:background="?android:attr/selectableItemBackground"/>
+
+            <ImageView
+                    android:id="@+id/screenshot_btn_redo"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="60dp"
+                    android:contentDescription="@string/screenshot_btn_redo_label"
+                    android:background="?android:attr/selectableItemBackground"/>
+            <!--fix Bug#TABFIVEP-1940 mahui01@wind-mobi.com 2018/7/9 end-->
+        </LinearLayout>
+
+        <!-- shiyaru@wind-mobi.com fix TABFIVEP-2991 2018.7.6 start -->
+        <!--fix bug#TABFIVEP-293 mahui01@wind-mobi.com 2018/5/28 begin-->
+        <LinearLayout
+            android:id="@+id/linerlayout_btns"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <Button
+                android:id="@+id/btn_scrollshot"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@drawable/pic_button_redefine_clickstyle"
+                android:drawableStart="@drawable/screenshot_scrollshot"
+                android:drawablePadding="10dp"
+                android:gravity="center"
+                android:text="@string/widget_text_scrollscreenshot"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/lenovo_screenshot_text_size_button" />
+            <Button
+                android:id="@+id/btn_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/screenshot_button_margin_start"
+                android:background="@drawable/pic_button_redefine_clickstyle"
+                android:drawableStart="@drawable/screenshot_edit"
+                android:drawablePadding="10dp"
+                android:gravity="center"
+                android:text="@string/screenshot_edit"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/lenovo_screenshot_text_size_button" />
+            <Button
+                android:id="@+id/btn_share"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/screenshot_button_margin_start"
+                android:background="@drawable/pic_button_redefine_clickstyle"
+                android:drawableStart="@drawable/screenshot_save_share"
+                android:drawablePadding="10dp"
+                android:gravity="center"
+                android:text="@string/screenshot_share"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/lenovo_screenshot_text_size_button" />
+            <Button
+                android:id="@+id/btn_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/screenshot_button_margin_start"
+                android:background="@drawable/pic_button_redefine_clickstyle"
+                android:drawableStart="@drawable/screenshot_delete"
+                android:drawablePadding="10dp"
+                android:gravity="center"
+                android:text="@string/screenshot_delete"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/lenovo_screenshot_text_size_button" />
+        </LinearLayout>
+	<!--fix bug#TABFIVEP-293 mahui01@wind-mobi.com 2018/5/28 end-->
+        <!-- shiyaru@wind-mobi.com fix TABFIVEP-2991 2018.7.6 end -->
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/framelayout_bottom_btns"
+        android:gravity="center" >
+
+        <LinearLayout
+                android:id="@+id/screenshot_tool_panel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="104dp"
+                android:layout_marginBottom="0dp"
+                android:background="@drawable/lenovo_screenshot_popup"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="visible" >
+
+            <ImageView
+                    android:id="@+id/screenshot_spot_1"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:src="@drawable/lenovo_screenshot_spot_1" />
+
+            <ImageView
+                    android:id="@+id/screenshot_spot_2"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginStart="13dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:src="@drawable/lenovo_screenshot_spot_2" />
+
+            <ImageView
+                    android:id="@+id/screenshot_spot_3"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginStart="13dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:src="@drawable/lenovo_screenshot_spot_3" />
+
+            <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/lenovo_screenshot_popcut" />
+
+            <ImageView
+                    android:id="@+id/screenshot_color_yellow"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="7dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:src="@drawable/lenovo_screenshot_color_yellow" />
+
+            <ImageView
+                    android:id="@+id/screenshot_color_black"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="7dp"
+                    android:layout_marginStart="13dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:src="@drawable/lenovo_screenshot_color_black" />
+
+            <ImageView
+                    android:id="@+id/screenshot_color_red"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="7dp"
+                    android:layout_marginStart="13dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:src="@drawable/lenovo_screenshot_color_red" />
+
+            <ImageView
+                    android:id="@+id/screenshot_color_blue"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginBottom="7dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginStart="13dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:src="@drawable/lenovo_screenshot_color_blue" />
+        </LinearLayout>
+    </LinearLayout>
+
+</com.android.systemui.lenovo.screenshot.AreaScreenshotRelativeLayout>
+<!--shiyaru@wind-mobi.com fix screenshot UI issue 2018.6.7 start -->

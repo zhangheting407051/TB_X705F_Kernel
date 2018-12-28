@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:custom="http://schemas.android.com/apk/res-auto"
+              android:id="@+id/top"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:visibility="visible"
+              android:background="#0D0D0D">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/por_draw_size"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/draw_size"
+            android:textSize="16sp"
+            android:textColor="#ffffff"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:focusable="true"
+            android:background="@drawable/button_selected"
+        />
+
+        <Button
+            android:id="@+id/por_draw_style"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/draw_style"
+            android:textSize="16sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/por_draw_color"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/draw_color"
+            android:textSize="16sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+    </LinearLayout>
+    <FrameLayout
+        android:id="@+id/editorContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="6"
+        android:layout_gravity="bottom"
+        android:layout_marginTop="20dp">
+
+        <LinearLayout
+            android:id="@+id/draw_size_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:theme="@android:style/Theme.DeviceDefault"
+                android:id="@+id/top"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#0D0D0D"
+                android:visibility="visible" >
+
+                <Button
+                    android:id="@+id/clearButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:text="@string/draw_clear"
+                    android:textColor="#ffffff"
+                    android:background="@drawable/button_original"
+                    android:layout_marginStart="30dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentLeft="true"/>
+
+                <ImageButton
+                    android:id="@+id/clearButton1"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:textColor="#ffffff"
+                    android:background="#0D0D0D"
+                    android:layout_marginEnd="30dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentRight="true" />
+
+                <SeekBar
+                    android:id="@+id/drawSizeSeekBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_toRightOf="@id/clearButton"
+                    android:layout_toLeftOf="@id/clearButton1"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:progress="20"
+                    style="@style/FilterShowSlider"/>
+                <TextView
+                    android:id="@+id/drawSizeValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#ffffff"
+                    android:layout_below="@id/drawSizeSeekBar"
+                    android:layout_marginTop="30dp"
+                    android:layout_centerHorizontal="true"
+                    android:textStyle="bold"
+                />
+            </RelativeLayout>
+
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/draw_style_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/clearStyle"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:text="@string/draw_clear"
+                android:textColor="#ffffff"
+                android:background="@drawable/button_original"
+                android:layout_marginStart="30dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentLeft="true"/>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_centerInParent="true"
+                android:orientation="vertical">
+
+                <HorizontalScrollView
+                    android:id="@+id/scrollList"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/listStyles"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_style_button01"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="true"
+                            custom:styleSelect="0"
+                            android:layout_marginStart="15dp"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_style_button02"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:styleSelect="1"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_style_button03"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:styleSelect="2"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_style_button04"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:styleSelect="3"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_style_button05"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:styleSelect="4"
+                            android:layout_marginEnd="20dp"/>
+                    </LinearLayout>
+                </HorizontalScrollView>
+            </LinearLayout>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/draw_color_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                    android:id="@+id/clearColor"
+                    android:layout_width="@dimen/land_scrawl_draw_color_height"
+                    android:layout_height="@dimen/land_scrawl_draw_color_height"
+                    android:text="@string/draw_clear"
+                    android:textColor="#ffffff"
+                    android:background="@drawable/button_original"
+                    android:layout_marginStart="30dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentLeft="true"/>
+
+            <LinearLayout
+                android:id="@+id/listColors"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/land_scrawl_draw_color_height"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal">
+
+
+                <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_color_button01"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="true"
+                            custom:circleColor="@color/color1"
+                            android:layout_marginStart="15dp"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_color_button02"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:circleColor="@color/color2"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_color_button03"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:circleColor="@color/color3"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_color_button04"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:circleColor="@color/color4"
+                            android:layout_marginEnd="20dp"/>
+
+                        <com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView
+                            android:id="@+id/draw_color_button05"
+                            android:layout_width="@dimen/land_scrawl_draw_color_height"
+                            android:layout_height="@dimen/land_scrawl_draw_color_height"
+                            custom:boaderColor="@color/colorboarder"
+                            custom:colorSelect="false"
+                            custom:circleColor="@color/color5"
+                            android:layout_marginEnd="20dp"/>
+            </LinearLayout>
+
+    </RelativeLayout>
+    </FrameLayout>
+    <LinearLayout
+        android:id="@+id/colorPicker"
+        android:layout_width="375dp"
+        android:layout_height="560dp"
+        android:orientation="vertical"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="35dp"
+        android:background="#ffffff"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/draw_color"
+            android:layout_marginStart="8dip"
+            android:id="@+id/textView"
+            android:visibility="gone"/>
+
+        <com.android.gallery3d.filtershow.colorpicker.ColorCompareView
+            android:id="@+id/btnSelect"
+            android:layout_width="@dimen/draw_ui_width"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="30dp"
+            android:layout_marginBottom="0dp"
+        />
+
+        <com.android.gallery3d.filtershow.colorpicker.ColorSVRectView
+            android:id="@+id/colorRectView"
+            android:layout_width="@dimen/draw_ui_width"
+            android:layout_height="280dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="0dp"/>
+
+        <com.android.gallery3d.filtershow.colorpicker.ColorHueView
+            android:id="@+id/ColorHueView"
+            android:layout_width="@dimen/draw_ui_width"
+            android:layout_gravity="center"
+            android:layout_height="32dp" />
+
+        <com.android.gallery3d.filtershow.colorpicker.ColorOpacityView
+            android:id="@+id/colorOpacityView"
+            android:layout_width="@dimen/draw_ui_width"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:layout_height="32dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+        >
+            <Button
+                android:id="@+id/cancel_choose_color"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="@string/cancel"
+                android:background="#00ffffff"
+                android:textColor="#9E9E9E"
+                android:textSize="14sp"
+                android:layout_marginTop="6dp">
+            </Button>
+            <Button
+                android:id="@+id/verity_choose_color"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="@string/draw_size_accept"
+                android:background="#00ffffff"
+                android:textColor="#478CFE"
+                android:textSize="14sp"
+                android:layout_marginTop="6dp">
+            </Button>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

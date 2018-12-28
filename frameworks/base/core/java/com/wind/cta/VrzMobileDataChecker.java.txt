@@ -1,0 +1,369 @@
+package com.wind.cta;
+
+import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.SystemProperties;
+import android.util.Log;
+import android.view.ContextThemeWrapper;
+import android.view.WindowManager;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+public class VrzMobileDataChecker {
+
+    public VrzMobileDataChecker() {
+        
+    }
+    /*public static final String TAG = "Checker";
+	
+
+    private static final String AUTHORITY = "com.wind.windmaster.permission";
+    private static final String TABLE_PERMISSION = "permission_manager";
+    private static final String COL_ACTION = "action";
+    private static final String COL_CALLER = "caller";
+    private static final String COL_ACCEPT = "accept";
+    private static final Uri URI_PERMISSION = Uri.parse("content://" + AUTHORITY + "/" + TABLE_PERMISSION);
+
+    private Handler mHandler;
+    private Context mContext;
+    private Context mThemeContext;
+    private static AlertDialog dialog;
+    private static boolean mbPass = false;
+    private boolean mbEnableData = false;
+    private boolean mIsVoiceCapable = false;
+    private boolean mIsPendingOrder = false;
+
+    private class PermissionChecker implements Runnable {
+        Object checkLock = new Object();
+        int mAction;
+        String mCaller;
+        boolean result = false;
+
+        PermissionChecker(int action, String caller) {
+            mAction = action;
+            mCaller = caller;
+        }
+
+        public boolean getResult() {
+            return result;
+        }
+
+        @Override
+        public void run() {
+            synchronized (checkLock) {
+                //boolean exist = queryPermission();
+                //if (exist) {
+                //    checkLock.notifyAll();
+                //}
+                //else {
+                    try {
+                        showDialog();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        result = true;
+                        checkLock.notifyAll();
+                    }
+                //}
+            }
+        }
+
+        private boolean queryPermission() {
+            boolean ret = false;
+            if (mContext != null) {
+                if (android.provider.Settings.System.getInt(mContext.getContentResolver(), "MobileDataCheckerPass", 0) == 1 ||
+                    mbPass) {
+                    ret = true;
+                    result = true;
+                }
+            }
+            return ret;
+        }
+
+        /*private void showDialog() {
+            System.out.println("mContext = " + mContext);
+            System.out.println("dialog = " + dialog);
+            System.out.println("mIsVoiceCapable = " + mIsVoiceCapable);
+            System.out.println("mIsPendingOrder = " + mIsPendingOrder);
+            System.out.println("mbEnableData = " + mbEnableData);
+            if (mContext == null) {
+                return;
+            }
+            if (dialog != null) {
+                return;
+            }
+            int targetThemeRes = android.R.style.Theme_DeviceDefault_Light;
+
+            mThemeContext = new ContextThemeWrapper(mContext, targetThemeRes);
+
+            LinearLayout view = new LinearLayout(mThemeContext);
+            view.setOrientation(LinearLayout.VERTICAL);
+            int padding = 30;
+            int padding_in_dp_LR = 13;
+            int padding_in_dp_UD = 15;
+            final float scale = mContext.getResources().getDisplayMetrics().density;
+            int padding_in_px_LR = (int) (padding_in_dp_LR * scale + 0.5f);
+            int padding_in_px_UD = (int) (padding_in_dp_UD * scale + 0.5f);
+            view.setPadding(padding_in_px_LR, padding_in_px_UD, padding_in_px_LR, padding_in_px_UD);//Common UI
+
+            TextView message = new TextView(mThemeContext);
+            message.setText(getMessageString());
+            message.setTextSize(18);
+            message.setTextColor(android.graphics.Color.BLACK);
+            view.addView(message);
+
+            final CheckBox checkBox = new CheckBox(mThemeContext);
+            checkBox.setText(mContext.getString(com.android.internal.R.string.mde_dialog_checkbox));
+            checkBox.setTextSize(15);
+            checkBox.setTextColor(android.graphics.Color.BLACK);
+            //view.addView(checkBox);
+
+            ScrollView scrollView = new ScrollView(mThemeContext);
+            scrollView.addView(view);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(mThemeContext);
+            builder.setTitle(getTitle());
+            builder.setView(scrollView);
+            builder.setCancelable(false);
+            builder.setPositiveButton(getPositiveButtonMessage(), new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    synchronized (checkLock) {
+                        result = true;
+                        checkLock.notifyAll();
+                    }
+                    if (checkBox.isChecked()) {
+                        addPermission(1);
+                    }
+                    if (mIsVoiceCapable && !mIsPendingOrder) {
+                        // smart phone without pending order
+                        return;
+                    }
+                    if (mbEnableData) {
+                        Intent selectPlan;
+                        if (mIsVoiceCapable && mIsPendingOrder) {
+                            // is pending order Smart phone
+                            selectPlan = new Intent("com.asus.setupwizard.ACTIVATION_AUTH_ENTRY");
+                        } else {
+                            // pad: VZ_REQ_ACTIVATIONUI_36859
+                            selectPlan = new Intent("com.asus.action.activity.VerizonBBPortalWebViewActivity");
+                        }
+                        String requestID = SystemProperties.get("gsm.vzw.requestID", "");
+                        String correlationID = SystemProperties.get("gsm.vzw.correlationID", "");
+                        String securityQuestionID = SystemProperties.get("gsm.vzw.securityQuestionID", "");
+                        System.out.println("requestID = " + requestID);
+                        System.out.println("correlationID = " + correlationID);
+                        System.out.println("securityQuestionID = " + securityQuestionID);
+                        selectPlan.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        selectPlan.putExtra("from", "phone");
+                        selectPlan.putExtra("requestID", requestID);
+                        selectPlan.putExtra("correlationID", correlationID);
+                        selectPlan.putExtra("securityQuestionID", securityQuestionID);
+                        mContext.startActivity(selectPlan);
+                    }
+                }
+            });
+
+            String deny = getVrzMobileDataCheckerNegativeString();
+            if (deny != null) {
+                builder.setNegativeButton(deny, new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        synchronized (checkLock) {
+                            result = false;
+                            checkLock.notifyAll();
+                        }
+                    }
+                });
+            }
+            // +++ allen_chu@20140407: fix fd leak
+            //AlertDialog dialog = builder.create();
+            dialog = builder.create();
+            dialog.setOnDismissListener(mDismissListener);
+            // --- allen_chu@201407
+            dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ERROR);
+            dialog.show();
+        }*/
+
+        /*private void addPermission(int accept) {
+            if (mContext != null) {
+                mbPass = true;
+                try {
+                    android.provider.Settings.System.putInt(mContext.getContentResolver(), "MobileDataCheckerPass", 1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }*/
+
+    /*HandlerThread thread;
+    public VrzMobileDataChecker(Context context, boolean bEnableData, boolean isVoiceCapable, boolean isPendingOrder) {
+        mContext = context;
+        //HandlerThread thread = new HandlerThread("Checker");
+        thread = new HandlerThread("Checker"); // +++ allen_chu@20140407: fix fd leak
+        thread.start();
+        mHandler = new Handler(thread.getLooper());
+        mbEnableData = bEnableData;
+        mIsVoiceCapable = SystemProperties.getBoolean("gsm.vzw.test.isvoicecapable", isVoiceCapable);
+        mIsPendingOrder = SystemProperties.getBoolean("gsm.vzw.test.ispendingorder", isPendingOrder);
+    }*/
+
+    /*PermissionChecker permissionChecker;
+    public boolean checkPermission(int action, String caller) {
+        //PermissionChecker permissionChecker = new PermissionChecker(action, caller);
+        permissionChecker = new PermissionChecker(action, caller); // +++ allen_chu@20140407: fix fd leak
+        synchronized (permissionChecker.checkLock) {
+            mHandler.post(permissionChecker);
+            try {
+                permissionChecker.checkLock.wait();
+                return permissionChecker.getResult();
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }*/
+
+    /*private String getTitle() {
+        String title;
+        if (mbEnableData) {
+            if (mIsVoiceCapable) {
+                // phone: VZ_REQ_ACTIVATIONUI_37584
+                if (mIsPendingOrder) {
+                    title = mContext.getString(com.android.internal.R.string.vrz_postpaid_smartphones_mde_enable_dialog_title);
+                } else {
+                    title = mContext.getString(com.android.internal.R.string.vrz_smartphones_without_postpaid_mde_enable_dialog_title);
+                }
+            } else {
+                // pad
+                title = mContext.getString(com.android.internal.R.string.vrz_mde_enable_dialog_title);
+            }
+        } else {
+            // VZ_REQ_UI_15708
+            title = mContext.getString(com.android.internal.R.string.vrz_mde_disable_dialog_title);
+        }
+        return title;
+    }
+
+    private String getMessageString() {
+        String message;
+        if (mbEnableData) {
+            if (mIsVoiceCapable) {
+                // phone: VZ_REQ_ACTIVATIONUI_37584
+                if (mIsPendingOrder) {
+                    message = mContext.getString(com.android.internal.R.string.vrz_postpaid_smartphones_mde_enable_dialog_message);
+                } else {
+                    message = mContext.getString(com.android.internal.R.string.vrz_smartphones_without_postpaid_mde_enable_dialog_message);
+                }
+            } else {
+                // pad
+                message = mContext.getString(com.android.internal.R.string.vrz_mde_enable_dialog_message);
+            }
+        } else {
+            // VZ_REQ_UI_15708
+            message = mContext.getString(com.android.internal.R.string.vrz_mde_disable_dialog_message);
+        }
+        return message;
+    }
+
+    private String getPositiveButtonMessage() {
+        String positiveButtonMessage;
+        if (mbEnableData) {
+            if (mIsVoiceCapable) {
+                // phone: VZ_REQ_ACTIVATIONUI_37584
+                if (mIsPendingOrder) {
+                    positiveButtonMessage = mContext.getString(com.android.internal.R.string.vrz_postpaid_smartphones_mde_enable_dialog_activate_now);
+                } else {
+                    positiveButtonMessage = mContext.getString(com.android.internal.R.string.ok);
+                }
+            } else {
+                // pad
+                 positiveButtonMessage = mContext.getString(com.android.internal.R.string.gpsVerifYes);
+            }
+        } else {
+            // VZ_REQ_UI_15708
+            positiveButtonMessage = mContext.getString(com.android.internal.R.string.ok);
+        }
+        return positiveButtonMessage;
+    }
+
+    private String getAppName(String packageName) {
+        String appName = packageName;
+        PackageManager pm = mContext.getPackageManager();
+        try {
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, PackageManager.GET_ACTIVITIES);
+            appName = appInfo.loadLabel(pm).toString();
+        } catch (android.content.pm.PackageManager.NameNotFoundException ex) {
+        }
+        return appName;
+    }*/
+
+    // +++ allen_chu@20140406: fix fd leak
+    /*public void release() {
+        mHandler.removeCallbacksAndMessages(permissionChecker);
+        permissionChecker = null;
+
+        //thread = null;
+        if(thread != null) {
+            thread.quitSafely();
+            Thread moribund = thread;
+            thread = null;
+            moribund.interrupt();
+        }
+        mContext = null;
+        dialog = null;
+        mThemeContext = null;
+    }*/
+
+    /*private DialogInterface.OnDismissListener mDismissListener = new DialogInterface.OnDismissListener() {
+        @Override
+        public void onDismiss (DialogInterface dialog) {
+            release();
+            mContext = null;
+            dialog = null;
+            mThemeContext = null;
+        }
+    };*/
+    // --- allen_chu@20140406
+
+    /*private String getVrzMobileDataCheckerNegativeString() {
+        String deny = null;
+        if (!mbEnableData) {
+            // VZ_REQ_UI_15708
+            // trun Moblie Data off
+            deny = mContext.getString(com.android.internal.R.string.cancel);
+        } else {
+            // trun Moblie Data on
+            if (mIsVoiceCapable) {
+                if (mIsPendingOrder) {
+                    // VZ_REQ_ACTIVATIONUI_37584
+                    // Device is phone with Pending Order
+                    deny = mContext.getString(com.android.internal.R.string.vrz_postpaid_smartphones_mde_enable_dialog_dont_activate);
+                } else {
+                    // VZ_REQ_ACTIVATIONUI_37584
+                    // Device is phone without Pending Order
+                    deny = null;
+                }
+            } else {
+                // VZ_REQ_ACTIVATIONUI_36859
+                // Device is Pad
+                deny = mContext.getString(com.android.internal.R.string.vrz_mde_enable_dialog_not_now);
+            }
+        }
+        return deny;
+    }*/
+}

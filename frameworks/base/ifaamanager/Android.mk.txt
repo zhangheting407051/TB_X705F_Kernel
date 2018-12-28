@@ -1,0 +1,11 @@
+#LOCAL_PATH := $(call my-dir)
+
+############################ build ifaa_fw ############################
+
+#include $(CLEAR_VARS)
+#IFAA_JAVA_PATH := src
+#LOCAL_MODULE := ifaa_fw
+#LOCAL_SRC_FILES := $(call all-java-files-under, $(IFAA_JAVA_PATH)) $(call all-Iaidl-files-under, $(IFAA_JAVA_PATH))
+#LOCAL_MODULE_TAGS := optional
+
+#include $(BUILD_JAVA_LIBRARY)

@@ -1,0 +1,107 @@
+/*Transsion Top Secret*/
+/**
+ * Copyright(C) 2016 Transsion Inc
+ * Author licheng
+ * Description
+ */
+
+
+package com.android.systemui.scrollshot;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.Handler;
+import android.os.IBinder;
+
+import android.os.Message;
+import android.util.Log;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
+import android.widget.Toast;
+import android.provider.Settings;
+
+import com.android.systemui.R;
+
+import java.lang.ref.WeakReference;
+
+public class JudgeScrollShotService extends Service {
+
+    private static final String CAN_SCROLL_SHOT = "android.intent.action.can_scroll_shot";
+    private static final int ACCIDENT_STOP_SCROLL_SHOT = 1;
+    private boolean mRegisterFlag = false;
+    private final H mHandler = new H(this);
+
+    private BroadcastReceiver mCanScrollShotReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (CAN_SCROLL_SHOT.equals(intent.getAction())) {
+                mHandler.removeMessages(ACCIDENT_STOP_SCROLL_SHOT);
+                Boolean canScrollShot = intent.getBooleanExtra("canScrollShot", false);
+                if (canScrollShot) {
+                    startService(new Intent(JudgeScrollShotService.this, TakeScrollshotService.class));
+                } else {
+                    //Toast.makeText(context, context.getString(R.string.scroll_shot_unsupport), Toast.LENGTH_SHORT).show();
+                }
+                stopSelf();
+            }
+        }
+    };
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        int ori = getResources().getConfiguration().orientation;
+        if(ori == 1){
+            IntentFilter filter = new IntentFilter(CAN_SCROLL_SHOT);
+            registerReceiver(mCanScrollShotReceiver, filter);
+            mRegisterFlag = true;
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    ScrollShot.getInstance().judgeScrollShot(JudgeScrollShotService.this);
+                }
+            },200);
+            mHandler.sendEmptyMessageDelayed(ACCIDENT_STOP_SCROLL_SHOT, 2000);
+        }else{
+         //   Toast.makeText(this, getString(R.string.scroll_shot_unsupport_landscape), Toast.LENGTH_SHORT).show();
+            stopSelf();
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+
+    @Override
+    public void onDestroy() {
+        if (mRegisterFlag){
+            mRegisterFlag = false;
+            unregisterReceiver(mCanScrollShotReceiver);
+        }
+    }
+
+    private static class H extends Handler {
+        WeakReference<Service> mServiceWeakReference;
+
+        public H(Service service) {
+            mServiceWeakReference = new WeakReference<>(service);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            final Service service = mServiceWeakReference.get();
+            if (service == null) {
+                return;
+            }
+            if (msg.what == ACCIDENT_STOP_SCROLL_SHOT) {
+           //     Toast.makeText(service, service.getString(R.string.scroll_shot_unsupport), Toast.LENGTH_SHORT).show();
+                service.stopSelf();
+            }
+        }
+    }
+}

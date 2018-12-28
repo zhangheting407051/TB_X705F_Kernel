@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:custom="http://schemas.android.com/apk/res/org.codeaurora.gallery"
+              android:layout_width="@dimen/land_category_panel_new_width"
+              android:layout_height="wrap_content"
+              android:background="@android:color/transparent"
+              android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/category_text"
+        android:layout_width="@dimen/land_category_width"
+        android:layout_height="@dimen/land_category_text_height"
+        android:textColor="#ffffff"
+        android:textSize="24sp"
+        android:background="#1B1B1B"
+        android:gravity="center_vertical|center_horizontal"/>
+
+    <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#202020"
+            android:scrollbars="none" >
+        <!--fix feature#10896 xiangkezhu@wind-mobi.com 20180413 begin-->
+        <com.android.gallery3d.filtershow.category.CategoryTrack2
+                android:id="@+id/listItems"
+                android:layout_width="match_parent"
+                android:layout_height="527dp"
+                android:background="@android:color/transparent"
+                custom:iconSize="@dimen/category_panel_icon_size"
+                android:divider="@android:color/transparent"
+                android:dividerPadding="20dip"
+                android:layout_marginLeft="10dp"
+                android:orientation="vertical"
+                />
+        <!--fix feature#10896 xiangkezhu@wind-mobi.com 20180413 end-->
+
+    </ScrollView>
+
+    <FrameLayout
+        android:id="@+id/land_cover_item"
+        android:layout_width="match_parent"
+        android:layout_height="527dp"
+        android:background="#202020"
+        android:layout_marginTop="75dp"/>
+
+    <com.android.gallery3d.filtershow.category.IconView
+            android:id="@+id/addButton"
+            android:layout_width="@dimen/category_panel_height"
+            android:layout_height="@dimen/category_panel_height"
+            android:src="@drawable/filtershow_add"/>
+
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

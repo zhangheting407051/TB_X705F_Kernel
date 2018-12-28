@@ -1,0 +1,503 @@
+/*
+ * Copyright (C) 2013 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.gallery3d.filtershow.editors;
+
+import android.app.ActionBar;
+import android.content.Context;
+import android.content.res.Resources;
+import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.ListView;
+import android.util.Log;
+
+import org.codeaurora.gallery.R;
+import com.android.gallery3d.filtershow.colorpicker.ColorCompareView;
+import com.android.gallery3d.filtershow.colorpicker.ColorHueView;
+import com.android.gallery3d.filtershow.colorpicker.ColorListener;
+import com.android.gallery3d.filtershow.colorpicker.ColorOpacityView;
+import com.android.gallery3d.filtershow.colorpicker.ColorSVRectView;
+import com.android.gallery3d.filtershow.colorpicker.ColorPickerDialog;
+import com.android.gallery3d.filtershow.controller.BasicParameterInt;
+import com.android.gallery3d.filtershow.controller.BasicParameterStyle;
+import com.android.gallery3d.filtershow.controller.ParameterColor;
+import com.android.gallery3d.filtershow.filters.FilterDrawRepresentation;
+import com.android.gallery3d.filtershow.ui.FilterShowDrawCustomView;
+import com.android.gallery3d.filtershow.FilterShowActivity;
+import com.android.gallery3d.util.ScreenUtils;
+
+import java.util.Arrays;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+public class EditorDrawTabletUI implements ColorPickerDialog.UpdateDrawColorListener{
+    private static final int LAND_STYLE_WIDTH = 110;
+    private static final int POR_STYLE_WIDTH = 80;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    private EditorDraw mEditorDraw;
+    private int[] mBrushIcons;
+    private static int sIconDim = 120;
+    private int mSelectedColorButton;
+    private int mSelectedStyleButton;
+    private FilterDrawRepresentation mRep;
+    private FilterShowDrawCustomView[] mColorButton;
+    private ImageButton[] mStyleButton;
+    private ColorHueView mHueView;
+    private ColorSVRectView mSatValView;
+    private ColorOpacityView mOpacityView;
+    private ColorCompareView mColorCompareView;
+    private TextView mDrawSizeValue;
+
+    private int[] mBasColors;
+    private int mSelected;
+    private int mTransparent;
+    private SeekBar mdrawSizeSeekBar;
+    private int[] ids = {
+            R.id.draw_color_button01,
+            R.id.draw_color_button02,
+            R.id.draw_color_button03,
+            R.id.draw_color_button04,
+            R.id.draw_color_button05,
+    };
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    private int[] styleIds = {
+            R.id.draw_style_button01,
+            R.id.draw_style_button02,
+            R.id.draw_style_button03,
+            R.id.draw_style_button04,
+            R.id.draw_style_button05
+    };
+
+    private LinearLayout mSizeLayout;
+    private RelativeLayout mStyleLayout;
+    private RelativeLayout mColorLayout;
+    private LinearLayout mControlLayout;
+
+    private Button mCancelButton;
+    private Button mVerityButton;
+    private Button mDrawSizeButton;
+    private Button mDrawStyleButton;
+    private Button mDrawColorButton;
+    private Button mLastPressButton;
+    private int mStyleWidth;
+    private int mStyleHeight;
+
+    private FilterShowDrawCustomView[] mStyleButtons;
+    private int mNewColor = 0;
+
+    private int mLastViewId = R.id.por_draw_size;
+
+    private Context mContext;
+    private boolean mLandColorChanged = false;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    public void setDrawRepresentation(FilterDrawRepresentation rep) {
+        mRep = rep;
+        BasicParameterInt size;
+        size = (BasicParameterInt) mRep.getParam(FilterDrawRepresentation.PARAM_SIZE);
+        mdrawSizeSeekBar.setMax(size.getMaximum() - size.getMinimum());
+        mdrawSizeSeekBar.setProgress(size.getValue());
+
+        ParameterColor color;
+        color = (ParameterColor) mRep.getParam(FilterDrawRepresentation.PARAM_COLOR);
+        color.setValue(mBasColors[mSelectedColorButton]);
+        BasicParameterStyle style;
+        style = (BasicParameterStyle) mRep.getParam(FilterDrawRepresentation.PARAM_STYLE);
+        style.setSelected(mSelectedStyleButton);
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    public EditorDrawTabletUI(EditorDraw editorDraw, Context context, final LinearLayout lp) {
+        mContext = context;
+        mControlLayout = lp;
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+        mEditorDraw = editorDraw;
+        mBasColors = editorDraw.mBasColors;
+        mBrushIcons = editorDraw.brushIcons;
+        Resources res = context.getResources();
+        sIconDim = res.getDimensionPixelSize(R.dimen.draw_style_icon_dim);
+        LinearLayout buttonContainer = (LinearLayout) lp.findViewById(R.id.listStyles);
+
+        mdrawSizeSeekBar = (SeekBar) lp.findViewById(R.id.drawSizeSeekBar);
+        mDrawSizeValue = (TextView) lp.findViewById(R.id.drawSizeValue);
+
+        Button clearButton = (Button) lp.findViewById(R.id.clearButton);
+        clearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mEditorDraw.clearDrawing();
+            }
+        });
+
+        mdrawSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                BasicParameterInt size;
+                size = (BasicParameterInt) mRep.getParam(FilterDrawRepresentation.PARAM_SIZE);
+                size.setValue(progress + size.getMinimum());
+                mEditorDraw.commitLocalRepresentation();
+                int val  = progress + size.getMinimum();
+                //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+                mDrawSizeValue.setText(val+"");
+                //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+            }
+        });
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        if (isLandscape()) {
+            initLandLayout(lp);
+        } else {
+            initPorLayout(lp);
+        }
+
+        mTransparent = res.getColor(R.color.color_chooser_unslected_border);
+        mSelected = res.getColor(R.color.color_chooser_slected_border);
+
+        initFilterShowColorViews(lp);
+        initFilterShowStyleViews(lp);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+        mHueView = (ColorHueView) lp.findViewById(R.id.ColorHueView);
+        mSatValView = (ColorSVRectView) lp.findViewById(R.id.colorRectView);
+        mOpacityView = (ColorOpacityView) lp.findViewById(R.id.colorOpacityView);
+        mColorCompareView = (ColorCompareView) lp.findViewById(R.id.btnSelect);
+
+        float[] hsvo = new float[4];
+        Color.colorToHSV(mBasColors[0], hsvo);
+        hsvo[3] = (0xFF & (mBasColors[0] >> 24)) / (float) 255;
+
+        mColorCompareView.setOrigColor(hsvo);
+        ColorListener[] colorViews = {mHueView, mSatValView, mOpacityView, mColorCompareView};
+        for (int i = 0; i < colorViews.length; i++) {
+            colorViews[i].setColor(hsvo);
+
+            for (int j = 0; j < colorViews.length; j++) {
+                if (i == j) {
+                    continue;
+                }
+                colorViews[i].addColorListener(colorViews[j]);
+            }
+        }
+        ColorListener colorListener = new ColorListener() {
+
+            @Override
+            public void setColor(float[] hsvo) {
+                //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+                //In landscape mode,This method is called when the color changes.
+                mLandColorChanged = true;
+                int color = Color.HSVToColor((int) (hsvo[3] * 255), hsvo);
+                FilterShowDrawCustomView b = mColorButton[mSelectedColorButton];
+                float[] f = setColorToHSV(mSelectedColorButton);
+                System.arraycopy(hsvo, 0, f, 0, 4);
+                mBasColors[mSelectedColorButton] = color;
+                mNewColor = color;
+                //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+                ParameterColor pram;
+                pram = (ParameterColor) mRep.getParam(FilterDrawRepresentation.PARAM_COLOR);
+                pram.setValue(color);
+                mEditorDraw.commitLocalRepresentation();
+            }
+
+            @Override
+            public void addColorListener(ColorListener l) {
+            }
+        };
+
+        for (int i = 0; i < colorViews.length; i++) {
+            colorViews[i].addColorListener(colorListener);
+        }
+    }
+
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    private void initFilterShowColorViews(LinearLayout lp) {
+        mColorButton = new FilterShowDrawCustomView[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            mColorButton[i] = (FilterShowDrawCustomView) lp.findViewById(ids[i]);
+        }
+
+        for (int i = 0; i < mColorButton.length; i++) {
+            mColorButton[i].setTag(i);
+            mColorButton[i].setCurrentShow(FilterShowDrawCustomView.SHOWCIRCLE);
+            mColorButton[i].setOnClickListener(mDrawColorOnClickListener);
+        }
+    }
+
+    private View.OnClickListener mDrawColorOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            int index = (int) v.getTag();
+            mSelectedColorButton = index;
+            float[] hsvo1 = setColorToHSV(index);
+            float[] hsvo = Arrays.copyOf(hsvo1, 4);
+            if (mRep == null) {
+                return;
+            }
+            ParameterColor pram;
+            pram = (ParameterColor) mRep.getParam(FilterDrawRepresentation.PARAM_COLOR);
+            pram.setValue(mBasColors[mSelectedColorButton]);
+            mEditorDraw.commitLocalRepresentation();
+            mHueView.setColor(hsvo);
+            mSatValView.setColor(hsvo);
+            mOpacityView.setColor(hsvo);
+            mColorCompareView.setColor(hsvo);
+            mColorCompareView.setOrigColor(hsvo);
+            if (isLandscape()) {
+                showColorChooseLayout(mControlLayout);
+            } else {
+                showColorPicker();
+            }
+            for (int i = 0; i < mColorButton.length; i++) {
+                if (i == index) {
+                    mColorButton[index].setCurrentSelect(true);
+                } else {
+                    mColorButton[i].setCurrentSelect(false);
+                }
+            }
+        }
+
+    };
+
+    private float[] setColorToHSV(int index) {
+        float[] hsvo = new float[4];
+        Color.colorToHSV(mBasColors[index], hsvo);
+        hsvo[3] = (0xFF & (mBasColors[index] >> 24)) / (float) 255;
+        return hsvo;
+    }
+
+    private void initFilterShowStyleViews(LinearLayout lp) {
+        mStyleButtons = new FilterShowDrawCustomView[styleIds.length];
+        for (int i = 0; i < styleIds.length; i++) {
+            mStyleButtons[i] = (FilterShowDrawCustomView) lp.findViewById(styleIds[i]);
+        }
+
+        for (int i = 0; i < mStyleButtons.length; i++) {
+            mStyleButtons[i].setTag(i);
+            mStyleButtons[i].setCurrentShow(FilterShowDrawCustomView.SHOWSTYLE);
+            mStyleButtons[i].setOnClickListener(mDrawStyleOnClickListener);
+        }
+    }
+
+    private View.OnClickListener mDrawStyleOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            int index = (int) v.getTag();
+            mSelectedStyleButton = index;
+            if (mRep == null) {
+                return;
+            }
+            BasicParameterStyle style = (BasicParameterStyle)
+                    mRep.getParam(FilterDrawRepresentation.PARAM_STYLE);
+            style.setSelected(mSelectedStyleButton);
+            for (int i = 0; i < mStyleButtons.length; i++) {
+                if (i == index) {
+                    mStyleButtons[index].setCurrentSelect(true);
+                } else {
+                    mStyleButtons[i].setCurrentSelect(false);
+                }
+                mEditorDraw.commitLocalRepresentation();
+            }
+        }
+    };
+
+    private void initPorLayout(LinearLayout lp){
+        mSizeLayout = (LinearLayout) lp.findViewById(R.id.draw_size_layout);
+        mStyleLayout = (RelativeLayout) lp.findViewById(R.id.draw_style_layout);
+        mColorLayout = (RelativeLayout)lp.findViewById(R.id.draw_color_layout);
+        mDrawSizeButton = (Button) lp.findViewById(R.id.por_draw_size);
+        mDrawStyleButton = (Button) lp.findViewById(R.id.por_draw_style);
+        mDrawColorButton = (Button) lp.findViewById(R.id.por_draw_color);
+
+        mDrawSizeButton.setOnClickListener(mOnClickListener);
+        mDrawStyleButton.setOnClickListener(mOnClickListener);
+        mDrawColorButton.setOnClickListener(mOnClickListener);
+
+        Button clearStyle = (Button) lp.findViewById(R.id.clearStyle);
+        clearStyle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mEditorDraw.clearDrawing();
+            }
+        });
+        Button clearColor = (Button) lp.findViewById(R.id.clearColor);
+        clearColor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mEditorDraw.clearDrawing();
+            }
+        });
+    }
+
+    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            int viewId = view.getId();
+            if (mLastViewId != viewId) {
+                mLastPressButton = (Button)mControlLayout.findViewById(mLastViewId);
+                setButtonOrginal(mLastPressButton);
+            }
+            switch (viewId){
+                case R.id.por_draw_size: {
+                    mDrawSizeButton.setBackground(mContext.getResources().getDrawable(R.drawable.button_selected));
+                    mSizeLayout.setVisibility(View.VISIBLE);
+                    mStyleLayout.setVisibility(View.GONE);
+                    mColorLayout.setVisibility(View.GONE);
+                    break;
+                }
+                case R.id.por_draw_style: {
+                    mDrawStyleButton.setBackground(mContext.getResources().getDrawable(R.drawable.button_selected));
+                    mSizeLayout.setVisibility(View.GONE);
+                    mStyleLayout.setVisibility(View.VISIBLE);
+                    mColorLayout.setVisibility(View.GONE);
+                    break;
+                }
+                case R.id.por_draw_color: {
+                    mDrawColorButton.setBackground(mContext.getResources().getDrawable(R.drawable.button_selected));
+                    mSizeLayout.setVisibility(View.GONE);
+                    mStyleLayout.setVisibility(View.GONE);
+                    mColorLayout.setVisibility(View.VISIBLE);
+                    break;
+                }
+            }
+            mLastViewId = viewId;
+        }
+    };
+
+    private void initLandLayout(LinearLayout lp) {
+        final LinearLayout ctls = (LinearLayout) lp.findViewById(R.id.controls);
+        final LinearLayout pick = (LinearLayout) lp.findViewById(R.id.colorPicker);
+        final LinearLayout allColor = (LinearLayout)lp.findViewById(R.id.allColorsChoose);
+
+        mCancelButton = (Button) lp.findViewById(R.id.cancel_choose_color);
+        mVerityButton = (Button) lp.findViewById(R.id.verity_choose_color);
+        mCancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                   boolean b = ctls.getVisibility() == View.VISIBLE;
+                   ctls.setVisibility((b) ? View.GONE : View.VISIBLE);
+                   pick.setVisibility((!b) ? View.GONE : View.VISIBLE);
+                   allColor.setVisibility((b) ? View.GONE : View.VISIBLE);
+            }
+        }
+        );
+        mVerityButton.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View view) {
+                 boolean b = ctls.getVisibility() == View.VISIBLE;
+                 ctls.setVisibility((b) ? View.GONE : View.VISIBLE);
+                 pick.setVisibility((!b) ? View.GONE : View.VISIBLE);
+                 allColor.setVisibility((b) ? View.GONE : View.VISIBLE);
+                 if (mLandColorChanged) {
+                     mColorButton[mSelectedColorButton].setCurrentCircleColor(mNewColor);
+                     mLandColorChanged = false;
+                 }
+             }
+        }
+        );
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    }
+
+    public void resetStyle() {
+        for (int i = 0; i < mStyleButton.length; i++) {
+            int rid = (i == mSelectedStyleButton) ? android.R.color.holo_blue_light :
+                    android.R.color.transparent;
+            mStyleButton[i].setBackgroundResource(rid);
+
+        }
+    }
+
+    private void resetBorders() {
+        for (int i = 0; i < ids.length; i++) {
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+            final FilterShowDrawCustomView button = mColorButton[i];
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+            GradientDrawable sd = ((GradientDrawable) button.getBackground());
+            sd.setColor(mBasColors[i]);
+            sd.setStroke(3, (mSelectedColorButton == i) ? mSelected : mTransparent);
+        }
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    protected boolean isLandscape() {
+        Configuration mConfiguration = mContext.getResources().getConfiguration();
+        return mConfiguration.orientation == Configuration.ORIENTATION_LANDSCAPE ?
+                true : false;
+    }
+
+    private void showColorPicker() {
+        ColorListener cl = new ColorListener() {
+            @Override
+            public void setColor(float[] hsvo) {
+                changeSelectedColor(hsvo);
+            }
+            @Override
+            public void addColorListener(ColorListener l) {
+            }
+        };
+        ColorPickerDialog cpd = new ColorPickerDialog(mContext, cl);
+        cpd.setUpdateDrawColorListener(this);
+        float[] c = setColorToHSV(mSelectedColorButton);
+        cpd.setColor(Arrays.copyOf(c, 4));
+        cpd.setOrigColor(Arrays.copyOf(c, 4));
+        cpd.show();
+    }
+
+    private void setButtonOrginal(Button button){
+        button.setBackground(mContext.getResources().getDrawable(R.drawable.button_original));
+    }
+
+    public void changeSelectedColor(float[] hsvo) {
+        int color = Color.HSVToColor((int) (hsvo[3] * 255), hsvo);
+        FilterShowDrawCustomView b = mColorButton[mSelectedColorButton];
+        float[] f = setColorToHSV(mSelectedColorButton);
+        System.arraycopy(hsvo, 0, f, 0, 4);
+        mBasColors[mSelectedColorButton] = color;
+        mNewColor = color;
+        ParameterColor pram;
+        pram = (ParameterColor) mRep.getParam(FilterDrawRepresentation.PARAM_COLOR);
+        pram.setValue(color);
+        mEditorDraw.commitLocalRepresentation();
+    }
+
+    public void showColorChooseLayout(LinearLayout lp){
+        final LinearLayout ctls = (LinearLayout) lp.findViewById(R.id.controls);
+        final LinearLayout pick = (LinearLayout) lp.findViewById(R.id.colorPicker);
+        final LinearLayout allColor = (LinearLayout)lp.findViewById(R.id.allColorsChoose);
+        boolean b = ctls.getVisibility() == View.VISIBLE;
+        ctls.setVisibility((b) ? View.GONE : View.VISIBLE);
+        pick.setVisibility((!b) ? View.GONE : View.VISIBLE);
+        allColor.setVisibility((b) ? View.GONE : View.VISIBLE);
+    }
+    @Override
+    public void updateDrawColor() {
+        mColorButton[mSelectedColorButton].setCurrentCircleColor(mNewColor);
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+}

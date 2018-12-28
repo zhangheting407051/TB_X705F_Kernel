@@ -1,0 +1,856 @@
+
+package com.android.systemui.lenovo.view;
+
+import android.app.ActivityManager;
+import android.app.ActivityManager.RecentTaskInfo;
+import android.app.ActivityManagerNative;
+import android.app.TaskStateListener;
+import android.content.*;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
+import android.os.Handler;
+import android.os.Message;
+import android.os.RemoteException;
+import android.os.UserHandle;
+import android.text.TextUtils;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.LinearLayout;
+
+import com.android.internal.content.PackageMonitor;
+import com.android.internal.os.BackgroundThread;
+import com.android.systemui.R;
+import com.android.systemui.SystemUIApplication;
+import com.android.systemui.lenovo.bean.TaskDescription;
+import com.android.systemui.lenovo.mouse.MouseTouchDelegate;
+import com.android.systemui.lenovo.mouse.MouseViewDelegate;
+import com.android.systemui.statusbar.phone.NavigationBarFragment;
+
+import java.util.ArrayList;
+import java.util.List;
+
+//shiyaru@wind-mobi.com add 2018.11.13 start
+import android.content.pm.UserInfo;
+import android.os.UserManager;
+import android.util.ArraySet;
+import com.android.systemui.recents.misc.SystemServicesProxy;
+import com.android.systemui.recents.Recents;
+//shiyaru@wind-mobi.com add 2018.11.13 end
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class AppPanel extends LinearLayout {
+    private String TAG = "AppPanel";
+    private boolean DEBUG = false;
+    private Dock mDock;
+    private DragAppPanel mDragAppPanel;
+    private int mIndex;
+    private TaskDescription mCurrentFocusTask;
+
+    //Record when entering the splite screen task
+    private TaskDescription mIntoSpliteScreenTask;
+    private Context mContext;
+
+    private final int STATUS_FLAG_SPLITE_APP_FOCUS = 1;
+    private final int STATUS_FLAG_SPLITE_APP_UNFOCUS = 0;
+    private final int STATUS_FLAG_OTHER_APP = -1;
+    private boolean isForceReoladRecents = false;
+    private static final int UI_PACKAGECHANGED_OR_REMOVE = 0X01;
+    private static final int UI_USER_SWITCH = 0X02;
+    private static final int INDEX_UNAVAILABLE = -1;
+    private UIHandler mUIHandler;
+    private BookUIPackageMonitor mBookUIPackageMonitor;
+    int mDensityDpi;
+    private List<RecentTaskInfo> infoList = new ArrayList<RecentTaskInfo>();
+
+    //yunbo@wind-mobi.com 20180611 st
+    private static String[] mPackageIconNeedtoCustomize = new String[]{
+            "com.microsoft.office.excel",
+            "com.microsoft.office.onenote",
+            "com.microsoft.office.powerpoint",
+            "com.microsoft.office.word",
+            "com.skype.raider",
+            "com.lenovo.lps.cloud.sync.row",
+            "com.lenovo.lps.cloud.sync",
+            "com.lenovo.tab10plus",
+            "com.lenovo.leos.appstore.pad",
+            "com.lenovo.browser",
+            "com.qiyi.video.pad"
+    };
+
+    private static int[] mPackageIconNeedtoCustomizeRes = new int[]{
+            R.drawable.com_microsoft_office_excel,
+            R.drawable.com_microsoft_office_onenote,
+            R.drawable.com_microsoft_office_powerpoint,
+            R.drawable.com_microsoft_office_word,
+            R.drawable.com_skype_raider,
+            R.drawable.com_lenovo_lps_cloud_sync,
+            R.drawable.com_lenovo_lps_cloud_sync,
+            R.drawable.com_lenovo_tab10plus,
+            R.drawable.com_lenovo_leos_appstore_pad,
+            R.drawable.com_lenovo_browser,
+            R.drawable.com_qiyi_video_pad
+    };
+    //yunbo@wind-mobi.com 20180611 end
+
+    public AppPanel(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mContext = context;
+        mDensityDpi = mContext.getResources().getConfiguration().densityDpi;
+        mUIHandler = new UIHandler();
+        mBookUIPackageMonitor = new BookUIPackageMonitor();
+        mBookUIPackageMonitor.register(mContext);
+        IntentFilter userFilter = new IntentFilter(Intent.ACTION_USER_SWITCHED);
+        mContext.registerReceiverAsUser(mUserSwitchReceiver, UserHandle.ALL, userFilter, null, mUIHandler);
+
+    }
+
+    public void setDock(Dock dock) {
+        mDock = dock;
+    }
+
+    public void setDragAppPanel(DragAppPanel dragAppPanel) {
+        Log.d(TAG, "setDragAppPanel");
+        mDragAppPanel = dragAppPanel;
+    }
+
+    public void disMissAllMenu() {
+    }
+
+    private MouseTouchDelegate mMouseTouchDelegate = new MouseTouchDelegate() {
+
+        @Override
+        public void clearFocus() {
+
+        }
+
+        @Override
+        public void onLongPress(MotionEvent event, View v) {
+            Log.d(TAG, "onLongPress");
+            AppIcon icon = (AppIcon) v;
+            mDragAppPanel.init(AppPanel.this);
+            mDragAppPanel.startDrag(event, v);
+            mDragAppPanel.startBigDrag();
+        }
+
+        @Override
+        public boolean onMouseLeftDoubleTap(MotionEvent e, View v) {
+            Log.d(TAG, "onMouseLeftDoubleTap");
+            return false;
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e, View v) {
+            Log.d(TAG, "onSingleTapUp");
+            return onSingleTapUpMouseLeft(e, v);
+        }
+
+        @Override
+        public boolean onSingleTapUpMouseLeft(MotionEvent e, View v) {
+            Log.d(TAG, "onSingleTapUpMouseLeft");
+            AppIcon icon = (AppIcon) v;
+            int taskCount = icon.getTaskCount();
+
+            boolean exists = mDock.isDockedStackExists();
+
+            /*
+             *this is a temporary scheme to avoid ANR when click navigation bar dock first app icon
+             *in split screen. In order to avoid ANR, It needs to start recents app list (same as click
+             *recent button or click app icon in luncher) in split screen, not remove the task to font.
+             */
+
+            Log.d(TAG, "exists : " + exists);
+            if (exists) {
+                int status = isCurrentFocuseTask(icon.getTaskId());
+                Log.d(TAG, "status :" + status);
+                if (status != STATUS_FLAG_OTHER_APP) {
+                    if (status == STATUS_FLAG_SPLITE_APP_UNFOCUS) {
+                        SystemUIApplication app = (SystemUIApplication) mContext;
+                        // PhoneStatusBar statusBar = app.getComponent(PhoneStatusBar.class);
+                        NavigationBarFragment statusBar = app.getComponent(NavigationBarFragment.class);
+                        statusBar.reloadSpliteRecentsScreen();
+                    }
+                    isForceReoladRecents = true;
+                    return false;
+                }
+            } else {
+                mIntoSpliteScreenTask = null;
+            }
+
+            isForceReoladRecents = false;
+            //yunbo@wind-mobi.com 20180730 st
+            // moveTaskBackwards will be abnormal in some scenes, only use moveTaskToFront to instead
+            /*if (mCurrentFocusTask != null && mCurrentFocusTask.getPackageName().equals(icon.getPackageName())) {
+                try {
+                    ActivityManagerNative.getDefault().moveTaskBackwards(mCurrentFocusTask.getTaskId());
+                    //yunbo@wind-mobi.com 20180608 st
+                    setCurrentFocus(mCurrentFocusTask.getTaskId());
+                    //yunbo@wind-mobi.com 20180608 end
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+                return false;
+            }*/
+            //yunbo@wind-mobi.com 20180730 end
+
+            if (taskCount == 0) {
+                disMissAllMenu();
+                ComponentName componet = new ComponentName(icon.getPackageName(),
+                        icon.getAppLaunchActivityName());
+
+                Intent intent = new Intent();
+                intent.setComponent(componet);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    v.getContext().startActivityAsUser(intent, UserHandle.CURRENT);
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+            } else {
+                if (taskCount > 0) {
+                    int[] taskList = new int[icon.getTaskCount()];
+                    for (int i = 0; i < icon.getTaskCount(); i++) {
+                        taskList[i] = icon.getTaskList().get(i).getTaskId();
+                        try {
+                            ActivityManagerNative.getDefault().moveTaskToFront(
+                                    taskList[i], 0, null);
+                            //yunbo@wind-mobi.com 20180608 st
+                            setCurrentFocus(icon.getTaskList().get(i).getTaskId());
+                            //yunbo@wind-mobi.com 20180608 end
+                        } catch (RemoteException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onSingleTapUpMouseRight(MotionEvent e, View v) {
+            return false;
+        }
+    };
+
+    TaskStateListener listener = new TaskStateListener() {
+        @Override
+        public void onTaskCreate(ActivityManager.RecentTaskInfo info) {
+            if (info.userId != ActivityManager.getCurrentUser()) {
+                return;
+            }
+            if (info.stackId <= 0) {
+                return;
+            }
+            try {
+                ResolveInfo resolve = getResolveInfo(info);
+                if (resolve != null) {
+                    //shiyaru@wind-mobi.com fix TABFIVEL-1550 2018.11.13 start
+                    if (isRecentExcludedTask(info)) {
+                        return;
+                    }
+                    //shiyaru@wind-mobi.com fix TABFIVEL-1550 2018.11.13 end
+                    TaskDescription item = createTaskDescription(info.id,
+                            info.persistentId, info.stackId, info.baseIntent,
+                            info.origActivity, info.description);
+                    //yunbo@wind-mobi.com 20180626 st
+                    addTask(item, resolve.activityInfo.packageName, isNewTask(resolve.activityInfo.packageName));
+                    //yunbo@wind-mobi.com 20180626 end
+
+                    if(!infoList.contains(info)) {
+                        infoList.add(info);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "", e);
+            }
+        }
+
+        @Override
+        public void onTaskFocuseChange(ActivityManager.RecentTaskInfo info) {
+            try {
+                ResolveInfo resolve = getResolveInfo(info);
+                if (resolve != null) {
+                    mCurrentFocusTask = createTaskDescription(info.id,
+                            info.persistentId, info.stackId, info.baseIntent,
+                            info.origActivity, info.description);
+                } else {
+                    mCurrentFocusTask = null;
+                }
+
+                Log.d(TAG, " onTaskFocuseChange : mCurrentFocusTask : " + mCurrentFocusTask +
+                        " <-isForceReoladRecents :" + isForceReoladRecents + " <- mIntoSpliteScreenTask :" +
+                        mIntoSpliteScreenTask);
+
+                setCurrentFocus(info.id);
+                if (isForceReoladRecents && mIntoSpliteScreenTask != null) {
+                    mCurrentFocusTask = mIntoSpliteScreenTask;
+                    setCurrentFocus(mCurrentFocusTask.getTaskId());
+                    isForceReoladRecents = false;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "", e);
+            }
+        }
+
+        @Override
+        public void onTaskClose(ActivityManager.RecentTaskInfo info) {
+            if (info.userId != ActivityManager.getCurrentUser()) {
+                return;
+            }
+
+            try {
+                ResolveInfo resolve = getResolveInfo(info);
+                if (resolve != null) {
+                    for(RecentTaskInfo infoTemp : infoList){
+                        if(info.id == infoTemp.id){
+                            infoList.remove(infoTemp);
+                            break;
+                        }
+                    }
+                    TaskDescription item = createTaskDescription(info.id,
+                            info.persistentId, info.stackId, info.baseIntent,
+                            info.origActivity, info.description);
+                    removeTask(item);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void onTaskActivityWindowVisible(RecentTaskInfo info) {
+            if (info.userId != ActivityManager.getCurrentUser()) {
+                return;
+            }
+
+            changeTaskLoadingStatus(info, false);
+        }
+
+
+    };
+
+    private boolean addTask(TaskDescription task, String packageName, boolean newTask) {
+        if (TextUtils.equals(packageName, "com.validation")) {
+            return false;
+        }
+        int childCount = this.getChildCount();
+        for (int index = 0; index < childCount; index++) {
+            AppIcon childIcon = (AppIcon) this.getChildAt(index);
+            childIcon.setVisibility(View.VISIBLE);
+            if (childIcon.getPackageName().equals(packageName)) {
+                if (childIcon.addTask(task) && newTask) {
+                    childIcon.startTaskLoading(task.getTaskId());
+                }
+                return false;
+            }
+        }
+
+        List<ResolveInfo> installApps = loadApps();
+        ResolveInfo resolveInfo = task.getResolveInfo();
+        boolean isCanPin = false;
+        if (installApps != null) {
+            for (ResolveInfo info : installApps) {
+                if (info.activityInfo.packageName.equalsIgnoreCase(packageName)) {
+                    resolveInfo = info;
+                    isCanPin = true;
+                    break;
+                }
+            }
+        }
+
+        if (resolveInfo == null) {
+            return false;
+        }
+
+        AppIcon icon = addAppTaskIcon(resolveInfo);
+        icon.mInfo = resolveInfo;
+        icon.setIsCanPin(isCanPin);
+        icon.addTask(task);
+
+        if (newTask) {
+            icon.startTaskLoading(task.getTaskId());
+        }
+        return true;
+    }
+
+    private List<ResolveInfo> loadApps() {
+        List<ResolveInfo> apps;
+        Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+        apps = mContext.getPackageManager().queryIntentActivities(mainIntent, 0);
+        return apps;
+    }
+
+    private AppIcon addAppTaskIcon(ResolveInfo info) {
+        AppIcon icon = new AppIcon(mContext);
+        int index = getReplacePackageIconByPackageName(info.activityInfo.packageName);
+        if (index != -1) {
+            icon.setImageIcon(mPackageIconNeedtoCustomizeRes[index]);
+        } else {
+            icon.setImageIcon(info.activityInfo.loadIcon(mContext.getPackageManager()));
+        }
+        icon.setPackageName(info.activityInfo.packageName);
+        icon.setAppLaunchActivityName(info.activityInfo.name);
+        icon.setLabelName(info.loadLabel(mContext.getPackageManager()));
+        //add by chengrui@wind-mobi.com 2018.07.11 start
+        icon.setContentDescription(info.loadLabel(mContext.getPackageManager()));
+        //add by chengrui@wind-mobi.com 2018.07.11 end
+        MouseViewDelegate delegate = new MouseViewDelegate(mContext, icon);
+        delegate.init(mMouseTouchDelegate);
+
+        // we'd like to take back the control of hover events here
+        icon.setOnHoverListener(icon);
+        icon.setPos(mIndex);
+        //fix Bug#TABFIVEL-741 mahui01@wind-mobi.com 2018/8/16 begin
+        icon.setOnClickListener(new View.OnClickListener(){
+        @Override
+        public void onClick(View v){
+            Log.d(TAG,"onClick");
+            int taskCount = icon.getTaskCount();
+            boolean exists = mDock.isDockedStackExists();
+            if (taskCount == 0) {
+                disMissAllMenu();
+                ComponentName componet = new ComponentName(icon.getPackageName(),
+                icon.getAppLaunchActivityName());
+                Intent intent = new Intent();
+                intent.setComponent(componet);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    v.getContext().startActivityAsUser(intent, UserHandle.CURRENT);
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+            } else {
+                if (taskCount > 0) {
+                    int[] taskList = new int[icon.getTaskCount()];
+                    for (int i = 0; i < icon.getTaskCount(); i++) {
+                        taskList[i] = icon.getTaskList().get(i).getTaskId();
+                        try {
+                            ActivityManagerNative.getDefault().moveTaskToFront(
+                                    taskList[i], 0, null);
+                            //yunbo@wind-mobi.com 20180608 st
+                            setCurrentFocus(icon.getTaskList().get(i).getTaskId());
+                            //yunbo@wind-mobi.com 20180608 end
+                        } catch (RemoteException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    );
+    //fix Bug#TABFIVEL-741 mahui01@wind-mobi.com 2018/8/16 end
+        mIndex = mIndex + 1;
+
+        this.addView(icon, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT));
+        mDock.scrollFocusOnView(icon, false);
+
+        return icon;
+    }
+
+    TaskDescription createTaskDescription(int taskId, int persistentTaskId, int stackId,
+                                          Intent baseIntent,
+                                          ComponentName origActivity, CharSequence description) {
+        Intent intent = new Intent(baseIntent);
+        if (origActivity != null) {
+            intent.setComponent(origActivity);
+        }
+        final PackageManager pm = mContext.getPackageManager();
+        intent.setFlags((intent.getFlags() & ~Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+                | Intent.FLAG_ACTIVITY_NEW_TASK);
+        final ResolveInfo resolveInfo = pm.resolveActivityAsUser(intent, 0,
+                ActivityManager.getCurrentUser());
+        if (resolveInfo != null) {
+            final ActivityInfo info = resolveInfo.activityInfo;
+            final String title = info.loadLabel(pm).toString();
+
+            if (title != null && title.length() > 0) {
+                TaskDescription item = new TaskDescription(taskId,
+                        persistentTaskId, stackId, resolveInfo, baseIntent, info.packageName,
+                        description, title);
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private void changeTaskLoadingStatus(RecentTaskInfo info, boolean isLoading) {
+        try {
+            ResolveInfo resolve = getResolveInfo(info);
+            if (resolve != null) {
+                final String pkgName = resolve.activityInfo.packageName;
+                int childCount = getChildCount();
+                for (int index = 0; index < childCount; index++) {
+                    AppIcon childIcon = (AppIcon) getChildAt(index);
+                    if (childIcon.getPackageName().equals(pkgName)) {
+                        if (isLoading) {
+                            childIcon.startTaskLoading(info.id);
+                        } else {
+                            childIcon.stopTaskLoading(info.id);
+                        }
+                        return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "", e);
+        }
+    }
+
+    private ResolveInfo getResolveInfo(RecentTaskInfo recentInfo) {
+        Intent intent = new Intent(recentInfo.baseIntent);
+        if (recentInfo.origActivity != null) {
+            intent.setComponent(recentInfo.origActivity);
+        }
+
+        // Don't load the current home activity.
+        if (isCurrentHomeActivity(intent.getComponent(), null)) {
+            return null;
+        }
+
+        if (intent.getComponent().getPackageName().equals("com.lenovo.agent0") || intent.getComponent().getPackageName().equals("com.kidoz.lenovo")) {
+            return null;
+        }
+        // Don't load ourselves
+        if (intent.getComponent().getPackageName().equals(mContext.getPackageName())) {
+            return null;
+        }
+
+        final PackageManager pm = mContext.getPackageManager();
+        intent.setFlags((intent.getFlags() & ~Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+                | Intent.FLAG_ACTIVITY_NEW_TASK);
+        ResolveInfo resolveInfo = pm.resolveActivityAsUser(intent, 0,
+                ActivityManager.getCurrentUser());
+        return resolveInfo;
+    }
+
+    private boolean isCurrentHomeActivity(ComponentName component, ActivityInfo homeInfo) {
+        if (homeInfo == null) {
+            final PackageManager pm = mContext.getPackageManager();
+            homeInfo = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                    .resolveActivityInfo(pm, 0);
+        }
+        return homeInfo != null
+                && homeInfo.packageName.equals(component.getPackageName())
+                && homeInfo.name.equals(component.getClassName());
+    }
+
+    public void onExitClick(AppIcon appIcon) {
+        ArrayList<TaskDescription> tasks = appIcon.getTaskList();
+        if (tasks.size() == 0) {
+            return;
+        }
+        for (TaskDescription task : tasks) {
+            try {
+                ActivityManagerNative.getDefault().removeTask(task.getTaskId());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        appIcon.getTaskList().clear();
+    }
+
+    private boolean removeTask(TaskDescription task) {
+        int childCount = this.getChildCount();
+        for (int index = 0; index < childCount; index++) {
+            AppIcon icon = (AppIcon) this.getChildAt(index);
+            //yunbo@wind-mobi.com 20180721 st
+            if ((task != null) && icon.getPackageName()
+                    .equals(task.getResolveInfo().activityInfo.packageName)) {
+                //yunbo@wind-mobi.com 20180721 end
+                boolean isRemove = true;
+                ArrayList<TaskDescription> list = icon.getTaskList();
+                if (list != null && !list.isEmpty()) {
+                    for (TaskDescription desp : list) {
+                        if (desp != null && desp.getTaskId() >= 0) {
+                            isRemove = false;
+                        }
+                    }
+                }
+
+                icon.removeTask(task.getTaskId());
+                if (icon.getTaskCount() <= 0 || isRemove) {
+                    mIndex = mIndex - 1;
+                    this.removeView(icon);
+                    mDock.scrollFocusOnView(icon, true);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void setCurrentFocus(int focusTaskId) {
+        int childCount = this.getChildCount();
+        boolean hasExitTask = false;
+        for (int i = 0; i < childCount; i++) {
+            AppIcon app = (AppIcon) this.getChildAt(i);
+            if (app.isTaskIdCurrent(focusTaskId)) {
+                app.setFocus(true);
+                app.setVisibility(View.VISIBLE);
+                hasExitTask = true;
+            } else {
+                app.setFocus(false);
+            }
+        }
+
+        if (!hasExitTask && mCurrentFocusTask != null) {
+            //yunbo@wind-mobi.com 20180626 st
+            addTask(mCurrentFocusTask, mCurrentFocusTask.getPackageName(), isNewTask(mCurrentFocusTask.getPackageName()));
+            //yunbo@wind-mobi.com 20180626 end
+        }
+    }
+
+    private int isCurrentFocuseTask(int focusTaskId) {
+        Log.d(TAG, "mIntoSpliteScreenTask : " + mIntoSpliteScreenTask + " mCurrentFocusTask :" +
+                mCurrentFocusTask);
+
+        if (mIntoSpliteScreenTask != null && mIntoSpliteScreenTask.getTaskId() == focusTaskId) {
+            if (mCurrentFocusTask != null && mCurrentFocusTask.getTaskId() == focusTaskId) {
+                return STATUS_FLAG_SPLITE_APP_FOCUS;
+            } else {
+                return STATUS_FLAG_SPLITE_APP_UNFOCUS;
+            }
+        }
+        return STATUS_FLAG_OTHER_APP;
+    }
+
+    private final BroadcastReceiver mUserSwitchReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "intent = " + intent.getAction());
+            sendUserSwitchMessage(mUIHandler);
+        }
+    };
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+    }
+
+
+    public void saveCurrentFouceTask() {
+        mIntoSpliteScreenTask = mCurrentFocusTask;
+    }
+
+    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (mDensityDpi != newConfig.densityDpi) {
+            mDensityDpi = newConfig.densityDpi;
+            int num = this.getChildCount();
+            int itemwidth = 0;
+            if (num > 0) {
+                itemwidth = this.getChildAt(0).getLayoutParams().width * newConfig.densityDpi / mDensityDpi;
+            }
+            for (int i = 0; i < num; i++) {
+                AppIcon icon = (AppIcon) this.getChildAt(i);
+                icon.reInflateViews(newConfig, itemwidth);
+            }
+
+            if (mCurrentFocusTask != null) {
+                setCurrentFocus(mCurrentFocusTask.getTaskId());
+            } else {
+                Log.i(TAG, "onConfigurationChanged , mCurrentFocusTask is null");
+            }
+        }
+    }
+
+    private void updateUI(String packageName) {
+        int num = this.getChildCount();
+        int index_need_to_delete = INDEX_UNAVAILABLE;
+        for (int i = 0; i < num; i++) {
+            AppIcon icon = (AppIcon) getChildAt(i);
+            if (icon.getPackageName().equals(packageName)) {
+                index_need_to_delete = i;
+                onExitClick(icon);
+                break;
+            }
+        }
+        if (index_need_to_delete != INDEX_UNAVAILABLE) {
+            removeViewAt(index_need_to_delete);
+        }
+    }
+
+    class UIHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            int msgId = msg.what;
+            switch (msgId) {
+                case UI_PACKAGECHANGED_OR_REMOVE:
+                    updateUI((String) msg.obj);
+                    break;
+                case UI_USER_SWITCH:
+                    int childCount = getChildCount();
+                    for (int index = 0; index < childCount; index++) {
+                        AppIcon childIcon = (AppIcon) getChildAt(index);
+                        Log.d(TAG, "UI_USER_SWITCH KILL APP ---->" + childIcon.getPackageName());
+                        onExitClick(childIcon);
+                    }
+                    removeAllViews();
+                    break;
+
+            }
+        }
+    }
+
+    private void sendUserSwitchMessage(Handler handler) {
+        Message msg = Message.obtain();
+        msg.what = UI_USER_SWITCH;
+        handler.sendMessage(msg);
+    }
+
+    class BookUIPackageMonitor extends PackageMonitor {
+        public void register(Context context) {
+            try {
+                // We register for events from all users, but will cross-reference them with
+                // packages for the current user and any profiles they have.  Ensure that events are
+                // handled in a background thread.
+                register(context, BackgroundThread.get().getLooper(), UserHandle.ALL, true);
+            } catch (IllegalStateException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onPackageRemoved(String packageName, int uid) {
+            sendPackageChangeMessage(mUIHandler, packageName, false);
+        }
+
+        @Override
+        public void onPackageModified(String packageName, boolean notKillApp) {
+            sendPackageChangeMessage(mUIHandler, packageName, notKillApp);
+        }
+
+        @Override
+        public void unregister() {
+            try {
+                super.unregister();
+            } catch (IllegalStateException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void sendPackageChangeMessage(Handler hander, String packageName, boolean notKillApp) {
+            if (notKillApp) {
+                Log.d(TAG, "this " + packageName + "isn't killed");
+                return;
+            }
+            Message message = Message.obtain();
+            message.what = UI_PACKAGECHANGED_OR_REMOVE;
+            message.obj = packageName;
+            if (null != hander) {
+                hander.sendMessage(message);
+            } else {
+                Log.d(TAG, "UI_PACKAGECHANGED_OR_REMOVE , the handler is null");
+            }
+        }
+    }
+
+    private int getReplacePackageIconByPackageName(String packageName) {
+        for (int i = 0; i < mPackageIconNeedtoCustomize.length; i++) {
+            if (mPackageIconNeedtoCustomize[i].equals(packageName)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public List<RecentTaskInfo> getAppData() {
+        Log.d(TAG, " getAppData infoList.size = " + infoList.size());
+        return infoList;
+    }
+
+    public void resetAllApps(final List<RecentTaskInfo> list) {
+        Log.d(TAG, " resetAllApps list.size = " + list.size());
+
+        infoList.clear();
+
+        for(RecentTaskInfo info :list) {
+            if (info.userId != ActivityManager.getCurrentUser()) {
+                continue;
+            }
+
+            if (info.stackId <= 0) {
+                continue;
+            }
+
+            try {
+                ResolveInfo resolve = getResolveInfo(info);
+                if (resolve != null) {
+                    TaskDescription item = createTaskDescription(info.id,
+                            info.persistentId, info.stackId, info.baseIntent,
+                            info.origActivity, info.description);
+                    //yunbo@wind-mobi.com 20180626 st
+                    addTask(item, resolve.activityInfo.packageName, isNewTask(resolve.activityInfo.packageName));
+                    //yunbo@wind-mobi.com 20180626 end
+                    if(!infoList.contains(info)) {
+                        infoList.add(info);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "", e);
+            }
+        }
+    }
+
+    //yunbo@wind-mobi.com 20180626 st
+    private boolean isNewTask(String packagename){
+        Log.d(TAG,"isNewTask packagename:"+packagename);
+        List<String> names = new ArrayList<String>();
+        ActivityManager am = (ActivityManager)getContext().getSystemService(Context.ACTIVITY_SERVICE);
+        Boolean isNew = true;
+        List<ActivityManager.RunningTaskInfo> runningTaskInfos = am.getRunningTasks(1);
+        for (ActivityManager.RunningTaskInfo rti : runningTaskInfos) {
+            String pname = rti.baseActivity.getPackageName();
+            Log.d(TAG,"pname:"+pname);
+            if(packagename.equals(pname)){
+                isNew = true;
+                break;
+            }else {
+                isNew = false;
+                break;
+            }
+        }
+        return isNew;
+    }
+    //yunbo@wind-mobi.com 20180626 end
+
+    //shiyaru@wind-mobi.com fix TABFIVEL-1550 2018.11.13 start
+    private boolean isRecentExcludedTask(ActivityManager.RecentTaskInfo info){
+        SystemServicesProxy ssp = Recents.getSystemServices();
+        ArraySet<Integer> quietProfileIds = updateCurrentQuietProfilesCache(ssp.getCurrentUser());
+        boolean isExcluded = (info.baseIntent.getFlags() & Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                == Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS;
+        isExcluded |= quietProfileIds.contains(info.userId);
+        return isExcluded;
+    }
+
+    private ArraySet<Integer> updateCurrentQuietProfilesCache(int currentUserId) {
+        ArraySet<Integer> mCurrentQuietProfiles = new ArraySet<Integer>();
+        UserManager userManager = (UserManager) mContext.getSystemService(Context.USER_SERVICE);
+        List<UserInfo> profiles = userManager.getProfiles(currentUserId);
+        if (profiles != null) {
+            for (int i = 0; i < profiles.size(); i++) {
+                UserInfo user  = profiles.get(i);
+                if (user.isManagedProfile() && user.isQuietModeEnabled()) {
+                    mCurrentQuietProfiles.add(user.id);
+                }
+            }
+        }
+        return mCurrentQuietProfiles;
+    }
+    //shiyaru@wind-mobi.com fix TABFIVEL-1550 2018.11.13 end
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

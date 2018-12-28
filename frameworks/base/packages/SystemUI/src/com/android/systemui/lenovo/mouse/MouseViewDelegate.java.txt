@@ -1,0 +1,86 @@
+package com.android.systemui.lenovo.mouse;
+
+import android.content.Context;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class MouseViewDelegate implements View.OnTouchListener {
+    private static final String TAG = "MouseViewDelegate";
+    private static final boolean DEBUG = false;
+    private View mView;
+    private MouseTouchDelegate mDelegate;
+    private MotionEvent mCurrentDownEvent;
+    private MouseGestureDetector mGestureDetector;
+
+    public MouseViewDelegate(Context context, View v) {
+        mView = v;
+        mView.setClickable(true);
+        mGestureDetector = new MouseGestureDetector(mView.getContext(),
+                mGestureListener);
+        mView.setOnTouchListener(this);
+    }
+
+    public void init(MouseTouchDelegate delegate) {
+        mDelegate = delegate;
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (mCurrentDownEvent != null) {
+                mCurrentDownEvent.recycle();
+            }
+            mCurrentDownEvent = MotionEvent.obtain(event);
+        }
+        boolean handled = false;
+        if (mGestureDetector != null) {
+            handled = mGestureDetector.onTouchEvent(event);
+        }
+        return handled;
+    }
+
+    private MouseGestureDetector.SimpleOnGestureListener mGestureListener = new MouseGestureDetector.SimpleOnGestureListener() {
+        @Override
+        public void onLongPress(MotionEvent e) {
+            if (DEBUG) {
+                Log.e(TAG,"MouseViewDelegate onLongPress");
+            }
+            if (mDelegate != null) {
+                mDelegate.onLongPress(e, mView);
+            }
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            if (DEBUG) {
+                Log.e(TAG,"MouseViewDelegate onSingleTapUp");
+            }
+            boolean handled = false;
+            if (mDelegate != null) {
+                if (isMouseLeft(mCurrentDownEvent) && mDelegate.onSingleTapUpMouseLeft(e, mView)) {
+                    handled = true;
+                } else if (isMouseRight(mCurrentDownEvent) && mDelegate.onSingleTapUpMouseRight(e, mView)) {
+                    handled = true;
+                }
+                if (!handled) {
+                    return mDelegate.onSingleTapUp(e, mView);
+                }
+            }
+            return false;
+        }
+    };
+
+    private boolean isMouseLeft(MotionEvent e) {
+        return e.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE
+                && e.getButtonState() == MotionEvent.BUTTON_PRIMARY;
+    }
+
+    private boolean isMouseRight(MotionEvent e) {
+        return e.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE
+                && e.getButtonState() == MotionEvent.BUTTON_SECONDARY;
+    }
+
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

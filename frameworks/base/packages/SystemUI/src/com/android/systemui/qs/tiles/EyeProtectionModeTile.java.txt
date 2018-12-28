@@ -1,0 +1,518 @@
+//add by xuanyusong@wind-mobi.com 2018.4.17 start
+//Feature-10065 Eye Protection Mode
+
+package com.android.systemui.qs.tiles;
+
+import android.app.ActivityManager;
+import android.app.Application;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.Icon;
+import android.provider.MediaStore;
+import android.provider.Settings;
+import android.service.quicksettings.Tile;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Switch;
+
+import com.android.internal.logging.MetricsLogger;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
+import com.android.systemui.Dependency;
+import com.android.systemui.R;
+import com.android.systemui.plugins.qs.DetailAdapter;
+import com.android.systemui.plugins.qs.QSTile.BooleanState;
+import com.android.systemui.qs.QSDetailItems;
+import com.android.systemui.qs.QSHost;
+import com.android.systemui.qs.tileimpl.QSTileImpl;
+
+import com.qti.snapdragon.sdk.display.ColorManager;
+import com.qti.snapdragon.sdk.display.ColorManager.ColorManagerListener;
+import com.qti.snapdragon.sdk.display.ColorManager.DCM_DISPLAY_TYPE;
+import com.qti.snapdragon.sdk.display.ColorManager.DCM_FEATURE;
+import com.qti.snapdragon.sdk.display.ColorManager.MODE_TYPE;
+import com.qti.snapdragon.sdk.display.MemoryColorConfig;
+import com.qti.snapdragon.sdk.display.MemoryColorConfig.MEMORY_COLOR_PARAMS;
+import com.qti.snapdragon.sdk.display.ModeInfo;
+import com.qti.snapdragon.sdk.display.PictureAdjustmentConfig;
+import com.qti.snapdragon.sdk.display.MemoryColorConfig.MEMORY_COLOR_TYPE;
+import com.qti.snapdragon.sdk.display.PictureAdjustmentConfig.PICTURE_ADJUSTMENT_PARAMS;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+
+
+/** Quick settings tile: Control flashlight **/
+public class EyeProtectionModeTile extends QSTileImpl<BooleanState>  {
+
+    private final Icon mIcon = ResourceIcon.get(R.drawable.ic_eye_protection_mode);
+
+    private final EyeProtectionModeDetailAdapter mDetailAdapter;
+
+    private ColorManager mCmgr;
+    private ColorManagerListener colorinterface;
+
+
+    private static final String EYE_PROTECTION_MODE_CHANGING_ACTION =
+            "com.android.settings.display.EYE_MODE_CHANGING";
+
+    private static final String EYE_PROTECTION_MODE_CHANGING_QUICK_SETTINGS_ACTION =
+            "com.android.systemUI.EYE_MODE_CHANGING";
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            refreshState(getEyeProtectionpModeEnabled());
+        }
+    };
+
+    public ArrayList<ModeInfoWrapper> mModeList;
+
+    //refer to QdcmMobileMainv2.java
+    public class ModeInfoWrapper {
+        public ModeInfo mode;
+        public String modename;
+        public int modeID;
+
+        ModeInfoWrapper(ModeInfo displayMode) {
+            mode = displayMode;
+            modename = displayMode.getName();
+            modeID = displayMode.getId();
+        }
+
+        @Override
+        public String toString() {
+            return modename;
+        }
+    }
+
+
+
+    public EyeProtectionModeTile(QSHost host) {
+        super(host);
+        setupApplication();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(EYE_PROTECTION_MODE_CHANGING_ACTION);
+        mContext.registerReceiver(mReceiver, filter);
+        mDetailAdapter = (EyeProtectionModeDetailAdapter) createDetailAdapter();
+    }
+
+    @Override
+    protected void handleDestroy() {
+        super.handleDestroy();
+        mContext.unregisterReceiver(mReceiver);
+    }
+
+    @Override
+    protected DetailAdapter createDetailAdapter() {
+        return new EyeProtectionModeDetailAdapter();
+    }
+
+    @Override
+    public DetailAdapter getDetailAdapter() {
+        return mDetailAdapter;
+    }
+
+    @Override
+    public BooleanState newTileState() {
+        return new BooleanState();
+    }
+
+    @Override
+    public void handleSetListening(boolean listening) {
+
+    }
+
+    @Override
+    protected void handleUserSwitch(int newUserId) {
+    }
+
+    @Override
+    public Intent getLongClickIntent() {
+        return new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return true;
+    }
+
+    @Override
+    protected void handleClick() {
+        if (ActivityManager.isUserAMonkey()) {
+            return;
+        }
+        setupApplication();
+        createModeList();
+        boolean newState = !mState.value;
+        setEyeProtectionModeEnabled(newState);
+        refreshState(newState);
+        Intent intent = new Intent(EYE_PROTECTION_MODE_CHANGING_QUICK_SETTINGS_ACTION);
+        mContext.sendBroadcast(intent);
+    }
+
+    @Override
+    protected void handleSecondaryClick() {
+        showDetail(true);
+    }
+
+    private void setEyeProtectionModeEnabled(boolean enabled) {
+        if (enabled) {
+            setEyeProtectionMode(getEyeProtectionpRreviousMode());
+            setProtectionMode(getEyeProtectionMode());
+        }
+        else {
+            setEyeProtectionpRreviousMode(getEyeProtectionMode());
+            setEyeProtectionMode(Settings.System.EYE_PROTECTION_MODE_OFF);
+            setProtectionMode(Settings.System.EYE_PROTECTION_MODE_STANDARD);
+        }
+    }
+
+    private void setEyeProtectionMode(int mode){
+        Settings.System.putInt(mContext.getContentResolver(), Settings.System.EYE_PROTECTION_MODE,
+                mode);
+    }
+
+    private void setEyeProtectionpRreviousMode(int mode){
+        Settings.System.putInt(mContext.getContentResolver(), Settings.System.EYE_PROTECTION_PREVIOUS_MODE,
+                mode);
+    }
+
+    private int getEyeProtectionMode(){
+        int mode = Settings.System.getInt(mContext.getContentResolver(), Settings.System.EYE_PROTECTION_MODE,
+                Settings.System.EYE_PROTECTION_MODE_OFF);
+        return mode;
+    }
+
+    private int getEyeProtectionpRreviousMode(){
+        int mode = Settings.System.getInt(mContext.getContentResolver(), Settings.System.EYE_PROTECTION_PREVIOUS_MODE,
+                Settings.System.EYE_PROTECTION_MODE_STANDARD);
+        return mode;
+    }
+
+    private boolean getEyeProtectionpModeEnabled(){
+        if(getEyeProtectionMode() == Settings.System.EYE_PROTECTION_MODE_OFF) {
+            return  false;
+        }
+        return true;
+    }
+
+    @Override
+    public CharSequence getTileLabel() {
+        return mContext.getString(R.string.quick_settings_eye_protection_mode_lable);
+    }
+
+    @Override
+    protected void handleLongClick() {
+        handleClick();
+    }
+
+    @Override
+    protected void handleUpdateState(BooleanState state, Object arg) {
+        if (state.slash == null) {
+            state.slash = new SlashState();
+        }
+        state.dualTarget = true;
+        state.label = mHost.getContext().getString(R.string.quick_settings_eye_protection_mode_lable);
+        if (arg instanceof Boolean) {
+            boolean value = (Boolean) arg;
+            if (value == state.value) {
+                return;
+            }
+            state.value = value;
+        }
+        else {
+            state.value = getEyeProtectionpModeEnabled();
+        }
+        state.icon = mIcon;
+        state.slash.isSlashed = !state.value;
+        state.contentDescription = mContext.getString(R.string.quick_settings_eye_protection_mode_lable);
+        state.expandedAccessibilityClassName = Switch.class.getName();
+        state.state = state.value ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE;
+    }
+
+    @Override
+    public int getMetricsCategory() {
+        return MetricsEvent.QS_CELLULAR;
+    }
+
+    @Override
+    protected String composeChangeAnnouncement() {
+        if (mState.value) {
+            return mContext.getString(R.string.accessibility_quick_settings_eyeprotectionmode_changed_on);
+        } else {
+            return mContext.getString(R.string.accessibility_quick_settings_eyeprotectionmode_changed_off);
+        }
+    }
+
+    private void setupApplication() {
+        colorinterface = new ColorManagerListener() {
+            @Override
+            public void onConnected() {
+                Log.d(TAG, "Display ColorManager registered..");
+                if (mCmgr == null) {
+                    mCmgr = ColorManager.getInstance(getApplication (), mContext,
+                            DCM_DISPLAY_TYPE.DISP_PRIMARY);
+
+                    if (mCmgr == null) {
+                        throw new RuntimeException("Failed to get ColorManager instance.");
+                    }
+                }
+            }
+        };
+        int retVal = ColorManager.connect(mContext, colorinterface);
+        if (retVal != ColorManager.RET_SUCCESS) {
+            Log.e(TAG, "Connection failed");
+        }
+    }
+
+    private void createModeList() {
+        ModeInfo[] modeDataArray = null;
+        if (mCmgr == null) {
+            Log.e(TAG, "Display SDK ColorManager is null!");
+        }
+        modeDataArray = mCmgr.getModes(MODE_TYPE.MODE_ALL);
+        mModeList = new ArrayList<ModeInfoWrapper>();
+        for (ModeInfo i : modeDataArray)
+            mModeList.add(new ModeInfoWrapper(i));
+        Log.d(TAG,"size-->"+mModeList.size());
+    }
+
+
+
+    private void setProtectionMode(int mode){
+        mCmgr.setActiveMode(mModeList.get(mode).modeID);
+    }
+
+    private Application getApplication () {
+        Application application = null;
+        Class<?> activityThreadClass;
+        try {
+            activityThreadClass = Class.forName("android.app.ActivityThread");
+            final Method method2 = activityThreadClass.getMethod(
+                    "currentActivityThread", new Class[0]);
+            Object localObject = method2.invoke(null, (Object[]) null);
+
+            final Method method = activityThreadClass
+                    .getMethod("getApplication");
+            application = (Application) method.invoke(localObject, (Object[]) null);
+
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return application;
+    }
+
+    protected class EyeProtectionModeDetailAdapter implements DetailAdapter, QSDetailItems.Callback {
+        // We probably won't ever have space in the UI for more than 20 devices, so don't
+        // get info for them.
+        private RadioGroup radioGroup;
+        private RadioButton standardButton;
+        private RadioButton readButton;
+        private RadioButton multimediaButton;
+        private RadioButton studentChildButton;
+        private RadioButton customizeButton;
+
+        @Override
+        public CharSequence getTitle() {
+            return mContext.getString(R.string.quick_settings_eye_protection_mode_lable);
+        }
+
+        @Override
+        public Boolean getToggleState() {
+            return mState.value;
+        }
+
+        @Override
+        public boolean getToggleEnabled() {
+            return true;
+        }
+
+        @Override
+        public Intent getSettingsIntent() {
+            return new Intent(Settings.ACTION_DISPLAY_SETTINGS);
+        }
+
+        @Override
+        public void setToggleState(boolean state) {
+            if (state) {
+                setEyeProtectionModeEnabled(true);
+                resetRadioButtonState ();
+            }
+            else {
+                setEyeProtectionModeEnabled(false);
+                cleanRadioButtonState ();
+            }
+            //add by xuanyusong@wind-mobi.com 2018.4.28 start
+            //fix Bug-12675
+            Intent intent = new Intent(EYE_PROTECTION_MODE_CHANGING_QUICK_SETTINGS_ACTION);
+            mContext.sendBroadcast(intent);
+            //add by xuanyusong@wind-mobi.com 2018.4.28 end
+            boolean newState = !mState.value;
+            refreshState(newState);
+
+        }
+
+        private void cleanRadioButtonState () {
+            radioGroup.clearCheck();
+        }
+
+        private void resetRadioButtonState () {
+            if (getEyeProtectionMode() == Settings.System.EYE_PROTECTION_MODE_STANDARD) {
+                standardButton.setChecked(true);
+            }
+            else if (getEyeProtectionMode() == Settings.System.EYE_PROTECTION_MODE_READ) {
+                readButton.setChecked(true);
+            }
+            else if (getEyeProtectionMode() == Settings.System.EYE_PROTECTION_MODE_MULTIMEDIA) {
+                multimediaButton.setChecked(true);
+            }
+            else if (getEyeProtectionMode() == Settings.System.EYE_PROTECTION_MODE_STUDENTS_CHILDREN) {
+                studentChildButton.setChecked(true);
+            }
+            else {
+                customizeButton.setChecked(true);
+            }
+        }
+
+        @Override
+        public View createDetailView(Context context, View convertView, ViewGroup parent) {
+            final View v = (LinearLayout) (convertView != null
+                    ? convertView
+                    : LayoutInflater.from(mContext).inflate(R.layout.eye_protection_mode, parent, false));
+            radioGroup = (RadioGroup)v.findViewById(R.id.eye_protection_mode) ;
+            standardButton = (RadioButton) v.findViewById(R.id.btn_standard);
+            readButton = (RadioButton)v.findViewById(R.id.btn_reading);
+            multimediaButton = (RadioButton)v.findViewById(R.id.btn_multimedia);
+            studentChildButton = (RadioButton)v.findViewById(R.id.btn_student_child);
+            customizeButton = (RadioButton)v.findViewById(R.id.btn_user_defined);
+            initRadioButton();
+            if (mModeList == null) {
+                createModeList();
+            }
+            return v;
+        }
+
+        private void initRadioButton(){
+            Intent intent = new Intent(EYE_PROTECTION_MODE_CHANGING_QUICK_SETTINGS_ACTION);
+            standardButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setEyeProtectionMode(Settings.System.EYE_PROTECTION_MODE_STANDARD);
+                    setEyeProtectionpRreviousMode(Settings.System.EYE_PROTECTION_MODE_STANDARD);
+                    setProtectionMode(Settings.System.EYE_PROTECTION_MODE_STANDARD);
+                    mContext.sendBroadcast(intent);
+                    if (!mState.value) {
+                        boolean newState = true;
+                        refreshState(newState);
+                        fireToggleStateChanged(true);
+                    }
+                }
+            });
+            readButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setEyeProtectionMode(Settings.System.EYE_PROTECTION_MODE_READ);
+                    setEyeProtectionpRreviousMode(Settings.System.EYE_PROTECTION_MODE_READ);
+                    setProtectionMode(Settings.System.EYE_PROTECTION_MODE_READ);
+                    mContext.sendBroadcast(intent);
+                    if (!mState.value) {
+                        boolean newState = true;
+                        refreshState(newState);
+                        fireToggleStateChanged(true);
+                    }
+                }
+            });
+            multimediaButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setEyeProtectionMode(Settings.System.EYE_PROTECTION_MODE_MULTIMEDIA);
+                    setEyeProtectionpRreviousMode(Settings.System.EYE_PROTECTION_MODE_MULTIMEDIA);
+                    setProtectionMode(Settings.System.EYE_PROTECTION_MODE_MULTIMEDIA);
+                    mContext.sendBroadcast(intent);
+                    if (!mState.value) {
+                        boolean newState = true;
+                        refreshState(newState);
+                        fireToggleStateChanged(true);
+                    }
+
+                }
+            });
+            studentChildButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setEyeProtectionMode(Settings.System.EYE_PROTECTION_MODE_STUDENTS_CHILDREN);
+                    setEyeProtectionpRreviousMode(Settings.System.EYE_PROTECTION_MODE_STUDENTS_CHILDREN);
+                    setProtectionMode(Settings.System.EYE_PROTECTION_MODE_STUDENTS_CHILDREN);
+                    mContext.sendBroadcast(intent);
+                    if (!mState.value) {
+                        boolean newState = true;
+                        refreshState(newState);
+                        fireToggleStateChanged(true);
+                    }
+                }
+            });
+            customizeButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setEyeProtectionMode(Settings.System.EYE_PROTECTION_MODE_CUSTOMIZE);
+                    setEyeProtectionpRreviousMode(Settings.System.EYE_PROTECTION_MODE_CUSTOMIZE);
+                    setProtectionMode(Settings.System.EYE_PROTECTION_MODE_CUSTOMIZE);
+                    mContext.sendBroadcast(intent);
+                    if (!mState.value) {
+                        boolean newState = true;
+                        refreshState(newState);
+                        fireToggleStateChanged(true);
+                    }
+                }
+            });
+            if (getEyeProtectionpModeEnabled()) {
+                resetRadioButtonState ();
+            }
+            else {
+                cleanRadioButtonState();
+            }
+
+        }
+
+
+        @Override
+        public void onDetailItemClick(QSDetailItems.Item item) {
+
+
+        }
+        @Override
+        public void onDetailItemDisconnect(QSDetailItems.Item item) {
+
+        }
+
+        @Override
+        public int getMetricsCategory() {
+            return MetricsEvent.QS_BLUETOOTH_DETAILS;
+        }
+    }
+}
+//add by xuanyusong@wind-mobi.com 2018.4.17 end
+

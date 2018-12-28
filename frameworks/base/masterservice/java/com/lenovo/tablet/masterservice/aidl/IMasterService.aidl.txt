@@ -1,0 +1,94 @@
+package com.lenovo.tablet.masterservice.aidl;
+
+import com.lenovo.tablet.masterservice.aidl.ControllableAppList;
+import android.content.pm.ResolveInfo;
+/**
+*  TabletMasterSerivce AIDL interface.
+*
+*  author: wufl2@lenovo.com
+*  date: 2017.11.24
+*  version: 1.0.1
+*
+*  author: yangyu4@lenovo.com
+*  change checkAutoStart Interface name to checkIntentAutoStart, and add more parameters.
+*  add checkServiceAutoStart Interface
+*  add checkServiceReschedule Interface
+*  date: 2017.11.30
+*  version: 1.0.2
+* */
+interface IMasterService {
+    /**
+    * Work for framework. Query the rule of auto start by the giving packageName.
+    *
+    * @param uid package uid
+    * @param packageName package name of app.
+    * @param action intent action
+    * @param callerPackageName caller package name
+    * @param isUserLaunch whether this package is launched by user
+    * @return boolean
+    *       true: the giving package has the rule of auto start .
+    *       false: the giving package has not the rule of auto start .
+    * */
+    boolean checkIntentAutoStart(int uid, String packageName, String action, String callerPackageName, boolean isUserLaunch);
+    /**
+    * Work for framework. Query the rule of service auto start by the giving packageName.
+    *
+    * @param rInfo Resolve info of starting service
+    * @param action intent action of starting service
+    * @param callerUid caller package uid
+    * @param callerPackageName caller pacakge name
+    * @param userId caller userid
+    * @param userLaunch whether service belong to package that user launched from launcher
+    * @return boolean:
+    *       true: the giving package has the rule of auto start .
+    *       false: the giving package has not the rule of auto start .
+    * */
+    boolean checkServiceAutoStart(in ResolveInfo rInfo, String action, int callerUid, String callerPackageName, int userId, boolean userLaunch);
+    /**
+    * Work for framework. Query the rule of service reschedule by the giving packageName.
+    *
+    * @param uid package uid
+    * @param packageName pacakge name of restarting service
+    * @param userLaunch whether service belong to package that user launched from launcher
+    * @return boolean:
+    *       true: the giving package has the rule of auto start .
+    *       false: the giving package has not the rule of auto start .
+    * */
+    boolean checkServiceReschedule(int uid, String packageName, boolean userLaunch);
+    /**
+    * Work for App. Set up the rule of auto start.
+    *
+    * @param packageNames A List of package name.
+    * @param uidList A List of uid of package. Associated with packageNames.
+    * @param valueList A List of value of package. Associated with packageNames.
+    * @return boolean
+    *       true: the mean is the work has been done. and set up success.
+    *       false: the mean is that there are some error when is working. and set up fail.
+    * */
+    boolean setAppAutoStartup(in List packageNames, in List uidList,in List valueList);
+    /**
+    * Work for App. Set up the rule of Associate start.
+    *
+    * @param packageNames A List of package name.
+    * @param uidList A List of uid of package. Associated with packageNames.
+    * @param valueList A List of value of package. Associated with packageNames.
+    * @return boolean
+    *       true: the mean is the work has been done. and set up success.
+    *       false: the mean is that there are some error when is working. and set up fail.
+    * */
+    boolean setAppAssociateStartup(in List packageNames, in List uidList,in List valueList);
+    /**
+    * Work for App. Query the list of auto start in the device.The list contain three sub list,
+    * the non-controllable app list,the app while list,the user config list.
+    *
+    * @return ControllableAppList @see com.lenovo.tablet.masterservice.aidl.ControllableAppList
+    * */
+    ControllableAppList getAutoStartupSetting();
+    /**
+    * Work for App. Query the list of auto start in the device.The list contain three sub list,
+    * the non-controllable app list,the app while list,the user config list.
+    *
+    * @return ControllableAppList @see com.lenovo.tablet.masterservice.aidl.ControllableAppList
+    * */
+    ControllableAppList getAssocStartupSetting();
+}

@@ -1,0 +1,903 @@
+/*
+ * Copyright (C) 2010 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.gallery3d.util;
+
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.media.MediaScannerConnection;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+import android.graphics.Color;
+
+import android.net.Uri;
+import android.os.ConditionVariable;
+import android.os.Environment;
+import android.os.StatFs;
+import android.preference.PreferenceManager;
+import android.provider.MediaStore;
+import android.telephony.TelephonyManager;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.WindowManager;
+import android.widget.Toast;
+
+import org.codeaurora.gallery.R;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import com.android.gallery3d.app.AbstractGalleryActivity;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+import com.android.gallery3d.app.GalleryActivity;
+import com.android.gallery3d.app.PackagesMonitor;
+import com.android.gallery3d.common.ApiHelper;
+import com.android.gallery3d.data.DataManager;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import com.android.gallery3d.data.LocalImage;
+import com.android.gallery3d.data.LocalVideo;
+import com.android.gallery3d.data.MediaItem;
+import com.android.gallery3d.data.MediaObject;
+import com.android.gallery3d.data.Path;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+import com.android.gallery3d.ui.TiledScreenNail;
+import com.android.gallery3d.util.ThreadPool.CancelListener;
+import com.android.gallery3d.util.ThreadPool.JobContext;
+
+import java.io.File;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
+public class GalleryUtils {
+    private static final String TAG = "GalleryUtils";
+    private static final String MAPS_PACKAGE_NAME = "com.google.android.apps.maps";
+    private static final String MAPS_CLASS_NAME = "com.google.android.maps.MapsActivity";
+    private static final String CAMERA_LAUNCHER_NAME = "com.android.camera.CameraLauncher";
+
+    public static final String MIME_TYPE_IMAGE = "image/*";
+    public static final String MIME_TYPE_VIDEO = "video/*";
+    public static final String MIME_TYPE_PANORAMA360 = "application/vnd.google.panorama360+jpg";
+    public static final String MIME_TYPE_ALL = "*/*";
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    public static final String OWNER_CREATE_ALBUM_PATH = Environment.getExternalStorageDirectory().toString() + "/Pictures/";
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    private static final String DIR_TYPE_IMAGE = "vnd.android.cursor.dir/image";
+    private static final String DIR_TYPE_VIDEO = "vnd.android.cursor.dir/video";
+
+    private static final String PREFIX_PHOTO_EDITOR_UPDATE = "editor-update-";
+    private static final String PREFIX_HAS_PHOTO_EDITOR = "has-editor-";
+
+    private static final String KEY_CAMERA_UPDATE = "camera-update";
+    private static final String KEY_HAS_CAMERA = "has-camera";
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    public static final String ACTION_RELOAD_MEDIASET = "action_reload_mediaset";
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+    private static float sPixelDensity = -1f;
+    private static boolean sCameraAvailableInitialized = false;
+    private static boolean sCameraAvailable;
+
+    public static void initialize(Context context) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        WindowManager wm = (WindowManager)
+                context.getSystemService(Context.WINDOW_SERVICE);
+        wm.getDefaultDisplay().getMetrics(metrics);
+        sPixelDensity = metrics.density;
+        Resources r = context.getResources();
+        TiledScreenNail.setPlaceholderColor(r.getColor(
+                R.color.bitmap_screennail_placeholder));
+        initializeThumbnailSizes(metrics, r);
+    }
+
+    private static void initializeThumbnailSizes(DisplayMetrics metrics, Resources r) {
+        int maxPixels = Math.max(metrics.heightPixels, metrics.widthPixels);
+
+        // For screen-nails, we never need to completely fill the screen
+        MediaItem.setThumbnailSizes(maxPixels / 2, maxPixels / 5);
+        TiledScreenNail.setMaxSide(maxPixels / 2);
+    }
+
+    public static float[] intColorToFloatARGBArray(int from) {
+        return new float[] {
+            Color.alpha(from) / 255f,
+            Color.red(from) / 255f,
+            Color.green(from) / 255f,
+            Color.blue(from) / 255f
+        };
+    }
+
+    public static float dpToPixel(float dp) {
+        return sPixelDensity * dp;
+    }
+
+    public static int dpToPixel(int dp) {
+        return Math.round(dpToPixel((float) dp));
+    }
+
+    public static int meterToPixel(float meter) {
+        // 1 meter = 39.37 inches, 1 inch = 160 dp.
+        return Math.round(dpToPixel(meter * 39.37f * 160));
+    }
+
+    public static byte[] getBytes(String in) {
+        byte[] result = new byte[in.length() * 2];
+        int output = 0;
+        for (char ch : in.toCharArray()) {
+            result[output++] = (byte) (ch & 0xFF);
+            result[output++] = (byte) (ch >> 8);
+        }
+        return result;
+    }
+
+    // Below are used the detect using database in the render thread. It only
+    // works most of the time, but that's ok because it's for debugging only.
+
+    private static volatile Thread sCurrentThread;
+    private static volatile boolean sWarned;
+
+    public static void setRenderThread() {
+        sCurrentThread = Thread.currentThread();
+    }
+
+    public static void assertNotInRenderThread() {
+        if (!sWarned) {
+            if (Thread.currentThread() == sCurrentThread) {
+                sWarned = true;
+                Log.w(TAG, new Throwable("Should not do this in render thread"));
+            }
+        }
+    }
+
+    private static final double RAD_PER_DEG = Math.PI / 180.0;
+    private static final double EARTH_RADIUS_METERS = 6367000.0;
+
+    public static double fastDistanceMeters(double latRad1, double lngRad1,
+            double latRad2, double lngRad2) {
+       if ((Math.abs(latRad1 - latRad2) > RAD_PER_DEG)
+             || (Math.abs(lngRad1 - lngRad2) > RAD_PER_DEG)) {
+           return accurateDistanceMeters(latRad1, lngRad1, latRad2, lngRad2);
+       }
+       // Approximate sin(x) = x.
+       double sineLat = (latRad1 - latRad2);
+
+       // Approximate sin(x) = x.
+       double sineLng = (lngRad1 - lngRad2);
+
+       // Approximate cos(lat1) * cos(lat2) using
+       // cos((lat1 + lat2)/2) ^ 2
+       double cosTerms = Math.cos((latRad1 + latRad2) / 2.0);
+       cosTerms = cosTerms * cosTerms;
+       double trigTerm = sineLat * sineLat + cosTerms * sineLng * sineLng;
+       trigTerm = Math.sqrt(trigTerm);
+
+       // Approximate arcsin(x) = x
+       return EARTH_RADIUS_METERS * trigTerm;
+    }
+
+    public static double accurateDistanceMeters(double lat1, double lng1,
+            double lat2, double lng2) {
+        double dlat = Math.sin(0.5 * (lat2 - lat1));
+        double dlng = Math.sin(0.5 * (lng2 - lng1));
+        double x = dlat * dlat + dlng * dlng * Math.cos(lat1) * Math.cos(lat2);
+        return (2 * Math.atan2(Math.sqrt(x), Math.sqrt(Math.max(0.0,
+                1.0 - x)))) * EARTH_RADIUS_METERS;
+    }
+
+
+    public static final double toMile(double meter) {
+        return meter / 1609;
+    }
+
+    // For debugging, it will block the caller for timeout millis.
+    public static void fakeBusy(JobContext jc, int timeout) {
+        final ConditionVariable cv = new ConditionVariable();
+        jc.setCancelListener(new CancelListener() {
+            @Override
+            public void onCancel() {
+                cv.open();
+            }
+        });
+        cv.block(timeout);
+        jc.setCancelListener(null);
+    }
+
+    public static boolean isEditorAvailable(Context context, String mimeType) {
+        int version = PackagesMonitor.getPackagesVersion(context);
+
+        String updateKey = PREFIX_PHOTO_EDITOR_UPDATE + mimeType;
+        String hasKey = PREFIX_HAS_PHOTO_EDITOR + mimeType;
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        if (prefs.getInt(updateKey, 0) != version) {
+            PackageManager packageManager = context.getPackageManager();
+            List<ResolveInfo> infos = packageManager.queryIntentActivities(
+                    new Intent(Intent.ACTION_EDIT).setType(mimeType), 0);
+            prefs.edit().putInt(updateKey, version)
+                        .putBoolean(hasKey, !infos.isEmpty())
+                        .commit();
+        }
+
+        return prefs.getBoolean(hasKey, true);
+    }
+
+    public static boolean isAnyCameraAvailable(Context context) {
+        int version = PackagesMonitor.getPackagesVersion(context);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        if (prefs.getInt(KEY_CAMERA_UPDATE, 0) != version) {
+            PackageManager packageManager = context.getPackageManager();
+            List<ResolveInfo> infos = packageManager.queryIntentActivities(
+                    new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA), 0);
+            prefs.edit().putInt(KEY_CAMERA_UPDATE, version)
+                        .putBoolean(KEY_HAS_CAMERA, !infos.isEmpty())
+                        .commit();
+        }
+        return prefs.getBoolean(KEY_HAS_CAMERA, true);
+    }
+
+    public static boolean isCameraAvailable(Context context) {
+        if (sCameraAvailableInitialized) return sCameraAvailable;
+        PackageManager pm = context.getPackageManager();
+        Intent cameraIntent = IntentHelper.getCameraIntent(context);
+        List<ResolveInfo> apps = pm.queryIntentActivities(cameraIntent, 0);
+        sCameraAvailableInitialized = true;
+        sCameraAvailable = !apps.isEmpty();
+        return sCameraAvailable;
+    }
+
+    public static void startCameraActivity(Context context) {
+        Intent intent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            context.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            // This will only occur if Camera was disabled while Gallery is open
+            // since we cache our availability check. Just abort the attempt.
+            Log.e(TAG, "Camera activity previously detected but cannot be found", e);
+        }
+    }
+
+    public static void startGalleryActivity(Context context) {
+        Intent intent = new Intent(context, GalleryActivity.class)
+                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+    }
+
+    public static boolean isValidLocation(double latitude, double longitude) {
+        // TODO: change || to && after we fix the default location issue
+        return (latitude != MediaItem.INVALID_LATLNG || longitude != MediaItem.INVALID_LATLNG);
+    }
+
+    public static String formatLatitudeLongitude(String format, double latitude,
+            double longitude) {
+        // We need to specify the locale otherwise it may go wrong in some language
+        // (e.g. Locale.FRENCH)
+        return String.format(Locale.ENGLISH, format, latitude, longitude);
+    }
+
+    public static void showOnMap(final Context context, double latitude, double longitude) {
+        try {
+            // We don't use "geo:latitude,longitude" because it only centers
+            // the MapView to the specified location, but we need a marker
+            // for further operations (routing to/from).
+            // The q=(lat, lng) syntax is suggested by geo-team.
+            String uri = formatLatitudeLongitude("http://maps.google.com/maps?f=q&q=(%f,%f)",
+                    latitude, longitude);
+            ComponentName compName = new ComponentName(MAPS_PACKAGE_NAME,
+                    MAPS_CLASS_NAME);
+            Intent mapsIntent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse(uri)).setComponent(compName);
+            context.startActivity(mapsIntent);
+        } catch (ActivityNotFoundException e) {
+            // Use the "geo intent" if no GMM is installed
+            Log.e(TAG, "GMM activity not found!", e);
+            String url = formatLatitudeLongitude("geo:%f,%f", latitude, longitude);
+            try {
+                Intent mapsIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                context.startActivity(mapsIntent);
+            } catch (ActivityNotFoundException ex) {
+                Log.e(TAG, "Map view activity not found! url = " + url, ex);
+                ((Activity)context).runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(context,
+                                context.getString(R.string.map_activity_not_found_err),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+            }
+        }
+    }
+
+    public static void setViewPointMatrix(
+            float matrix[], float x, float y, float z) {
+        // The matrix is
+        // -z,  0,  x,  0
+        //  0, -z,  y,  0
+        //  0,  0,  1,  0
+        //  0,  0,  1, -z
+        Arrays.fill(matrix, 0, 16, 0);
+        matrix[0] = matrix[5] = matrix[15] = -z;
+        matrix[8] = x;
+        matrix[9] = y;
+        matrix[10] = matrix[11] = 1;
+    }
+
+    public static int getBucketId(String path) {
+        return path.toLowerCase().hashCode();
+    }
+
+    // Return the local path that matches the given bucketId. If no match is
+    // found, return null
+    public static String searchDirForPath(File dir, int bucketId) {
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    String path = file.getAbsolutePath();
+                    if (GalleryUtils.getBucketId(path) == bucketId) {
+                        return path;
+                    } else {
+                        path = searchDirForPath(file, bucketId);
+                        if (path != null) return path;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    // Returns a (localized) string for the given duration (in seconds).
+    public static String formatDuration(final Context context, int duration) {
+        int h = duration / 3600;
+        int m = (duration - h * 3600) / 60;
+        int s = duration - (h * 3600 + m * 60);
+        String durationValue;
+        if (h == 0) {
+            durationValue = String.format(context.getString(R.string.details_ms), m, s);
+        } else {
+            durationValue = String.format(context.getString(R.string.details_hms), h, m, s);
+        }
+        return durationValue;
+    }
+
+    @TargetApi(ApiHelper.VERSION_CODES.HONEYCOMB)
+    public static int determineTypeBits(Context context, Intent intent) {
+        int typeBits = 0;
+        String type = intent.resolveType(context);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        if (MIME_TYPE_ALL.equals(type)) {
+            typeBits = DataManager.INCLUDE_ALL;
+        } else if (MIME_TYPE_IMAGE.equals(type) || DIR_TYPE_IMAGE.equals(type)) {
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+            typeBits = DataManager.INCLUDE_IMAGE;
+        } else if (MIME_TYPE_VIDEO.equals(type) ||
+                DIR_TYPE_VIDEO.equals(type)) {
+            typeBits = DataManager.INCLUDE_VIDEO;
+        } else {
+            typeBits = DataManager.INCLUDE_ALL;
+        }
+
+        if (ApiHelper.HAS_INTENT_EXTRA_LOCAL_ONLY) {
+            if (intent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false)) {
+                typeBits |= DataManager.INCLUDE_LOCAL_ONLY;
+            }
+        }
+
+        return typeBits;
+    }
+
+    public static int getSelectionModePrompt(int typeBits) {
+        if ((typeBits & DataManager.INCLUDE_VIDEO) != 0) {
+            return (typeBits & DataManager.INCLUDE_IMAGE) == 0
+                    ? R.string.select_video
+                    : R.string.select_item;
+        }
+        return R.string.select_image;
+    }
+
+    public static boolean hasSpaceForSize(long size) {
+        String state = Environment.getExternalStorageState();
+        if (!Environment.MEDIA_MOUNTED.equals(state)) {
+            return false;
+        }
+
+        String path = Environment.getExternalStorageDirectory().getPath();
+        try {
+            StatFs stat = new StatFs(path);
+            return stat.getAvailableBlocks() * (long) stat.getBlockSize() > size;
+        } catch (Exception e) {
+            Log.i(TAG, "Fail to access external storage", e);
+        }
+        return false;
+    }
+
+    public static boolean isPanorama(MediaItem item) {
+        if (item == null) return false;
+        int w = item.getWidth();
+        int h = item.getHeight();
+        return (h > 0 && w / h >= 2);
+    }
+ // Newly added methods
+    public static int getIntPref(Context context, String name, int def) {
+        SharedPreferences prefs =
+            context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+        return prefs.getInt(name, def);
+    }
+
+    public static void setIntPref(Context context, String name, int value) {
+        SharedPreferences prefs =
+            context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+        Editor ed = prefs.edit();
+        ed.putInt(name, value);
+        ed.commit();
+    }
+
+    public static boolean getBooleanPref(Context context, String name, boolean def) {
+        SharedPreferences prefs =
+                context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+        return prefs.getBoolean(name, def);
+    }
+
+    public static void setBooleanPref(Context context, String name, boolean value) {
+        SharedPreferences prefs =
+                context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+        Editor ed = prefs.edit();
+        ed.putBoolean(name, value);
+        ed.commit();
+    }
+
+    public static String getStringPref(Context context, String name, String def) {
+        SharedPreferences prefs =
+                context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+        return prefs.getString(name, def);
+    }
+
+    public static void setStringPref(Context context, String name, String value) {
+        SharedPreferences prefs =
+                context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+        Editor ed = prefs.edit();
+        ed.putString(name, value);
+        ed.commit();
+    }
+
+    public static boolean isTelephonyCallInProgress(Context context) {
+        TelephonyManager telephonyManager =
+                (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        return telephonyManager.getCallState() != TelephonyManager.CALL_STATE_IDLE;
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    public static boolean isValidFileName(String fileName) {
+        //matches(.) means : Matches any single character except "\r?бщ\n".
+        //Only match the separate ".", The demand for a separate judgment.
+        if (fileName.length() > 255 || (fileName.length() == 1 && fileName.equals("."))) return false;
+        else return fileName.matches("[^/\\\\<>*?|\"]+");
+    }
+
+    public static void saveFolder(Context context, AlbumFolderInfo info) {
+        List<AlbumFolderInfo> infoList = getAlbumFolderInfo(context);
+        boolean isChange = true;
+        boolean isNewFolder = false;
+        for (int i = 0; i < infoList.size(); i++) {
+            AlbumFolderInfo getInfo = infoList.get(i);
+            if (info.getmPath().equals(getInfo.getmPath())) {
+                if (info.getIsHide() != getInfo.getIsHide()) {
+                    infoList.set(i, info);
+                } else {
+                    isChange = false;
+                }
+                break;
+            }
+            if (i == infoList.size() - 1) {
+                isNewFolder = true;
+            }
+        }
+        if (isNewFolder || infoList.size() == 0) {
+            infoList.add(info);
+        }
+        if (isChange) {
+            setAlbumFolderInfo(context, infoList);
+        }
+    }
+
+    public static List<AlbumFolderInfo> getAlbumFolderInfo(Context context) {
+        List<AlbumFolderInfo> infoList = new ArrayList<AlbumFolderInfo>();
+        String infoFromPref = getStringPref(context, AlbumFolderInfo.FOLDER_INFO_KEY, "");
+        if (infoFromPref.length() != 0) {
+            try {
+                JSONArray jsonArray = new JSONArray(infoFromPref);
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject object = (JSONObject) jsonArray.get(i);
+                    String folderName = object.getString(AlbumFolderInfo.ATTRI_FOLDERNAME);
+                    String path = object.getString(AlbumFolderInfo.ATTRI_PATH);
+                    boolean isHide = object.getBoolean(AlbumFolderInfo.ATTRI_ISHIDE);
+                    boolean isUserCreate = object.getBoolean(AlbumFolderInfo.ATTRI_IS_USER_CREATE);
+                    int bucketId = object.getInt(AlbumFolderInfo.ATTRI_BUCKETID);
+                    infoList.add(new AlbumFolderInfo(folderName, path, isHide, isUserCreate, bucketId));
+                }
+            } catch (Exception e) {
+            }
+        }
+        return infoList;
+    }
+
+    public static void setAlbumFolderInfo(Context context, List<AlbumFolderInfo> infoList) {
+        JSONArray jsonArray = new JSONArray();
+        for (int i = 0; i < infoList.size(); i++) {
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put(AlbumFolderInfo.ATTRI_FOLDERNAME, infoList.get(i).getmFolderName());
+                jsonObject.put(AlbumFolderInfo.ATTRI_PATH,infoList.get(i).getmPath());
+                jsonObject.put(AlbumFolderInfo.ATTRI_ISHIDE, infoList.get(i).getIsHide());
+                jsonObject.put(AlbumFolderInfo.ATTRI_IS_USER_CREATE, infoList.get(i).isUserCreate());
+                jsonObject.put(AlbumFolderInfo.ATTRI_BUCKETID, infoList.get(i).getBucketId());
+                jsonArray.put(jsonObject);
+            } catch (Exception e) {
+            }
+        }
+        setStringPref(context, AlbumFolderInfo.FOLDER_INFO_KEY, jsonArray.toString());
+    }
+
+    public static void modifyFolder(Context context, String oldname, String newName) {
+        List<AlbumFolderInfo> infoList = getAlbumFolderInfo(context);
+        int index = -1;
+        for (int i = 0; i < infoList.size(); i++) {
+            AlbumFolderInfo getInfo = infoList.get(i);
+            if (oldname.equals(getInfo.getmFolderName()) && getInfo.isUserCreate()) {
+                index = i;
+                break;
+            }
+        }
+        if (index != -1) {
+            AlbumFolderInfo oldInfo = infoList.get(index);
+            oldInfo.setmFolderName(newName);
+            oldInfo.setmPath(OWNER_CREATE_ALBUM_PATH + newName);
+            oldInfo.setBucketId((OWNER_CREATE_ALBUM_PATH + newName).toLowerCase().hashCode());
+            changeAlbumsBucketName(oldname, newName);
+            infoList.set(index, oldInfo);
+            setAlbumFolderInfo(context, infoList);
+        }
+    }
+
+    public static boolean isUserAlbum(Context context, int bucketId) {
+        List<AlbumFolderInfo> infoList = getAlbumFolderInfo(context);
+        for (AlbumFolderInfo albumFolderInfo : infoList) {
+            if (bucketId == getBucketId(albumFolderInfo.getmPath())
+                    && albumFolderInfo.isUserCreate()) return true;
+        }
+        return false;
+    }
+
+    public static String[] addFilePath(File[] files) {
+        String[] paths = new String[files.length];
+        for (int i = 0; i < files.length; i++) {
+            paths[i] = files[i].getPath();
+        }
+        return paths;
+    }
+
+    public static boolean removeUserAlbum(Context context, int bucketId) {
+        List<AlbumFolderInfo> infoList = getAlbumFolderInfo(context);
+        int index = -1;
+        for (int i = 0; i < infoList.size(); i++) {
+            String albumPath = OWNER_CREATE_ALBUM_PATH + infoList.get(i).getmFolderName();
+            if (bucketId == getBucketId(albumPath)) {
+                index = i;
+                break;
+            }
+        }
+        if (index != -1) {
+            infoList.remove(index);
+            removeAlbumsBucket(bucketId);
+            setAlbumFolderInfo(context, infoList);
+            return true;
+        }
+        return false;
+    }
+
+    public static void moveFileToAlbum(final AbstractGalleryActivity activity,
+                                       final List<Path> paths, final String albumPath) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Map<String, String> realPaths = new HashMap<String, String>();
+                    Map<String, MediaObject> mediaObjectMap = new HashMap<String, MediaObject>();
+                    for (Path path : paths) {
+                        MediaObject mediaObject = activity.getDataManager().getMediaObject(path);
+                        String[] result = getRealPathFromURI(activity, mediaObject);
+                        if (result != null) {
+                            realPaths.put(result[0], result[1]);
+                            mediaObjectMap.put(result[0], mediaObject);
+                        }
+                    }
+                    ArrayList<String> successSourceName = new ArrayList<String>();
+                    ArrayList<File> successTargetFile = new ArrayList<File>();
+                    String albumRealPath = searchDirForPath(Environment.getExternalStorageDirectory(),
+                            Integer.parseInt(Path.fromString(albumPath).getSuffix()));
+                    for (String name : realPaths.keySet()) {
+                        File moveFile = new File(realPaths.get(name));
+                        File targetDir = new File(albumRealPath);
+                        File targetFile = new File(albumRealPath + "/" + name);
+                        if (moveFile.exists() && moveFile.isFile()
+                                && targetDir.exists() && targetDir.isDirectory()) {
+                            if (!targetFile.exists()) {
+                                if (moveFile.renameTo(targetFile)) {
+                                    successSourceName.add(name);
+                                    successTargetFile.add(targetFile);
+                                } else {
+                                    toastOnUiThread(activity,
+                                            activity.getString(R.string.action_move_fail) + name);
+                                }
+                            } else {
+                                toastOnUiThread(activity,
+                                        activity.getString(R.string.action_move_same_name) + name);
+                            }
+                        } else {
+                            toastOnUiThread(activity,
+                                    activity.getString(R.string.action_move_error));
+                        }
+                    }
+                    updateMediaDatabase(activity, mediaObjectMap, successSourceName,
+                            successTargetFile);
+                } catch (Exception e) {
+                } finally {
+                    activity.sendBroadcast(new Intent(ACTION_RELOAD_MEDIASET));
+                }
+            }
+        }).start();
+    }
+
+    public static String[] getRealPathFromURI(AbstractGalleryActivity activity,
+                                              MediaObject mediaObject) {
+        String[] result = new String[2];
+        String[] imageProj = {MediaStore.Images.Media.DATA, MediaStore.Images.Media.DISPLAY_NAME};
+        String[] videoProj = {MediaStore.Video.Media.DATA, MediaStore.Video.Media.DISPLAY_NAME};
+        Boolean isImage = false;
+        Uri uri = mediaObject.getContentUri();
+        if (mediaObject instanceof LocalImage) {
+            isImage = true;
+        } else if (mediaObject instanceof LocalVideo) {
+            isImage = false;
+        } else {
+            return null;
+        }
+        Cursor cursor = activity.getContentResolver().query(uri,
+                isImage ? imageProj : videoProj, null, null, null);
+        if (cursor.moveToFirst()) {
+            int column_index_date = cursor.getColumnIndexOrThrow(isImage
+                    ? MediaStore.Images.Media.DATA : MediaStore.Video.Media.DATA);
+            int column_index_display_name = cursor.getColumnIndexOrThrow(isImage
+                    ? MediaStore.Images.Media.DISPLAY_NAME : MediaStore.Video.Media.DISPLAY_NAME);
+            result[0] = cursor.getString(column_index_display_name);
+            result[1] = cursor.getString(column_index_date);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return result;
+    }
+
+    public static void updateMediaDatabase(Context context, Map<String, MediaObject> mediaObjectMap,
+                                           ArrayList<String> successSourceName,
+                                           ArrayList<File> successTargetFile) {
+        for (String name : successSourceName) {
+            MediaObject mediaObject = mediaObjectMap.get(name);
+            mediaObject.delete();
+        }
+        File[] addFiles = new File[successTargetFile.size()];
+        successTargetFile.toArray(addFiles);
+        MediaScannerConnection.scanFile(context, addFilePath(addFiles), null, null);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180511 begin
+        if(successSourceName.size() != 0){
+            toastOnUiThread(context,
+                    context.getString(R.string.action_move_done, successSourceName.size()));
+        }
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180511 end
+    }
+
+    public static void toastOnUiThread(final Context context, final String msg) {
+        ((Activity)context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public static boolean isDefaultAlbum(int bucketId) {
+        return bucketId == MediaSetUtils.CAMERA_BUCKET_ID
+                || bucketId == MediaSetUtils.DOWNLOAD_BUCKET_ID
+                || bucketId == MediaSetUtils.IMPORTED_BUCKET_ID
+                || bucketId == MediaSetUtils.SNAPSHOT_BUCKET_ID
+                || bucketId == MediaSetUtils.EDITED_ONLINE_PHOTOS_BUCKET_ID;
+    }
+
+    public static ArrayList<Integer> getHideBucketId(Context context) {
+        List<AlbumFolderInfo> infoList = getAlbumFolderInfo(context);
+        ArrayList<Integer> listBuckId = new ArrayList<Integer>();
+        for (AlbumFolderInfo info : infoList) {
+            if (info.getIsHide()) {
+                listBuckId.add(info.getBucketId());
+            }
+        }
+        return listBuckId;
+    }
+
+    public static void saveHideInfo(Context context, List<Path> pathSet) {
+        List<AlbumFolderInfo> infoList = getAlbumFolderInfo(context);
+        ArrayList<Integer> alreadyInList = new ArrayList<Integer>();
+        ArrayList<Integer> notInList = new ArrayList<Integer>();
+        boolean isChange = false;
+        for (Path path : pathSet) {
+            int bucketId = Integer.parseInt(path.getSuffix());
+            boolean isFind = false;
+            for (int i = 0; i < infoList.size(); i++) {
+                if (getBucketId(infoList.get(i).getmPath()) == bucketId) {
+                    alreadyInList.add(i);
+                    isFind = true;
+                    break;
+                }
+            }
+            if (!isFind) notInList.add(bucketId);
+        }
+        for (int i = 0; i < infoList.size(); i++) {
+            AlbumFolderInfo info = infoList.get(i);
+            if (alreadyInList.contains(i) != info.getIsHide()) {
+                info.setIsHide(alreadyInList.contains(i));
+                isChange = true;
+            }
+        }
+        for (Integer bucketId : notInList) {
+            String realPath = getAlbumsBucketName(bucketId);
+            Log.d(TAG, "saveHideInfo realPath = " + realPath);
+            if (realPath == null) {
+                continue;
+            }
+            String albumName = realPath.substring(realPath.lastIndexOf('/') + 1);
+            Log.d(TAG, "saveHideInfo albumName = " + albumName);
+            infoList.add(new AlbumFolderInfo(albumName, realPath, true, false, bucketId));
+            isChange = true;
+        }
+        if (isChange) {
+            setAlbumFolderInfo(context, infoList);
+        }
+    }
+
+    public static StringBuffer buildStringByList(List<String> list) {
+        StringBuffer sb = new StringBuffer();
+        if(list == null || list.size() ==0) {
+            sb.append("(-1)");
+        } else {
+            sb.append('(');
+            for (int i = 0; i < list.size(); i++) {
+                sb.append(list.get(i));
+                if(i == list.size() - 1) {
+                    sb.append(')');
+                } else {
+                    sb.append(',');
+                }
+            }
+        }
+        return sb;
+    }
+
+    private static List<GalleryUtils.AlbumsInfo> mAlbumsInfoList ;
+    private static boolean isFirstInsert = false;
+
+    public static void setAlbumsBucketId(int bucketId, String bucketName) {
+        //Log.d(TAG, "setAlbumsBucketId bucketId = " + bucketId + ",bucketName = " + bucketName);
+        if (mAlbumsInfoList == null) {
+            mAlbumsInfoList = new ArrayList<GalleryUtils.AlbumsInfo>();
+        }
+        AlbumsInfo info = new AlbumsInfo(bucketId, bucketName);
+        if (!isFirstInsert) {
+            mAlbumsInfoList.add(info);
+            isFirstInsert = true;
+            return;
+        }
+        int lenght = mAlbumsInfoList.size();
+        for (int index = 0; index < lenght ; index ++) {
+            AlbumsInfo info1 = mAlbumsInfoList.get(index);
+            if (info1.getAlbumsBucketId() == bucketId) {
+                break;
+            } else {
+                mAlbumsInfoList.add(info);
+                return;
+            }
+        }
+    }
+
+    private static String getAlbumsBucketName(int bucketId) {
+        Log.d(TAG, "getAlbumsBucketName bucketId = " + bucketId);
+        if (mAlbumsInfoList == null) return null;
+        String bucketName = null;
+        int lenght = mAlbumsInfoList.size();
+        for (int index = 0; index < lenght ; index ++) {
+            AlbumsInfo info = mAlbumsInfoList.get(index);
+            if (info.getAlbumsBucketId() == bucketId) {
+                bucketName = info.getAlbumsBucketName();
+                return bucketName;
+            }
+        }
+        return bucketName;
+    }
+
+    private static void removeAlbumsBucket(int bucketId) {
+        Log.d(TAG, "removeAlbumsBucket bucketId = " + bucketId);
+        if (mAlbumsInfoList == null) return;
+        int length = mAlbumsInfoList.size();
+        for (int index = 0; index < length ; index ++) {
+            AlbumsInfo info = mAlbumsInfoList.get(index);
+            if (info.getAlbumsBucketId() == bucketId) {
+                mAlbumsInfoList.remove(index);
+                return;
+            }
+        }
+    }
+
+    private static void changeAlbumsBucketName(String bucketName, String newBucketName) {
+        Log.d(TAG, "changeAlbumsBucketName bucketName = " + bucketName + ",newBucketName = " + newBucketName);
+        if (mAlbumsInfoList == null) return;
+        int length = mAlbumsInfoList.size();
+        for (int index = 0; index < length ; index ++) {
+            AlbumsInfo info = mAlbumsInfoList.get(index);
+            if (info.getAlbumsBucketName().equals(bucketName)) {
+                AlbumsInfo newInfo = new AlbumsInfo(newBucketName.toLowerCase().hashCode(), newBucketName);
+                mAlbumsInfoList.set(index, newInfo);
+                return;
+            }
+        }
+    }
+
+    private static class AlbumsInfo {
+        private int bucketId;
+        private String bucketName;
+
+        public AlbumsInfo(int bucketId, String bucketName) {
+            this.bucketId = bucketId;
+            this.bucketName = bucketName;
+        }
+
+        public int getAlbumsBucketId () {
+            return bucketId;
+        }
+
+        public String getAlbumsBucketName() {
+            return bucketName;
+        }
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+}

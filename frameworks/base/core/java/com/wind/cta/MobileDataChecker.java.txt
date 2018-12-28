@@ -1,0 +1,241 @@
+package com.wind.cta;
+
+import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.util.Log;
+import android.view.ContextThemeWrapper;
+import android.view.WindowManager;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+public class MobileDataChecker {
+    public static final String TAG = "Checker";
+
+    // Provider
+    private static final String AUTHORITY = "com.wind.windmaster.permission";
+    private static final String TABLE_PERMISSION = "permission_manager";
+    private static final String COL_ACTION = "action";
+    private static final String COL_CALLER = "caller";
+    private static final String COL_ACCEPT = "accept";
+    private static final Uri URI_PERMISSION = Uri.parse("content://" + AUTHORITY + "/" + TABLE_PERMISSION);
+
+    private Handler mHandler;
+    private Context mContext;
+    private Context mThemeContext;
+    private static AlertDialog dialog;
+    private static boolean mbPass = false;
+
+    private class PermissionChecker implements Runnable {
+        Object checkLock = new Object();
+        int mAction;
+        String mCaller;
+        boolean result = false;
+
+        PermissionChecker(int action, String caller) {
+            mAction = action;
+            mCaller = caller;
+        }
+
+        public boolean getResult() {
+            return result;
+        }
+
+        @Override
+        public void run() {
+            synchronized (checkLock) {
+                boolean exist = queryPermission();
+                if (exist) {
+                    checkLock.notifyAll();
+                }
+                else {
+                    try {
+                        showDialog();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        result = true;
+                        checkLock.notifyAll();
+                    }
+                }
+            }
+        }
+
+        private boolean queryPermission() {
+            boolean ret = false;
+            /*if (mContext != null) {
+                if (android.provider.Settings.System.getInt(mContext.getContentResolver(), "MobileDataCheckerPass", 0) == 1 ||
+                    mbPass) {
+                    ret = true;
+                    result = true;
+                }
+            }*/
+            return ret;
+        }
+
+        private void showDialog() {
+            System.out.println("mContext = " + mContext);
+            System.out.println("dialog = " + dialog);
+            if (mContext == null) {
+                return;
+            }
+            if (dialog != null) {
+                return;
+            }
+            int targetThemeRes = android.R.style.Theme_DeviceDefault_Light;
+            
+            mThemeContext = new ContextThemeWrapper(mContext, targetThemeRes);// +++ Common UI
+
+            LinearLayout view = new LinearLayout(mThemeContext);
+            view.setOrientation(LinearLayout.VERTICAL);
+            int padding = 30;
+            int padding_in_dp_LR = 13;
+            int padding_in_dp_UD = 15;
+            final float scale = mContext.getResources().getDisplayMetrics().density;
+            int padding_in_px_LR = (int) (padding_in_dp_LR * scale + 0.5f);
+            int padding_in_px_UD = (int) (padding_in_dp_UD * scale + 0.5f);
+            view.setPadding(padding_in_px_LR, padding_in_px_UD, padding_in_px_LR, padding_in_px_UD);
+            
+            TextView message = new TextView(mThemeContext);
+            String msg = getMessage();
+            if ("dsda".equals(android.os.SystemProperties.get(com.android.internal.telephony.TelephonyProperties.PROPERTY_MULTI_SIM_CONFIG))) {
+                message.setText(mContext.getString(com.android.internal.R.string.show_only_sim1_data_confirm_dialog_message) + "\n" + mContext.getString(com.android.internal.R.string.mde_message));
+            } else {
+                message.setText(mContext.getString(com.android.internal.R.string.mde_message));
+            }
+            message.setTextSize(18);
+            message.setTextColor(android.graphics.Color.BLACK);
+            view.addView(message);
+            
+            //final CheckBox checkBox = new CheckBox(mThemeContext);
+            //checkBox.setText(mContext.getString(com.android.internal.R.string.mde_dialog_checkbox));
+            //checkBox.setTextSize(15);
+            //checkBox.setTextColor(android.graphics.Color.BLACK);
+            //view.addView(checkBox);
+            
+            ScrollView scrollView = new ScrollView(mThemeContext);
+            scrollView.addView(view);
+            
+            AlertDialog.Builder builder = new AlertDialog.Builder(mThemeContext);
+            builder.setTitle(mContext.getString(com.android.internal.R.string.mde_dialog_title));
+            builder.setView(scrollView);
+            builder.setCancelable(false);
+            String allow = mContext.getString(com.android.internal.R.string.yes);
+            builder.setPositiveButton(allow, new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    synchronized (checkLock) {
+                        result = true;
+                        checkLock.notifyAll();
+                    }
+                    /*if (checkBox.isChecked()) {
+                        addPermission(1);
+                    }*/
+                }
+            });
+            String deny = mContext.getString(com.android.internal.R.string.cancel);
+            builder.setNegativeButton(deny, new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    synchronized (checkLock) {
+                        result = false;
+                        checkLock.notifyAll();
+                    }
+                }
+            });
+            dialog = builder.create();
+            dialog.setOnDismissListener(mDismissListener);
+            dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ERROR);
+            dialog.show();
+        }
+
+        private void addPermission(int accept) {
+            if (mContext != null) {
+                mbPass = true;
+                try {
+                    android.provider.Settings.System.putInt(mContext.getContentResolver(), "MobileDataCheckerPass", 1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    HandlerThread thread;
+    public MobileDataChecker(Context context) {
+        mContext = context;
+        thread = new HandlerThread("Checker"); 
+        thread.start();
+        mHandler = new Handler(thread.getLooper());
+    }
+
+    PermissionChecker permissionChecker;
+    public boolean checkPermission(int action, String caller) {
+        permissionChecker = new PermissionChecker(action, caller);
+        synchronized (permissionChecker.checkLock) {
+            mHandler.post(permissionChecker);
+            try {
+                permissionChecker.checkLock.wait();
+                return permissionChecker.getResult();
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    private String getTitle() {
+        return "Enable mobile data";
+    }
+
+    private String getMessage() {
+        return "Enable mobile data? Additional fee may incur depending on your mobile network plan. You can disable mobile data to avoid additional charges when finished.";
+    }
+    
+    private String getAppName(String packageName) {
+        String appName = packageName;
+        PackageManager pm = mContext.getPackageManager();        
+        try {
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, PackageManager.GET_ACTIVITIES);
+            appName = appInfo.loadLabel(pm).toString();
+        } catch (android.content.pm.PackageManager.NameNotFoundException ex) {
+        }
+        return appName;
+    }
+
+
+    public void release() {
+        mHandler.removeCallbacksAndMessages(permissionChecker);
+        permissionChecker = null;
+        if(thread != null) {
+            thread.quitSafely();
+            Thread moribund = thread;
+            thread = null;
+            moribund.interrupt();
+        }
+        mContext = null;
+        dialog = null;
+        mThemeContext = null;
+    }
+
+    private DialogInterface.OnDismissListener mDismissListener = new DialogInterface.OnDismissListener() {
+        @Override
+        public void onDismiss (DialogInterface dialog) {
+            release();
+            mContext = null;
+            dialog = null;
+            mThemeContext = null;
+        }
+    };
+}

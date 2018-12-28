@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/land_toolbar_height"
+    android:theme="@android:style/Theme.DeviceDefault"
+    android:background="#000000"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/filtershow_exit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/actionBarItemBackground"
+        android:scaleType="fitCenter"
+        android:src="@drawable/cancel"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="@dimen/land_toolbar_left_margin"/>
+
+    <ImageButton
+        android:id="@+id/filtershow_undo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/actionBarItemBackground"
+        android:scaleType="fitCenter"
+        android:src="@drawable/icon_btn_undo_rest"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="@dimen/land_toolbar_undo_left_margin"/>
+
+    <ImageButton
+        android:id="@+id/filtershow_redo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/actionBarItemBackground"
+        android:scaleType="fitCenter"
+        android:src="@drawable/icon_btn_redo_rest"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="@dimen/land_toolbar_redo_left_margin"/>
+
+    <TextView
+        android:id="@+id/filtershow_done"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center_vertical"
+        android:singleLine="true"
+        android:text="@string/save"
+        android:textAllCaps="true"
+        android:textColor="#ffffff"
+        android:textSize="17sp"
+        android:layout_marginLeft="@dimen/land_toolbar_save_left_margin"/>
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

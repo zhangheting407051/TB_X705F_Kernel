@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2012 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!-- yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start -->
+<!-- yunbo@wind-mobi.com modify  2018-05-24 st -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:systemui="http://schemas.android.com/apk/res-auto"
+             android:id="@+id/non_book_ui_menu_ime"
+             android:layout_width="wrap_content"
+             android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:animateLayoutChanges="false"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="horizontal"
+        android:visibility="visible">
+
+        <com.android.systemui.statusbar.policy.KeyButtonView
+            android:id="@+id/non_book_ui_menu"
+            android:layout_width="@dimen/navigation_extra_key_width"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/accessibility_menu"
+            android:scaleType="centerInside"
+            android:visibility="invisible"
+            systemui:keyCode="82"/>
+
+        <com.android.systemui.statusbar.policy.KeyButtonView
+            android:id="@+id/non_book_ui_ime_switcher"
+            android:layout_width="@dimen/navigation_extra_key_width"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/accessibility_ime_switch_button"
+            android:scaleType="centerInside"
+            android:visibility="invisible"/>
+
+        <!--yunbo@wind-mobi.com unused 20180606 st
+        <com.android.systemui.statusbar.policy.KeyButtonView
+            android:id="@+id/non_book_ui_btn_home_assistant"
+            android:layout_width="@dimen/navigation_bar_home_assistant_button_width"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/accessibility_voice_assist_button"
+            android:scaleType="centerInside"
+            android:visibility="invisible"/>-->
+
+        <com.android.systemui.statusbar.policy.KeyButtonView
+            android:id="@+id/non_book_ui_accessibility_button"
+            android:layout_width="@dimen/navigation_extra_key_width"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/accessibility_accessibility_button"
+            android:scaleType="centerInside"
+            android:visibility="invisible"/>
+        <!--<Space
+            android:layout_width="@dimen/navigation_bar_space_width"
+            android:layout_height="match_parent" />-->
+    </LinearLayout>
+</FrameLayout>
+<!-- yunbo@wind-mobi.com modify  2018-05-24 st -->
+<!-- yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end -->

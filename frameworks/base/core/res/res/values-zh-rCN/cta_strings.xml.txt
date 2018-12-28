@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--WINDCTA:zhuyuqiang@wind-mobi.com 2017 05 10 start -->
+<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="cta_act_phone_call">"拨打电话"</string>
+    <string name="cta_act_send_sms">"发送短信"</string>
+    <string name="cta_act_send_mms">"发送彩信"</string>
+    <string name="cta_act_read_contacts">"读取联系人"</string>
+    <string name="cta_act_read_call_log">"读取通话记录"</string>
+    <string name="cta_act_read_mms">"读取彩信"</string>
+    <string name="cta_act_read_sms">"读取短信"</string>
+    <string name="cta_act_read_mms_sms">"读取彩信及短信"</string>
+    <string name="cta_act_mobile_network">"开启移动数据"</string>
+    <string name="cta_act_wlan">"开启WLAN"</string>
+    <string name="cta_act_location">"读取位置信息"</string>
+    <string name="cta_act_call_recorder">"启动录音"</string>
+    <string name="cta_act_sound_recorder">"启动录音"</string>
+    <string name="cta_act_camera">"开启摄像头"</string>
+    <string name="cta_act_bluetooth">"开启蓝牙"</string>
+    <string name="cta_act_use_network">"使用网络"</string>
+    <string name="cta_act_write_contacts">"写/删联系人"</string>
+    <string name="cta_act_write_call_log">"写/删通话记录"</string>
+    <string name="cta_act_write_mms">"写/删彩信"</string>
+    <string name="cta_act_write_sms">"写/删短信"</string>
+    <string name="cta_act_write_mms_sms">"写/删彩信及短信"</string>
+    <string name="cta_act_nfc">"开启NFC"</string>
+    <string name="cta_act_photograph">"拍摄照片"</string>
+    <string name="cta_act_picture_recording">"录制视频"</string>
+    <string name="cta_msg_phone_call">"尝试拨打电话."</string>
+    <string name="cta_msg_send_sms">"尝试发送短信."</string>
+    <string name="cta_msg_send_mms">"尝试发送彩信."</string>
+    <string name="cta_msg_read_contacts">"尝试读取联系人."</string>
+    <string name="cta_msg_read_call_log">"尝试读取通话记录."</string>
+    <string name="cta_msg_read_mms">"尝试读取彩信."</string>
+    <string name="cta_msg_read_sms">"尝试读取短信."</string>
+    <string name="cta_msg_read_mms_sms">"尝试读取彩信及短信."</string>
+    <string name="cta_msg_mobile_network">"尝试启动移动数据. 使用移动数据可能会收取其他费用, 具体取决于您的网络订阅情况, 要避免流量耗费, 请在完成后禁用移动数据."</string>
+    <string name="cta_msg_wlan">"尝试开启WLAN."</string>
+    <string name="cta_msg_location">"尝试读取位置信息."</string>
+    <string name="cta_msg_call_recorder">"尝试启动录音."</string>
+    <string name="cta_msg_sound_recorder">"尝试启动录音."</string>
+    <string name="cta_msg_camera">"尝试开启摄像头."</string>
+    <string name="cta_msg_bluetooth">"尝试开启蓝牙."</string>
+    <string name="cta_msg_use_network">"尝试使用网络. 使用网络可能会收取其他费用, 具体取决于您的网络订阅情况, 要避免流量耗费, 请在完成后禁用网络."</string>
+    <string name="cta_msg_write_contacts">"尝试存取通讯录."</string>
+    <string name="cta_msg_write_call_log">"尝试存取通话记录."</string>
+    <string name="cta_msg_write_mms">"尝试写/删彩信."</string>
+    <string name="cta_msg_write_sms">"尝试写/删短信."</string>
+    <string name="cta_msg_write_mms_sms">"尝试写/删彩信及短信."</string>
+    <string name="cta_msg_nfc">"尝试启动NFC."</string>
+    <string name="cta_msg_photograph">"尝试拍摄照片"</string>
+    <string name="cta_msg_picture_recording">"尝试录制视频."</string>
+    <!-- Grace add 2016.05.18 for CTA -->
+    <string name="cta_perm_status_reject">"拒绝"</string>
+    <string name="cta_perm_status_accept">"允许"</string>
+    <string name="cta_perm_status_inquiry">"询问"</string>
+    <string name="cta_perm_mode">"权限分类"</string>
+    <string name="cta_app_mode">"应用分类"</string>
+    <string name="cta_app_list_desc">"受监控的应用 "</string>
+    <string name="cta_app_perm_num_desc">" 项权限"</string>
+    <string name="cta_perm_num_desc">" 款应用"</string>
+    <string name="cta_perm_cate_sms">"短信"</string>
+    <string name="cta_perm_cate_phone">"电话"</string>
+    <string name="cta_perm_cate_contacts">"通讯录"</string>
+    <string name="cta_perm_cate_camera">"照相机"</string>
+    <string name="cta_perm_cate_microphone">"麦克风"</string>
+    <string name="cta_perm_cate_location">"位置"</string>
+    <string name="cta_perm_cate_others">"其他"</string>
+    <string name="cta_ckb_config_wizard">"您可以在设置 -> 应用 ->权限中更改权限"</string>
+    <string name="cta_ckb_no_next_time">"不再询问"</string>
+    <string name="cta_btn_deny">拒绝</string>
+    <string name="cta_btn_allow">允许</string>
+    <string name="mde_dialog_title">启用移动数据</string>
+    <string name="mde_message">启用移动数据？ 根据您的移动网络套餐，可能产生额外费用。 为避免额外费用，您可以在使用完毕后禁用移动数据。</string>
+    <string name="show_only_sim1_data_confirm_dialog_message">只有 SIM1 可以使用数据网络服务。</string>
+	
+	<string name="cta_read_external_storage">"读取存储空间"</string>
+    <string name="cta_write_external_storage">"保存存储空间"</string>
+</resources>
+<!--WINDCTA:zhuyuqiang@wind-mobi.com 2017 05 10 end -->

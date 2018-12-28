@@ -1,0 +1,33 @@
+package com.android.systemui.lenovo.avatar;
+
+import android.content.Context;
+import android.util.Log;
+
+//import com.lenovo.lps.reaper.sdk.AnalyticsTracker;
+//import com.lenovo.lps.reaper.sdk.api.ParamMap;
+
+public class LenovoAvatarImpl {
+	private static LenovoAvatarImpl mInstance = null;
+	private static final String TAG = LenovoAvatarImpl.class.getSimpleName();
+	
+	public static LenovoAvatarImpl getInstance() {
+		if (mInstance == null) {
+			mInstance = new LenovoAvatarImpl();
+		}
+		
+		return mInstance;
+	}
+
+	/*
+	 * 自定义事件触发
+	 * @param: category: 事件类型
+	 * @param: action:   事件行为
+	 * @param: label:    事件标签
+	 * @param: extra:    事件附加值
+	 * @param: params:   事件详情
+	 */
+/*	public void trackEventEx(String category, String action, String lable, int extra, ParamMap params) {
+		AnalyticsTracker.getInstance().trackEvent(category, action, lable, extra, params);
+		Log.v(TAG, ">>>>>>>>>avatar trackEventEx:c:" + category + " a:" + action + " l:" + lable + " :" + extra + " : " + params);
+	}*/
+}

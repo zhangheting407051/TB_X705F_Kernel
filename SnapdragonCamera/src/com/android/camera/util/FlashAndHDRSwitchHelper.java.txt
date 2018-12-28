@@ -1,0 +1,50 @@
+//qidongdong@wind-mobi.com on 2018.3.20 start
+//add for Feature-10054 add flashmode/HDR popupwindow
+package com.android.camera.util;
+
+/*
+*1.when user open HDR/flashlight , flashlight/HDR must force close.
+*2.when user close HDR/flashlight , if flashlight/HDR was force closed before , then restore flashlight/HDR.
+**/
+public class FlashAndHDRSwitchHelper {
+
+    private boolean isFlashByUser = false;
+    private boolean isHDRByUser = false;
+    private String savedHDRMode = null;
+
+    private static class LazyHolder{
+        private static final FlashAndHDRSwitchHelper Instance = new FlashAndHDRSwitchHelper();
+    }
+
+    private FlashAndHDRSwitchHelper() {
+        // TODO Auto-generated constructor stub
+    }
+
+    public static final FlashAndHDRSwitchHelper getInstance(){
+        return LazyHolder.Instance;
+    }
+
+    public void setFlashModeChangeByUser(boolean isByUser){
+        isFlashByUser = isByUser;
+    }
+    public void setHDRChangeByUser(boolean isByUser){
+        isHDRByUser = isByUser;
+    }
+
+    public boolean isFlashModeChangeByUser(){
+        return isFlashByUser ;
+    }
+    public boolean isHDRChangeByUser(){
+        return isHDRByUser ;
+    }
+
+    public void saveHDRMode(String mode){
+        savedHDRMode = mode;
+    }
+
+    public String getSavedHDRMode(){
+        return savedHDRMode;
+    }
+
+}
+//qidongdong@wind-mobi.com on 2018.3.20 end

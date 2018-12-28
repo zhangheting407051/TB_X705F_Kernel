@@ -1,0 +1,94 @@
+//qidongdong@wind-mobi.com on 2018.3.20 start
+//add for Feature-10054 add flashmode/HDR popupwindow
+package com.android.camera.ui;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.LinearLayout.LayoutParams;
+
+import org.codeaurora.snapcam.R;
+
+public class SwitchPopupWindowAdapter extends BaseAdapter{
+
+    private CharSequence[] mStringArray = null;
+    private int[] mImgArray = null;
+    private int[] mImgArray_pressed = null;
+    private Context mContext;
+    private int nowSeleteItem;
+    private int itemHeight;
+
+    public SwitchPopupWindowAdapter(Context context,CharSequence[] strArray,int[] imgIDs,int[] imageIDs_pressed,int index,float height){
+        mContext = context;
+        mStringArray = strArray;
+        mImgArray = imgIDs;
+        mImgArray_pressed = imageIDs_pressed;
+        nowSeleteItem = index;
+        itemHeight = (int)height;
+    }
+
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return mStringArray.length;
+    }
+
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        return mStringArray[position];
+    }
+
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View view, ViewGroup viewGroup) {
+        // TODO Auto-generated method stub
+        ViewHolder lViewHolder = null;
+        if(view == null){
+            lViewHolder = new ViewHolder();
+            view = LayoutInflater.from(mContext).inflate(R.layout.switch_popup_window_item,null);
+            lViewHolder.itemTextView = view.findViewById(R.id.lv_tv);
+            lViewHolder.itemImageView = view.findViewById(R.id.lv_img);
+            view.setTag(lViewHolder);
+        }else{
+            lViewHolder = (ViewHolder)view.getTag();
+        }
+
+        lViewHolder.itemTextView.setText(mStringArray[position]);
+
+        if(position == nowSeleteItem){
+            lViewHolder.itemTextView.setTextColor(mContext.getResources().getColor(R.color.switchpopupwindow_tx_select));
+            lViewHolder.itemImageView.setImageResource(mImgArray_pressed[position]);
+        }else{
+            lViewHolder.itemTextView.setTextColor(mContext.getResources().getColor(R.color.switchpopupwindow_tx_normal));
+            lViewHolder.itemImageView.setImageResource(mImgArray[position]);
+        }
+
+        LinearLayout.LayoutParams lp;
+        lp = (LayoutParams) lViewHolder.itemTextView.getLayoutParams();
+        lp.height = itemHeight;
+        lViewHolder.itemTextView.setLayoutParams(lp);
+
+        return view;
+    }
+
+    private class ViewHolder{
+        TextView itemTextView;
+        ImageView itemImageView;
+    }
+
+}
+//qidongdong@wind-mobi.com on 2018.3.20 end

@@ -1,0 +1,20 @@
+package com.android.systemui.lenovo.mouse;
+
+import android.view.MotionEvent;
+import android.view.View;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public interface MouseTouchDelegate {
+    public void clearFocus();
+
+    public void onLongPress(MotionEvent e, View v);
+
+    public boolean onMouseLeftDoubleTap(MotionEvent e, View v);
+
+    public boolean onSingleTapUp(MotionEvent e, View v);
+
+    public boolean onSingleTapUpMouseLeft(MotionEvent e, View v);
+
+    public boolean onSingleTapUpMouseRight(MotionEvent e, View v);
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

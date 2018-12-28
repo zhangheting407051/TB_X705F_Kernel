@@ -1,0 +1,33 @@
+//qidongdong@wind-mobi.com on 2018.3.14 start
+//add for Feature-10054 add GridLines
+package com.android.camera.util;
+
+import android.graphics.Rect;
+import android.util.Log;
+
+public class PreviewChangeHelper {
+    private static final String TAG = "CAM_PreviewChangeHelper";
+
+    private PreviewAreaChangedListener mListener;
+
+    public void addPreviewAreaChangedListener(PreviewAreaChangedListener listener){
+        mListener = listener;
+    }
+
+    public void removePreviewAreaChangedListener(){
+        mListener = null;
+    }
+
+    public void updatePreviewArea(Rect previewArea){
+        if(mListener == null){
+            Log.d(TAG,"updatePreviewArea do not work, mListener == null");
+            return;
+        }
+        mListener.onPreviewAreaChanged(previewArea);
+    }
+
+    public interface PreviewAreaChangedListener{
+        public void onPreviewAreaChanged(Rect previewArea);
+    }
+}
+//qidongdong@wind-mobi.com on 2018.3.14 end

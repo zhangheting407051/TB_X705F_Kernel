@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2012 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/land_toolbar_height"
+    android:theme="@android:style/Theme.DeviceDefault"
+    android:background="#000000"
+    android:orientation="horizontal">
+
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="@dimen/land_toolbar_height"
+        android:layout_weight="1">
+
+        <ImageButton
+            android:id="@+id/filtershow_exit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="20dp"
+            android:background="?android:attr/actionBarItemBackground"
+            android:scaleType="fitCenter"
+            android:src="@drawable/cancel" />
+
+        <ImageButton
+            android:id="@+id/filtershow_undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_gravity="center_vertical"
+            android:layout_centerVertical="true"
+            android:background="?android:attr/actionBarItemBackground"
+            android:scaleType="fitCenter"
+            android:src="@drawable/icon_btn_undo_rest"
+            android:layout_marginRight="40dp"/>
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="@dimen/land_toolbar_height"
+        android:layout_weight="1">
+
+        <ImageButton
+            android:id="@+id/filtershow_redo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_gravity="center_vertical"
+            android:background="?android:attr/actionBarItemBackground"
+            android:scaleType="fitCenter"
+            android:src="@drawable/icon_btn_redo_rest"
+            android:layout_marginLeft="40dp"/>
+
+        <TextView
+            android:id="@+id/filtershow_done"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_gravity="center_vertical"
+            android:text="@string/save"
+            android:textAllCaps="true"
+            android:textColor="#ffffff"
+            android:textSize="16sp" />
+    </RelativeLayout>
+
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

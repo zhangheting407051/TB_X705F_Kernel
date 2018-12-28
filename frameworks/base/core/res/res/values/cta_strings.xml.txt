@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--WINDCTA:zhuyuqiang@wind-mobi.com 2017 02 28 start -->
+<resources>
+    <string name="cta_act_phone_call">"Phone call"</string>
+    <string name="cta_act_send_sms">"Send SMS messages"</string>
+    <string name="cta_act_send_mms">"Send MMS messages"</string>
+    <string name="cta_act_read_contacts">"Read your contacts"</string>
+    <string name="cta_act_read_call_log">"Read your call log"</string>
+    <string name="cta_act_read_mms">"Read MMS messages"</string>
+    <string name="cta_act_read_sms">"Read SMS messages"</string>
+    <string name="cta_act_read_mms_sms">"Read MMS and SMS messages"</string>
+    <string name="cta_act_mobile_network">"Mobile Network"</string>
+    <string name="cta_act_wlan">"Open WLAN"</string>
+    <string name="cta_act_location">"Read location information"</string>
+    <string name="cta_act_call_recorder">"Record audio"</string>
+    <string name="cta_act_sound_recorder">"Record audio"</string>
+    <string name="cta_act_camera">"Open camera"</string>
+    <string name="cta_act_bluetooth">"Turn on bluetooth"</string>
+    <string name="cta_act_use_network">"Turn on network"</string>
+    <string name="cta_act_write_contacts">"Modify or delete your contacts"</string>
+    <string name="cta_act_write_call_log">"Modify or delete your call log"</string>
+    <string name="cta_act_write_mms">"Modify or delete your MMS messages"</string>
+    <string name="cta_act_write_sms">"Modify or delete your SMS messages"</string>
+    <string name="cta_act_write_mms_sms">"Write MMS and SMS"</string>
+    <string name="cta_act_nfc">"Turn on NFC"</string>
+    <string name="cta_act_photograph">"Photograph"</string>
+    <string name="cta_act_picture_recording">"Picture recording"</string>
+    <string name="cta_msg_phone_call">"tries to dial call."</string>
+    <string name="cta_msg_send_sms">"tries to send SMS."</string>
+    <string name="cta_msg_send_mms">"tries to send MMS."</string>
+    <string name="cta_msg_read_contacts">"tries to read Contacts."</string>
+    <string name="cta_msg_read_call_log">"tries to read Call Log."</string>
+    <string name="cta_msg_read_mms">"tries to read MMS."</string>
+    <string name="cta_msg_read_sms">"tries to read SMS."</string>
+    <string name="cta_msg_read_mms_sms">"tries to read MMS and SMS."</string>
+    <string name="cta_msg_mobile_network">"tries to connect mobile network. Use mobile network may have cost. To avoid get cost, disconnect mobile network when not using."</string>
+    <string name="cta_msg_wlan">"tries to connect WLAN."</string>
+    <string name="cta_msg_location">"tries to use location information."</string>
+    <string name="cta_msg_call_recorder">"tries to use call recorder."</string>
+    <string name="cta_msg_sound_recorder">"tries to use sound recorder."</string>
+    <string name="cta_msg_camera">"tries to use camera."</string>
+    <string name="cta_msg_bluetooth">"tries to use open bluetooth."</string>
+    <string name="cta_msg_use_network">"tries to use network."</string>
+    <string name="cta_msg_write_contacts">"tries to write Contacts."</string>
+    <string name="cta_msg_write_call_log">"tries to write Call Log."</string>
+    <string name="cta_msg_write_mms">"tries to write MMS."</string>
+    <string name="cta_msg_write_sms">"tries to write SMS."</string>
+    <string name="cta_msg_write_mms_sms">"tries to write MMS and SMS."</string>
+    <string name="cta_msg_nfc">"tries to enable NFC."</string>
+    <string name="cta_msg_photograph">"tries to photograph"</string>
+    <string name="cta_msg_picture_recording">"tries to record a video"</string>
+
+    <!-- Grace add 2016.05.18 for CTA -->
+    <string name="cta_perm_status_reject">"Reject"</string>
+    <string name="cta_perm_status_accept">"Accept"</string>
+    <string name="cta_perm_status_inquiry">"Inquiry"</string>
+
+    <string name="cta_perm_mode">"Permissions"</string>
+    <string name="cta_app_mode">"Applications"</string>
+
+    <string name="cta_app_list_desc">"Monitoring "</string>
+    <string name="cta_app_perm_num_desc">" permissions"</string>
+    <string name="cta_perm_num_desc">" applications"</string>
+
+    <string name="cta_perm_cate_sms">"SMS"</string>
+    <string name="cta_perm_cate_phone">"Phone"</string>
+    <string name="cta_perm_cate_contacts">"Contacts"</string>
+    <string name="cta_perm_cate_camera">"Camera"</string>
+    <string name="cta_perm_cate_microphone">"Microphone"</string>
+    <string name="cta_perm_cate_location">"Location"</string>
+    <string name="cta_perm_cate_others">"Other Permissions"</string>
+    <string name="cta_ckb_config_wizard">"You can change permission in the Settings -> Applications -> permssions"</string>
+    <string name="cta_ckb_no_next_time">"Not ask again"</string>
+    <string name="cta_btn_deny">Deny</string>
+    <string name="cta_btn_allow">Allow</string>
+    <string name="show_only_sim1_data_confirm_dialog_message">"Data network service is enabled on SIM1 only"</string>
+    <string name="mde_dialog_title">"Enable mobile data"</string>
+    <string name="mde_message">"Enable mobile data? You might incur additional fees depending on your network plan. You may disable mobile data, if not in use, to avoid additional charges."</string>
+    <!-- liaoxiaomin@wind-mobi.com add begin 20180502 -->
+    <string name="cta_read_external_storage">"read storage"</string>
+    <string name="cta_write_external_storage">"write storage"</string>
+    <!-- liaoxiaomin@wind-mobi.com add end 20180502 -->
+</resources>
+<!--WINDCTA:zhuyuqiang@wind-mobi.com 2017 02 28 end -->

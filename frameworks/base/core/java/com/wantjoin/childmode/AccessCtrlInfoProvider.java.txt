@@ -1,0 +1,823 @@
+package com.wantjoin.childmode;
+
+import android.content.ContentProvider;
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.UriMatcher;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteQueryBuilder;
+import android.net.Uri;
+import android.text.TextUtils;
+import android.util.Log;
+
+import java.util.HashMap;
+
+import static com.wantjoin.childmode.AccessCtrlInfo.*;
+
+/**
+*
+* 说明：数据库ContentProvider实现，为其它应用提供数据访问接口
+*
+* @author  	孟祥生
+* @version	2016年10月19日
+*
+*/
+public class AccessCtrlInfoProvider extends ContentProvider{
+
+	private static final String TAG = "AccessCtrlInfoProvider";
+
+	//当前登录用户ID
+	private static int	m_UserID = -1;
+	
+	private static final int	DATABASE_VERSION	= 2;
+	private static final UriMatcher m_UriMatcher;
+	private DatabaseHelper m_DBHelper;
+	
+	//用户信息表
+	private static HashMap<String, String>			m_mapUser;
+	private static final int 	USERS				= 1;
+	private static final int 	USER_ID				= 2;
+	//创建表SQL语句
+	private static final String CREATE_USER_TABLE=
+		"CREATE TABLE " 
+		+ USER_TABLE_NAME 
+		+ " (" + KidUserInfo._ID
+		+ " INTEGER PRIMARY KEY," 
+		+ KidUserInfo.NAME
+		+ " TEXT,"
+		+ KidUserInfo.TYPE
+		+ " INTEGER,"
+		+ KidUserInfo.BIRTHDAY
+		+ " TEXT,"
+		+ KidUserInfo.SEX
+		+ " INTEGER,"
+		+ KidUserInfo.TOTALTIME
+		+ " INTEGER,"
+		+ KidUserInfo.CONTINUETIME
+		+ " INTEGER,"
+		+ KidUserInfo.DURATIONTODAY
+		+ " INTEGER,"
+		+ KidUserInfo.USAGETIME
+		+ " INTEGER,"
+		+ KidUserInfo.INTERVALTIME
+		+ " INTEGER,"
+		+ KidUserInfo.ENABLE_WEB_CTRL
+		+ " INTEGER,"
+		+ KidUserInfo.LASTLOGINDATE
+		+ " TEXT,"
+		+ KidUserInfo.USER_PHOTO_CHANGED
+		+ " INTEGER,"
+		+ KidUserInfo.IF_SHOW_WELCOME
+		+ " INTEGER"
+		+ ");";		
+	
+	//时间段表
+	private static HashMap<String, String>			m_mapCtrlTime;
+	private static final int 	CTRLTIMES				= 3;
+	private static final int 	CTRLTIME_ID				= 4;
+	//创建表SQL语句
+	private static final String CREATE_CTRLTIME_TABLE=
+		"CREATE TABLE " 
+		+ CTRLTIME_TABLE_NAME 
+		+ " (" + CtrlTimeInfo._ID
+		+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
+		+ CtrlTimeInfo.SESSIONTIME
+		+ " INTEGER,"
+		+ CtrlTimeInfo.INTERVALTIME
+		+ " INTEGER,"
+		+ CtrlTimeInfo.USERID
+		+ " INTEGER"
+		+ ");";
+	
+	//控制信息表
+	private static HashMap<String, String>			m_mapCtrl;
+	private static final int 	CTRLS				= 5;
+	private static final int 	CTRL_ID				= 6;
+	//创建表SQL语句
+	private static final String CREATE_CTRL_TABLE=
+		"CREATE TABLE " 
+		+ CTRL_TABLE_NAME 
+		+ " (" + CtrlInfo._ID
+		+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
+		+ CtrlInfo.OBJECT 
+		+ " TEXT," 
+		+ CtrlInfo.USERID 
+		+ " INTEGER,"
+		+ CtrlInfo.APPUID 
+		+ " INTEGER,"
+		+ CtrlInfo.LIMITED 
+		+ " INTEGER,"
+		+ CtrlInfo.PHOTO
+		+ " BLOB"
+		+ ");";
+
+	//网络日志信息表
+	private static HashMap<String, String>			m_mapNetLog;
+	private static final int 	NETLOGS				= 7;
+	private static final int 	NETLOG_ID			= 8;
+	//创建表SQL语句
+	private static final String CREATE_NETLOG_TABLE =
+		"CREATE TABLE " 
+		+ NETLOG_TABLE_NAME 
+		+ " (" + NetLogInfo._ID
+		+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
+		+ NetLogInfo.HOST 
+		+ " TEXT," 
+//		+ NetLogInfo.APPUID
+//		+ " INTEGER,"
+		+ NetLogInfo.APPLOGID 
+		+ " INTEGER," 		
+		+ NetLogInfo.APPPKGNAME 
+		+ " TEXT," 				
+		+ NetLogInfo.LOGTIME 
+		+ " INTEGER," 
+		+ NetLogInfo.SENDCOUNT 
+		+ " INTEGER,"		
+		+ NetLogInfo.RECVCOUNT 
+		+ " INTEGER,"
+		+ NetLogInfo.USERID 
+		+ " INTEGER,"		
+		+ NetLogInfo.HOST_TITLE 
+		+ " TEXT" 
+		+ ");";
+
+	//应用程序日志信息表
+	private static HashMap<String, String>			m_mapAppLog;
+	private static final int 	APPLOGS				= 9;
+	private static final int 	APPLOG_ID			= 10;
+	//创建表SQL语句
+	private static final String CREATE_APPLOG_TABLE =
+		"CREATE TABLE " 
+		+ APPLOG_TABLE_NAME 
+		+ " (" + AppLogInfo._ID
+		+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
+//		+ AppLogInfo.APPUID
+//		+ " INTEGER,"
+		+ AppLogInfo.APPPKGNAME 
+		+ " TEXT," 		
+		+ AppLogInfo.APPNAME 
+		+ " TEXT," 				
+		+ AppLogInfo.BEGINTIME 
+		+ " INTEGER," 
+		+ AppLogInfo.ENDTIME 
+		+ " INTEGER,"		
+		+ AppLogInfo.LOGTIME 
+		+ " INTEGER," 
+		+ AppLogInfo.USERID 
+		+ " INTEGER" + ");";
+
+	//当前登录帐号（开机后存在，不写入数据库中）
+	private static final int	LOGIN_USER			= 11;
+	
+	//应用程序列表
+	private static HashMap<String, String>			m_mapApp;
+	private static final int 	APPS				= 12;
+	private static final int 	APP_ID				= 13;
+	//创建表SQL语句
+	private static final String CREATE_APP_TABLE =
+		"CREATE TABLE " 
+		+ APP_TABLE_NAME 
+		+ " (" + AppInfo._ID
+		+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
+		+ AppInfo.NAME 
+		+ " TEXT," 
+		+ AppInfo.PACKAGE 
+		+ " TEXT," 
+		+ AppInfo.UID 
+		+ " INTEGER,"		
+		+ AppInfo.REGTIME 
+		+ " TEXT," 
+		+ AppInfo.INSTALLSTATE 
+		+ " INTEGER," 
+		+ AppInfo.UNINSTALL
+		+ " INTEGER" + ");";
+	
+	//设备状态记录表
+	private static HashMap<String, String>			m_mapDeviceStatus;
+	private static final int 	DEVICESTATUSS		= 14;
+	private static final int 	DEVICESTATUS_ID		= 15;
+	//创建表SQL语句
+	private static final String CREATE_DEVICESTATUS_TABLE =
+		"CREATE TABLE " 
+		+ DEVICE_TABLE_NAME 
+		+ " (" + DeviceStatusInfo._ID
+		+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
+		+ DeviceStatusInfo.NAME 
+		+ " TEXT," 
+		+ DeviceStatusInfo.VALUE 
+		+ " TEXT" + ");";
+	
+	//静态初始化
+	static
+	{
+		m_UriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+		m_UriMatcher.addURI(AUTHORITY, "user", USERS);
+		m_UriMatcher.addURI(AUTHORITY, "user/#", USER_ID);
+		m_UriMatcher.addURI(AUTHORITY, "ctrltime", CTRLTIMES);
+		m_UriMatcher.addURI(AUTHORITY, "ctrltime/#", CTRLTIME_ID);
+		m_UriMatcher.addURI(AUTHORITY, "ctrl", CTRLS);
+		m_UriMatcher.addURI(AUTHORITY, "ctrl/#", CTRL_ID);
+		m_UriMatcher.addURI(AUTHORITY, "netlog", NETLOGS);
+		m_UriMatcher.addURI(AUTHORITY, "netlog/#", NETLOG_ID);
+		m_UriMatcher.addURI(AUTHORITY, "applog", APPLOGS);
+		m_UriMatcher.addURI(AUTHORITY, "applog/#", APPLOG_ID);
+		m_UriMatcher.addURI(AUTHORITY, "loginuser", LOGIN_USER);
+		m_UriMatcher.addURI(AUTHORITY, "app", APPS);
+		m_UriMatcher.addURI(AUTHORITY, "app/#", APP_ID);
+		m_UriMatcher.addURI(AUTHORITY, "devicestatus", DEVICESTATUSS);
+		m_UriMatcher.addURI(AUTHORITY, "devicestatus/#", DEVICESTATUS_ID);
+		
+		//用户信息表
+		m_mapUser = new HashMap<String, String>();
+		m_mapUser.put(KidUserInfo._ID, KidUserInfo._ID);
+		m_mapUser.put(KidUserInfo.NAME, KidUserInfo.NAME);
+		m_mapUser.put(KidUserInfo.TYPE, KidUserInfo.TYPE);
+		m_mapUser.put(KidUserInfo.BIRTHDAY, KidUserInfo.BIRTHDAY);
+		m_mapUser.put(KidUserInfo.SEX, KidUserInfo.SEX);
+		m_mapUser.put(KidUserInfo.TOTALTIME, KidUserInfo.TOTALTIME);
+		m_mapUser.put(KidUserInfo.CONTINUETIME, KidUserInfo.CONTINUETIME);
+		m_mapUser.put(KidUserInfo.DURATIONTODAY, KidUserInfo.DURATIONTODAY);
+		m_mapUser.put(KidUserInfo.USAGETIME, KidUserInfo.USAGETIME);
+		m_mapUser.put(KidUserInfo.INTERVALTIME, KidUserInfo.INTERVALTIME);
+		m_mapUser.put(KidUserInfo.ENABLE_WEB_CTRL, KidUserInfo.ENABLE_WEB_CTRL);
+		m_mapUser.put(KidUserInfo.USER_PHOTO_CHANGED, KidUserInfo.USER_PHOTO_CHANGED);
+		m_mapUser.put(KidUserInfo.IF_SHOW_WELCOME, KidUserInfo.IF_SHOW_WELCOME);
+		m_mapUser.put(KidUserInfo.LASTLOGINDATE, KidUserInfo.LASTLOGINDATE);
+		
+		//时间段表
+		m_mapCtrlTime = new HashMap<String, String>();
+		m_mapCtrlTime.put(CtrlTimeInfo._ID, CtrlTimeInfo._ID);
+		m_mapCtrlTime.put(CtrlTimeInfo.SESSIONTIME, CtrlTimeInfo.SESSIONTIME);
+		m_mapCtrlTime.put(CtrlTimeInfo.INTERVALTIME, CtrlTimeInfo.INTERVALTIME);
+		m_mapCtrlTime.put(CtrlTimeInfo.USERID, CtrlTimeInfo.USERID);
+
+		//控制信息表
+		m_mapCtrl = new HashMap<String, String>();
+		m_mapCtrl.put(CtrlInfo._ID, CtrlInfo._ID);
+		m_mapCtrl.put(CtrlInfo.OBJECT, CtrlInfo.OBJECT);
+		m_mapCtrl.put(CtrlInfo.USERID, CtrlInfo.USERID);
+		m_mapCtrl.put(CtrlInfo.APPUID, CtrlInfo.APPUID);
+		m_mapCtrl.put(CtrlInfo.LIMITED, CtrlInfo.LIMITED);
+        m_mapCtrl.put(CtrlInfo.PHOTO,CtrlInfo.PHOTO);
+
+		//web日志信息表
+		m_mapNetLog = new HashMap<String, String>();
+		m_mapNetLog.put(NetLogInfo._ID, NetLogInfo._ID);
+		m_mapNetLog.put(NetLogInfo.HOST, NetLogInfo.HOST);
+//		m_mapNetLog.put(NetLogInfo.APPUID, NetLogInfo.APPUID);
+		m_mapNetLog.put(NetLogInfo.APPLOGID, NetLogInfo.APPLOGID);		
+		m_mapNetLog.put(NetLogInfo.APPPKGNAME, NetLogInfo.APPPKGNAME);				
+		m_mapNetLog.put(NetLogInfo.LOGTIME, NetLogInfo.LOGTIME);
+		m_mapNetLog.put(NetLogInfo.RECVCOUNT, NetLogInfo.RECVCOUNT);
+		m_mapNetLog.put(NetLogInfo.SENDCOUNT, NetLogInfo.SENDCOUNT);
+		m_mapNetLog.put(NetLogInfo.USERID, NetLogInfo.USERID);
+		m_mapNetLog.put(NetLogInfo.HOST_TITLE, NetLogInfo.HOST_TITLE);
+		
+
+		//app日志信息表
+		m_mapAppLog = new HashMap<String, String>();
+		m_mapAppLog.put(AppLogInfo._ID, AppLogInfo._ID);
+//		m_mapAppLog.put(AppLogInfo.APPUID, AppLogInfo.APPUID);
+		m_mapAppLog.put(AppLogInfo.APPPKGNAME, AppLogInfo.APPPKGNAME);		
+		m_mapAppLog.put(AppLogInfo.APPNAME, AppLogInfo.APPNAME);				
+		m_mapAppLog.put(AppLogInfo.LOGTIME, AppLogInfo.LOGTIME);
+		m_mapAppLog.put(AppLogInfo.BEGINTIME, AppLogInfo.BEGINTIME);
+		m_mapAppLog.put(AppLogInfo.ENDTIME, AppLogInfo.ENDTIME);
+		m_mapAppLog.put(NetLogInfo.USERID, NetLogInfo.USERID);
+
+		//app列表
+		m_mapApp = new HashMap<String, String>();
+		m_mapApp.put(AppInfo._ID, AppInfo._ID);
+		m_mapApp.put(AppInfo.NAME, AppInfo.NAME);
+		m_mapApp.put(AppInfo.PACKAGE, AppInfo.PACKAGE);
+		m_mapApp.put(AppInfo.UID, AppInfo.UID);
+		m_mapApp.put(AppInfo.REGTIME, AppInfo.REGTIME);
+		m_mapApp.put(AppInfo.INSTALLSTATE, AppInfo.INSTALLSTATE);
+		m_mapApp.put(AppInfo.UNINSTALL, AppInfo.UNINSTALL);		
+		
+		//设备状态列表
+		m_mapDeviceStatus = new HashMap<String, String>();
+		m_mapDeviceStatus.put(DeviceStatusInfo._ID, DeviceStatusInfo._ID);
+		m_mapDeviceStatus.put(DeviceStatusInfo.NAME, DeviceStatusInfo.NAME);
+		m_mapDeviceStatus.put(DeviceStatusInfo.VALUE, DeviceStatusInfo.VALUE);
+	}
+	
+	//自己封装的数据库
+	private static class DatabaseHelper extends SQLiteOpenHelper
+	{
+		//构造函数-创建数据库
+		DatabaseHelper(Context context)
+		{
+			super(context, DATABASE_NAME, null, DATABASE_VERSION);
+		}
+		
+		//创建表
+		@Override
+		public void onCreate(SQLiteDatabase db)
+		{
+			Log.e(TAG, "创建数据库");
+			db.execSQL(CREATE_USER_TABLE);
+			db.execSQL(CREATE_CTRLTIME_TABLE);
+			db.execSQL(CREATE_CTRL_TABLE);
+			db.execSQL(CREATE_NETLOG_TABLE);
+			db.execSQL(CREATE_APPLOG_TABLE);
+			db.execSQL(CREATE_APP_TABLE);
+			db.execSQL(CREATE_DEVICESTATUS_TABLE);
+		}
+		
+		//升级数据库
+		@Override
+		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+		{
+			db.execSQL("DROP TABLE IF EXISTS " + USER_TABLE_NAME);
+			db.execSQL("DROP TABLE IF EXISTS " + CTRLTIME_TABLE_NAME);
+			db.execSQL("DROP TABLE IF EXISTS " + CTRL_TABLE_NAME);
+			db.execSQL("DROP TABLE IF EXISTS " + NETLOG_TABLE_NAME);
+			db.execSQL("DROP TABLE IF EXISTS " + APPLOG_TABLE_NAME);
+			db.execSQL("DROP TABLE IF EXISTS " + APP_TABLE_NAME);
+			db.execSQL("DROP TABLE IF EXISTS " + DEVICE_TABLE_NAME);
+			onCreate(db);
+		}
+	}
+	
+	//初始化
+	@Override
+	public boolean onCreate() {
+		m_DBHelper = new DatabaseHelper(getContext());
+		
+		return true;
+	}
+	
+	//查询
+	@Override
+	public Cursor query(Uri uri, String[] projection, String selection,
+			String[] selectionArgs, String sortOrder) {
+		Log.d(TAG, "查询数据库...");
+		
+		SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
+		switch (m_UriMatcher.match(uri))
+		{
+			case USERS:
+				qb.setTables(USER_TABLE_NAME);
+				qb.setProjectionMap(m_mapUser);
+				break;
+			case USER_ID:
+				qb.setTables(USER_TABLE_NAME);
+				qb.setProjectionMap(m_mapUser);
+				qb.appendWhere(KidUserInfo._ID + " = " + uri.getPathSegments().get(1));
+				break;
+			case CTRLTIMES:
+				qb.setTables(CTRLTIME_TABLE_NAME);
+				qb.setProjectionMap(m_mapCtrlTime);
+				break;
+			case CTRLTIME_ID:
+				qb.setTables(CTRLTIME_TABLE_NAME);
+				qb.setProjectionMap(m_mapCtrlTime);
+				qb.appendWhere(CtrlTimeInfo._ID + " = " + uri.getPathSegments().get(1));
+				break;
+			case CTRLS:
+				qb.setTables(CTRL_TABLE_NAME);
+				qb.setProjectionMap(m_mapCtrl);
+				break;
+			case CTRL_ID:
+				qb.setTables(CTRL_TABLE_NAME);
+				qb.setProjectionMap(m_mapCtrl);
+				qb.appendWhere(CtrlInfo._ID + " = " + uri.getPathSegments().get(1));				
+				break;
+			case NETLOGS:
+				qb.setTables(NETLOG_TABLE_NAME);
+				qb.setProjectionMap(m_mapNetLog);
+				break;
+			case NETLOG_ID:
+				qb.setTables(NETLOG_TABLE_NAME);
+				qb.setProjectionMap(m_mapNetLog);
+				qb.appendWhere(NetLogInfo._ID + " = " + uri.getPathSegments().get(1));				
+				break;
+			case APPLOGS:
+				qb.setTables(APPLOG_TABLE_NAME);
+				qb.setProjectionMap(m_mapAppLog);
+				break;
+			case APPLOG_ID:
+				qb.setTables(APPLOG_TABLE_NAME);
+				qb.setProjectionMap(m_mapAppLog);
+				qb.appendWhere(AppLogInfo._ID + " = " + uri.getPathSegments().get(1));				
+				break;		
+			case LOGIN_USER:	//查询当前登录用户
+				if (m_UserID >= 0)
+				{
+					qb.setTables(USER_TABLE_NAME);
+					qb.setProjectionMap(m_mapUser);
+					selection = CtrlInfo._ID + " = " + m_UserID;
+					break;
+				}
+				else{
+					return null;
+				}
+			case APPS:
+				qb.setTables(APP_TABLE_NAME);
+				qb.setProjectionMap(m_mapApp);
+				break;			
+			case APP_ID:
+				qb.setTables(APP_TABLE_NAME);
+				qb.setProjectionMap(m_mapApp);
+				qb.appendWhere(AppInfo._ID + " = " + uri.getPathSegments().get(1));				
+				break;			
+			case DEVICESTATUSS:
+				qb.setTables(DEVICE_TABLE_NAME);
+				qb.setProjectionMap(m_mapDeviceStatus);
+				break;			
+			case DEVICESTATUS_ID:
+				qb.setTables(DEVICE_TABLE_NAME);
+				qb.setProjectionMap(m_mapDeviceStatus);
+				qb.appendWhere(DeviceStatusInfo._ID + " = " + uri.getPathSegments().get(1));				
+				break;
+
+			default:
+				Log.w(TAG, "Query Unknown URI " + uri);
+				throw new  IllegalArgumentException("Query Unknown URI " + uri);
+		}
+		SQLiteDatabase db = m_DBHelper.getReadableDatabase();
+		Cursor c = qb.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+		c.setNotificationUri(getContext().getContentResolver(), uri);
+		
+		return c;
+	}
+	
+	//添加数据
+	@Override
+	public Uri insert(Uri uri, ContentValues initvalues) {
+		Log.d(TAG, "添加数据库...");
+		
+		if (initvalues == null)	//传入的参数为空
+		{
+			throw new SQLException("Failed to insert row into, initvalues is NULL!");
+		}
+		
+		String sTableName;
+		Uri ConstUri;
+		
+		//检查输入的合法性
+		switch (m_UriMatcher.match(uri))
+		{
+		case USERS:
+			if (initvalues.containsKey(KidUserInfo.NAME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.NAME does not exists!");		
+			}
+			if (initvalues.containsKey(KidUserInfo.TYPE) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.TYPE does not exists!");
+			}
+			if (initvalues.containsKey(KidUserInfo.BIRTHDAY) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.BIRTHDAY does not exists!");		
+			}
+			if (initvalues.containsKey(KidUserInfo.SEX) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.SEX does not exists!");
+			}
+			if (initvalues.containsKey(KidUserInfo.DURATIONTODAY) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.DURATIONTODAY does not exists!");				
+			}
+			if (initvalues.containsKey(KidUserInfo.TOTALTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.TOTALTIME does not exists!");				
+			}
+			if (initvalues.containsKey(KidUserInfo.CONTINUETIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.CONTINUETIME does not exists!");				
+			}
+			if (initvalues.containsKey(KidUserInfo.LASTLOGINDATE) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.UserInfo.LASTLOGINDATE does not exists!");				
+			}
+			sTableName = USER_TABLE_NAME;
+			ConstUri = KidUserInfo.CONTENT_URI;
+			break;
+			
+		case CTRLTIMES:
+			if (initvalues.containsKey(CtrlTimeInfo.SESSIONTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.CtrlTimeInfo.BEGINTIME does not exists!");				
+			}
+			if (initvalues.containsKey(CtrlTimeInfo.INTERVALTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.CtrlTimeInfo.ENDTIME does not exists!");				
+			}
+			if (initvalues.containsKey(CtrlTimeInfo.USERID) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.CtrlTimeInfo.USER does not exists!");
+			}						
+			sTableName = CTRLTIME_TABLE_NAME;
+			ConstUri = CtrlTimeInfo.CONTENT_URI;
+			break;
+			
+		case CTRLS:
+			if (initvalues.containsKey(CtrlInfo.OBJECT) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.CtrlInfo.OBJECT does not exists!");				
+			}
+			if (initvalues.containsKey(CtrlInfo.USERID) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.CtrlInfo.USERID does not exists!");				
+			}
+			if (initvalues.containsKey(CtrlInfo.LIMITED) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.CtrlInfo.LIMITED does not exists!");
+			}
+			sTableName = CTRL_TABLE_NAME;
+			ConstUri = CtrlInfo.CONTENT_URI;
+			break;
+			
+		case NETLOGS:
+			if (initvalues.containsKey(NetLogInfo.HOST) == false)
+			{
+				throw new SQLException("Failed to insert row into, NetLogInfo.HOST does not exists!");				
+			}
+			if (initvalues.containsKey(NetLogInfo.LOGTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, NetLogInfo.LOGTIME does not exists!");
+			}
+			if (initvalues.containsKey(NetLogInfo.RECVCOUNT) == false)
+			{
+				throw new SQLException("Failed to insert row into, NetLogInfo.RECVCOUNT does not exists!");
+			}
+			if (initvalues.containsKey(NetLogInfo.SENDCOUNT) == false)
+			{
+				throw new SQLException("Failed to insert row into, NetLogInfo.SENDCOUNT does not exists!");
+			}
+			if (initvalues.containsKey(NetLogInfo.USERID) == false)
+			{
+				throw new SQLException("Failed to insert row into, NetLogInfo.USERID does not exists!");
+			}
+			sTableName = NETLOG_TABLE_NAME;
+			ConstUri = NetLogInfo.CONTENT_URI;
+			break;	
+			
+		case APPLOGS:
+//			if (initvalues.containsKey(AppLogInfo.APPUID) == false)
+//			{
+//				throw new SQLException("Failed to insert row into, AppLogInfo.APPNAME does not exists!");
+//			}
+			if (initvalues.containsKey(AppLogInfo.BEGINTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppLogInfo.BEGINTIME does not exists!");				
+			}
+			if (initvalues.containsKey(AppLogInfo.ENDTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppLogInfo.ENDTIME does not exists!");
+			}
+			if (initvalues.containsKey(AppLogInfo.LOGTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppLogInfo.LOGTIME does not exists!");
+			}
+			if (initvalues.containsKey(AppLogInfo.USERID) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppLogInfo.USERID does not exists!");
+			}
+			sTableName = APPLOG_TABLE_NAME;
+			ConstUri = AppLogInfo.CONTENT_URI;
+			break;	
+			
+		case LOGIN_USER:	//记录登录帐号
+			if (initvalues.containsKey(CtrlInfo.USERID) == false)
+			{
+				throw new SQLException("Failed to insert row into, AccessCtrlInfo.CtrlInfo.USERID does not exists!");
+			}
+			else{
+				m_UserID = initvalues.getAsInteger(CtrlInfo.USERID);	
+			}
+			ConstUri = Uri.parse(AUTHORITY + "/loginuser");
+			return ConstUri;
+			
+		case APPS:
+			if (initvalues.containsKey(AppInfo.NAME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppInfo.NAME does not exists!");				
+			}
+			if (initvalues.containsKey(AppInfo.PACKAGE) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppInfo.PACKAGE does not exists!");				
+			}
+			if (initvalues.containsKey(AppInfo.UID) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppInfo.UID does not exists!");
+			}
+			if (initvalues.containsKey(AppInfo.REGTIME) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppInfo.REGTIME does not exists!");
+			}
+			if (initvalues.containsKey(AppInfo.INSTALLSTATE) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppInfo.INSTALLSTATE does not exists!");
+			}			
+			if (initvalues.containsKey(AppInfo.UNINSTALL) == false)
+			{
+				throw new SQLException("Failed to insert row into, AppInfo.UNINSTALL does not exists!");
+			}
+			sTableName = APP_TABLE_NAME;
+			ConstUri = AppInfo.CONTENT_URI;
+			break;		
+			
+		case DEVICESTATUSS:
+			if (initvalues.containsKey(DeviceStatusInfo.NAME) == false)
+			{
+				throw new SQLException("Failed to insert row into, DeviceStatusInfo.NAME does not exists!");				
+			}
+			if (initvalues.containsKey(DeviceStatusInfo.VALUE) == false)
+			{
+				throw new SQLException("Failed to insert row into, DeviceStatusInfo.VALUE does not exists!");				
+			}
+			sTableName = DEVICE_TABLE_NAME;
+			ConstUri = DeviceStatusInfo.CONTENT_URI;
+			break;
+			
+		default:
+			throw new IllegalArgumentException("Insert Unknown URI" + uri);
+		}
+		
+		SQLiteDatabase db = m_DBHelper.getWritableDatabase();
+		long nRowId = db.insert(sTableName, null, initvalues);
+		if (nRowId > 0)
+		{
+			Uri RetUri = ContentUris.withAppendedId(ConstUri, nRowId);
+			getContext().getContentResolver().notifyChange(RetUri, null);
+			
+			return RetUri;
+		}
+		throw new SQLException("Failed to insert row into " + uri);
+	}
+
+	//删除
+	@Override
+	public int delete(Uri uri, String where, String[] whereArgs) 
+	{
+		Log.d(TAG, "删除数据库...");
+		
+		SQLiteDatabase db = m_DBHelper.getWritableDatabase();
+		int nCount = 0;
+		switch (m_UriMatcher.match(uri))
+		{
+			case USERS:
+				nCount = db.delete(USER_TABLE_NAME, where, whereArgs);
+				break;
+			case USER_ID:
+				String sUserId = uri.getPathSegments().get(1);
+				nCount = db.delete(USER_TABLE_NAME, KidUserInfo._ID + "=" + sUserId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case CTRLTIMES:
+				nCount = db.delete(CTRLTIME_TABLE_NAME, where, whereArgs);
+				break;
+			case CTRLTIME_ID:
+				String sCtrlTimeId = uri.getPathSegments().get(1);
+				nCount = db.delete(CTRLTIME_TABLE_NAME, CtrlTimeInfo._ID + "=" + sCtrlTimeId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case CTRLS:
+				nCount = db.delete(CTRL_TABLE_NAME, where, whereArgs);
+				break;
+			case CTRL_ID:
+				String sCtrlId = uri.getPathSegments().get(1);
+				nCount = db.delete(CTRL_TABLE_NAME, CtrlInfo._ID + "=" + sCtrlId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case NETLOGS:
+				nCount = db.delete(NETLOG_TABLE_NAME, where, whereArgs);
+				break;
+			case NETLOG_ID:
+				String sNetLogId = uri.getPathSegments().get(1);
+				nCount = db.delete(NETLOG_TABLE_NAME, NetLogInfo._ID + "=" + sNetLogId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case APPLOGS:
+				nCount = db.delete(APPLOG_TABLE_NAME, where, whereArgs);
+				break;
+			case APPLOG_ID:
+				String sAppLogId = uri.getPathSegments().get(1);
+				nCount = db.delete(APPLOG_TABLE_NAME, AppLogInfo._ID + "=" + sAppLogId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case LOGIN_USER:	//退出登录
+				break;
+			case APPS:
+				nCount = db.delete(APP_TABLE_NAME, where, whereArgs);
+				break;
+			case APP_ID:
+				String sAppId = uri.getPathSegments().get(1);
+				nCount = db.delete(APP_TABLE_NAME, AppInfo._ID + "=" + sAppId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;			
+			case DEVICESTATUSS:
+				nCount = db.delete(DEVICE_TABLE_NAME, where, whereArgs);
+				break;
+			case DEVICESTATUS_ID:
+				String sDeviceStatusId = uri.getPathSegments().get(1);
+				nCount = db.delete(DEVICE_TABLE_NAME, DeviceStatusInfo._ID + "=" + sDeviceStatusId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			default:
+				Log.w(TAG, "delete Unknown URI " + uri);
+				throw new IllegalArgumentException("delete Unknown URI " + uri);
+		}
+		getContext().getContentResolver().notifyChange(uri, null);
+		
+		return nCount;
+	}
+	
+	//更新数据
+	@Override
+	public int update(Uri uri, ContentValues values, String where, String[] whereArgs) 
+	{
+		Log.d(TAG, "更新数据库...");
+		
+		SQLiteDatabase db = m_DBHelper.getWritableDatabase();
+		int nCount = 0;
+		switch (m_UriMatcher.match(uri))
+		{
+			case USERS:
+				nCount = db.update(USER_TABLE_NAME, values, where, whereArgs);
+				break;
+			case USER_ID:
+				String sUserId = uri.getPathSegments().get(1);
+				nCount = db.update(USER_TABLE_NAME, values, KidUserInfo._ID + "=" + sUserId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case CTRLTIMES:
+				nCount = db.update(CTRLTIME_TABLE_NAME, values, where, whereArgs);
+				break;
+			case CTRLTIME_ID:
+				String sCtrlTimeId = uri.getPathSegments().get(1);
+				nCount = db.update(CTRLTIME_TABLE_NAME, values, CtrlTimeInfo._ID + "=" + sCtrlTimeId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case CTRLS:
+				nCount = db.update(CTRL_TABLE_NAME, values, where, whereArgs);
+				break;
+			case CTRL_ID:
+				String sCtrlId = uri.getPathSegments().get(1);
+				nCount = db.update(CTRL_TABLE_NAME, values, CtrlInfo._ID + "=" + sCtrlId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case NETLOGS:
+				nCount = db.update(NETLOG_TABLE_NAME, values, where, whereArgs);
+				break;
+			case NETLOG_ID:
+				String sNetLogId = uri.getPathSegments().get(1);
+				nCount = db.update(NETLOG_TABLE_NAME, values, NetLogInfo._ID + "=" + sNetLogId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case LOGIN_USER:	//记录登录帐号
+				break;
+			case APPLOGS:
+				nCount = db.update(APPLOG_TABLE_NAME, values, where, whereArgs);
+				break;
+			case APPLOG_ID:
+				String sAppLogId = uri.getPathSegments().get(1);
+				nCount = db.update(APPLOG_TABLE_NAME, values, AppLogInfo._ID + "=" + sAppLogId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;			
+			case APPS:
+				nCount = db.update(APP_TABLE_NAME, values, where, whereArgs);
+				break;
+			case APP_ID:
+				String sAppId = uri.getPathSegments().get(1);
+				nCount = db.update(APP_TABLE_NAME, values, AppInfo._ID + "=" + sAppId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			case DEVICESTATUSS:
+				nCount = db.update(DEVICE_TABLE_NAME, values, where, whereArgs);
+				break;
+			case DEVICESTATUS_ID:
+				String sDeviceStatusId = uri.getPathSegments().get(1);
+				nCount = db.update(DEVICE_TABLE_NAME, values, DeviceStatusInfo._ID + "=" + sDeviceStatusId + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+				
+			default:
+				Log.w(TAG, "update Unknown URI " + uri);
+				throw new IllegalArgumentException("update Unknown URI " + uri);
+		}
+		getContext().getContentResolver().notifyChange(uri, null);
+		
+		return nCount;
+	}
+	
+	@Override
+	public String getType(Uri uri) {
+		
+		switch (m_UriMatcher.match(uri))
+		{
+		case USERS:
+		case CTRLTIMES:
+		case CTRLS:
+		case NETLOGS:
+		case APPLOGS:
+		case APPS:
+		case DEVICESTATUSS:
+			return CONTENT_TYPE;
+		case USER_ID:
+		case CTRLTIME_ID:
+		case CTRL_ID:
+		case LOGIN_USER:
+		case NETLOG_ID:		
+		case APPLOG_ID:
+		case APP_ID:
+		case DEVICESTATUS_ID:
+			return CONTENT_ITEM_TYPE;
+		default:
+			throw new IllegalArgumentException("getType Unknown URI" + uri);
+		}
+	}
+}

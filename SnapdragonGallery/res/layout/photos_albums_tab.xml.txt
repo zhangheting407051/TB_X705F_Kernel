@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tab_layout"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/tab_height"
+    android:background="#00000000"
+    android:orientation="horizontal" >
+    <RelativeLayout
+        android:id="@+id/layout_main_tab_photos"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/tab_height"
+        android:layout_weight="0.1"
+        android:background="?android:attr/selectableItemBackground"
+        android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/tab_timeline_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_centerVertical="true"
+        android:text="@string/tab_photos"
+        android:textColor="@color/tab_accent_color"
+        android:textSize="@dimen/tab_photos_albums_size"
+        android:textAppearance="?android:attr/textAppearanceMedium"/>
+
+    <ImageView
+        android:id="@+id/tab_timeline_iv"
+        android:layout_width="@dimen/tab_imageview_width"
+        android:layout_height="@dimen/tab_selected_underline_height"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:background="@color/tab_accent_color"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layout_main_tab_albums"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/tab_height"
+        android:layout_weight="0.1"
+        android:background="?android:attr/selectableItemBackground"
+        android:orientation="vertical" >
+    <TextView
+        android:id="@+id/tab_albums_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_centerVertical="true"
+        android:text="@string/albums"
+        android:textColor="@color/tab_text_diselected"
+        android:textSize="@dimen/tab_photos_albums_size"
+        android:textAppearance="?android:attr/textAppearanceMedium"/>
+    <ImageView
+        android:id="@+id/tab_albums_iv"
+        android:layout_width="@dimen/tab_imageview_width"
+        android:layout_height="@dimen/tab_selected_underline_height"
+        android:layout_alignParentBottom="true"
+        android:background="@color/actionbar_background_color"
+        android:layout_centerHorizontal="true"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="@dimen/tab_height"
+        android:layout_weight="0.6"
+        android:background="?android:attr/selectableItemBackground"
+        android:orientation="vertical">
+    </RelativeLayout>
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

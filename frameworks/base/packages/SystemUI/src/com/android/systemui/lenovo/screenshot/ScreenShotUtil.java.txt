@@ -1,0 +1,244 @@
+package com.android.systemui.lenovo.screenshot;
+
+import java.io.File;
+
+import com.android.systemui.R;
+
+import android.app.KeyguardManager;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.os.Environment;
+import android.os.StatFs;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
+import android.view.SurfaceControl;
+import android.view.WindowManager;
+import android.widget.Toast;
+
+public class ScreenShotUtil {
+    /* Lenovo-sw ligr3 added 2014-10-16 begin, feature controllers */
+    public static final boolean FEATURE_CUSTOM_NOTIFICATION = true;
+    /* Lenovo-sw ligr3 added 2014-10-16 end, feature controllers */
+
+    public static final String TAG = "lenovoscreenshot";
+
+    private Bitmap mScreenBitmap;
+    public static ScreenShotUtil mScreenShotUtil = new ScreenShotUtil();
+
+    private WindowManager mWindowManager;
+    private Display mDisplay;
+    private DisplayMetrics mDisplayMetrics;
+    private Matrix mDisplayMatrix;
+
+    private ScreenShotUtil() {
+        //mScreenshotDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), SCREENSHOTS_DIR_NAME);
+    }
+
+    public void reset(Context context) {
+        mDisplayMatrix = new Matrix();
+        mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        mDisplay = mWindowManager.getDefaultDisplay();
+        mDisplayMetrics = new DisplayMetrics();
+        mDisplay.getRealMetrics(mDisplayMetrics);
+    }
+
+    public static ScreenShotUtil getInstance() {
+        if(mScreenShotUtil == null) {
+            mScreenShotUtil = new ScreenShotUtil();
+        }
+        return mScreenShotUtil;
+    }
+
+    /**
+     * @return the current display rotation in degrees
+     */
+    private float getDegreesForRotation(int value) {
+        switch (value) {
+        case Surface.ROTATION_90:
+            return 360f - 90f;
+        case Surface.ROTATION_180:
+            return 360f - 180f;
+        case Surface.ROTATION_270:
+            return 360f - 270f;
+        }
+        return 0f;
+    }
+
+    public Bitmap takeScreenshot() {
+        // We need to orient the screenshot correctly (and the Surface api seems to take screenshots
+        // only in the natural orientation of the device :!)
+
+        float[] dims = {mDisplayMetrics.widthPixels, mDisplayMetrics.heightPixels};
+        float degrees = getDegreesForRotation(mDisplay.getRotation());
+        boolean requiresRotation = (degrees > 0);
+        if (requiresRotation) {
+            // Get the dimensions of the device in its native orientation
+            mDisplayMatrix.reset();
+            mDisplayMatrix.preRotate(-degrees);
+            mDisplayMatrix.mapPoints(dims);
+            dims[0] = Math.abs(dims[0]);
+            dims[1] = Math.abs(dims[1]);
+        }
+
+        // Take the screenshot
+        mScreenBitmap = SurfaceControl.screenshot((int) dims[0], (int) dims[1]);
+
+        if (mScreenBitmap == null) {
+        	Log.d("ScreenShotUtil:", "screenshot  fail !!!");
+            return null;
+        }
+
+        if (requiresRotation && mDisplayMetrics.widthPixels > 0 && mDisplayMetrics.heightPixels > 0) {
+            // Rotate the screenshot to the current orientation
+            Bitmap ss = Bitmap.createBitmap(mDisplayMetrics.widthPixels,
+                    mDisplayMetrics.heightPixels, Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(ss);
+            c.translate(ss.getWidth() / 2.0f, ss.getHeight() / 2.0f);
+            c.rotate(degrees);
+            c.translate(-dims[0] / 2, -dims[1] / 2);
+            c.drawBitmap(mScreenBitmap, 0, 0, null);
+            c.setBitmap(null);
+
+            mScreenBitmap = ss;
+        }
+
+        // Optimizations
+        mScreenBitmap.setHasAlpha(false);
+        mScreenBitmap.prepareToDraw();
+
+        return mScreenBitmap;
+    }
+
+    /**
+    * Zoom the screenshot.
+    * @param f    Scale(0~1)
+    * @return
+    */
+    public Bitmap takeScreenshotScale(float f) {
+        Bitmap original = takeScreenshot();
+
+        if (original != null) {
+            Matrix matrix = new Matrix();
+            matrix.setScale(f, f);
+            /**lenovo-sw chengsd1 modify begin 20140919, for timely recyle bitmap preventing oom*/
+            Bitmap bitmap = Bitmap.createBitmap(original, 0, 0, original.getWidth(), original.getHeight(), matrix, false);
+            original.recycle();
+            return bitmap;
+            /**lenovo-sw chengsd1 modify end 20140919*/
+        }
+    return original;
+    }
+
+
+    /**
+     * 解除屏幕锁定, added by ligr3 at 2014-07-28
+     * TODO 需要解除屏幕锁定
+     * @param context
+     */
+    @SuppressWarnings("deprecation")
+    public static void unlockScreenIfNeeded(Context context) {
+        KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        if(km.isKeyguardLocked()){
+            /* Lenovo-sw ligr3 modified 2014-11-07 begin, for disable keyguard when share */
+//            try {
+//                ActivityManagerNative.getDefault().dismissKeyguardOnNextActivity();
+//            } catch (RemoteException e) {
+//                e.printStackTrace();
+//            }
+            km.newKeyguardLock("disable").disableKeyguard();
+            /* Lenovo-sw ligr3 modified 2014-11-07 end, for disable keyguard when share */
+        }
+    }
+
+    /* Lenovo-sw ligr3 modified 2014-10-30 begin, for checking storage */
+    public static final long STORAGE_LIMITATION = 10 * 1024 * 1000;
+    public static final int FLAG_LOW_STORAGE = 1;
+    public static final int FLAG_MEDIA_SHARED = 2;
+    public static final int FLAG_SDCARD_ERROR = 3;
+    public static final int FLAG_UNKNOWN_ERROR = 4;
+    public static int checkMemory() {
+        if(Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            try{
+                File sdcardDir = Environment.getExternalStorageDirectory();
+                StatFs sf = new StatFs(sdcardDir.getPath());
+                @SuppressWarnings("deprecation")
+                long bSize = sf.getBlockSize();
+                @SuppressWarnings("deprecation")
+                long availBlocks = sf.getAvailableBlocks();
+                long avail = bSize * availBlocks;
+                if(avail < STORAGE_LIMITATION) {
+                    return FLAG_LOW_STORAGE;
+                }
+            } catch(IllegalArgumentException e){
+                Log.e(TAG, e.toString());
+                return FLAG_SDCARD_ERROR;
+            } catch (Exception e){
+                Log.e(TAG, e.toString());
+                return FLAG_UNKNOWN_ERROR;
+            }
+        } else if(Environment.MEDIA_SHARED.equals(Environment.getExternalStorageState())) {
+            return FLAG_MEDIA_SHARED;
+        }
+        return 0;
+    }
+    /* Lenovo-sw ligr3 modified 2014-10-30 end, for checking storage */
+
+    public static boolean isKeyguardShowing(Context context){
+        KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        if(km.isKeyguardLocked()){
+            return true;
+        }
+        return false;
+    }
+
+
+    public static void handleError(Context context, int flag) {
+        switch (flag) {
+        case ScreenShotUtil.FLAG_LOW_STORAGE:
+            Log.e(TAG, "Lack of storage space");
+            Toast.makeText(context, context.getResources().getString(
+                            R.string.lenovo_low_memory_warning_text), Toast.LENGTH_SHORT).show();
+            break;
+        case ScreenShotUtil.FLAG_MEDIA_SHARED:
+            Log.e(TAG, "storage is MEDIA_SHARED");
+            Toast.makeText(context, context.getResources().getString(
+                            R.string.lenovo_usb_mode_warning_text), Toast.LENGTH_SHORT).show();
+            break;
+        case ScreenShotUtil.FLAG_SDCARD_ERROR:
+            Log.e(TAG, "Error getting SD Card state");
+            Toast.makeText(context, context.getResources().getString(
+                            R.string.lenovo_sdcard_error_warning), Toast.LENGTH_SHORT).show();
+            break;
+        case ScreenShotUtil.FLAG_UNKNOWN_ERROR:
+            Log.e(TAG, "Unknown Error!!!");
+            break;
+        default:
+            break;
+        }
+    }
+
+    /* Lenovo-sw ligr3 added 2015-03-06 begin, for create thunbmail */
+    public static final String THUMBNAIL_FILE_NAME_DEFAULT = ".screenshot_thumbnail";
+    public static final String THUMBNAIL_FILE_NAME_LENOVO = ".screenshot_thumbnail2";
+    public static Bitmap createThumbnail(Bitmap src, int maxWidth, int maxHeight){
+        if(src == null || src.isRecycled()){
+            return null;
+        }
+        int width = src.getWidth();
+        int height = src.getHeight();
+        float scale = 0.0f;
+        if(width > height){
+            scale = (float)maxWidth / width;
+        } else{
+            scale = (float)maxHeight / height;
+        }
+        Matrix mtx = new Matrix();
+        mtx.postScale(scale, scale);
+        return Bitmap.createBitmap(src, 0, 0, width, height, mtx, true);
+    }
+    /* Lenovo-sw ligr3 added 2015-03-06 end, for create thunbmail */
+}

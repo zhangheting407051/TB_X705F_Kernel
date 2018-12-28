@@ -1,0 +1,134 @@
+//mahui01@wind-mobi.com 2018/9/17 add for lenovo CSDK begin
+package com.lenovo.sdk;
+
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.os.ServiceManager;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class PackageWhiteListManager {
+    private static IPackageWhiteListService mService;
+
+    public PackageWhiteListManager() {
+         mService = IPackageWhiteListService.Stub.asInterface(
+                ServiceManager.getService("package_white_list"));
+    }
+
+    public boolean appWhiteListAdd(List<String> packageNameList) {
+        if (packageNameList == null || packageNameList.size() == 0) {
+            return true;
+        }
+
+        List<String> allWhiteList = appWhiteListRead();
+        if (allWhiteList == null || allWhiteList.isEmpty()) {
+            List<String> newList = new ArrayList<String> ();
+            for (String packageName : packageNameList) {
+                if (!newList.contains(packageName)) {
+                    newList.add(packageName);
+                }
+            }
+            return appWhiteListWrite(newList);
+        } else {
+            Boolean bAdd = false;
+            for (String packageName : packageNameList) {
+                if (!allWhiteList.contains(packageName)) {
+                    allWhiteList.add(packageName);
+                    bAdd = true;
+                }
+            }
+
+            if (bAdd) {
+                return appWhiteListWrite(allWhiteList);
+            } else {
+                return true;
+            }
+        }
+    }
+
+    public boolean appWhiteListDel(List<String> packageNameList) {
+        if (packageNameList == null || packageNameList.size() == 0) {
+            return true;
+        }
+
+        List<String> allWhiteList = appWhiteListRead();
+        if (allWhiteList != null && !allWhiteList.isEmpty()) {
+            Boolean bDel = false;
+            for (String packageName : packageNameList) {
+                if (allWhiteList.contains(packageName)) {
+                    allWhiteList.remove(packageName);
+                    bDel = true;
+                }
+            }
+
+            if (bDel) {
+                return appWhiteListWrite(allWhiteList);
+            }
+        }
+
+        return true;
+    }
+
+    public boolean appWhiteListOpen() {
+        IPackageWhiteListService service = getService();
+
+        try {
+            return service.appWhiteListOpen();
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
+    public boolean appWhiteListClose() {
+        IPackageWhiteListService service = getService();
+
+        try {
+            return service.appWhiteListClose();
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
+    public boolean isAppWhiteListOn() {
+        IPackageWhiteListService service = getService();
+
+        try {
+            return service.isAppWhiteListOn();
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
+    public List<String>  appWhiteListRead(){
+   	    IPackageWhiteListService service = getService();
+		
+        try{
+            return service.appWhiteListRead();
+        } catch (RemoteException e) {
+            return null;
+        }
+    }
+
+    private boolean appWhiteListWrite(List<String> packageName){
+        IPackageWhiteListService service = getService();
+
+        try{
+            return service.appWhiteListWrite(packageName);
+        } catch (RemoteException e) {
+            return false;
+        }
+	}
+
+    private static IPackageWhiteListService getService(){
+        if (mService != null) {
+            return mService;
+        }
+        
+        IBinder b = ServiceManager.getService("package_white_list");
+        mService = IPackageWhiteListService.Stub.asInterface(b);
+
+        return mService;
+    }
+}
+//mahui01@wind-mobi.com 2018/9/17 add for lenovo CSDK end

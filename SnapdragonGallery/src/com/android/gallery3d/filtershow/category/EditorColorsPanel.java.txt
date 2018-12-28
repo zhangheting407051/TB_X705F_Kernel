@@ -1,0 +1,81 @@
+
+package com.android.gallery3d.filtershow.category;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.android.gallery3d.filtershow.FilterShowActivity;
+import com.android.gallery3d.filtershow.editors.EditorDraw;
+import com.android.gallery3d.filtershow.editors.EditorPanel;
+import com.android.gallery3d.filtershow.editors.Editor;
+import com.android.gallery3d.filtershow.filters.FilterDrawRepresentation;
+
+import org.codeaurora.gallery.R;
+
+public class EditorColorsPanel extends EditorPanel implements Editor.ShowSaveButtonListener,FilterShowActivity.HandleOperateListener{
+
+    private FilterShowActivity activity;
+    private EditorDraw mEditorDraw;
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        activity = (FilterShowActivity) getActivity();
+        initEditorDrawTableUI();
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+    }
+
+    private void initEditorDrawTableUI() {
+        String name = activity.getString(R.string.imageDraw);
+        FilterDrawRepresentation mFilterRepresentation = new FilterDrawRepresentation(name);
+        final int currentId = mFilterRepresentation.getEditorId();
+        mEditorDraw = (EditorDraw)activity.getEditorDraw(currentId);
+        this.setEditor(currentId);
+        if (mEditorDraw == null) return;
+
+        View view;
+        LayoutInflater inflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        view = inflater.inflate(R.layout.filtershow_editor_panel, null);
+        View editControl = view.findViewById(R.id.controlArea);
+        mEditorDraw.setEditPanelUI(editControl);
+        mEditorDraw.reflectCurrentFilter();
+        mEditorDraw.setShowSaveButtonListener(this); //bug:A6092-282-huangjian-001 20170103 add
+        activity.setHandlerOperateListener(this);//bug:A6090-1702-huangjian-001 20170124 add
+    }
+
+    //bug:A6092-282-huangjian-001 20170103 add begin
+    @Override
+    public void showIfNeedSaveButton() {
+        activity.showSaveButtonIfNeed();
+    }
+    //bug:A6092-282-huangjian-001 20170103 add end
+
+    //bug:A6090-1702-huangjian-001 20170124 add begin
+    @Override
+    public void handleRedoOperateAction() {
+        mEditorDraw.mImageDraw.handleRedoOperateAction();
+    }
+
+    @Override
+    public void handleUndoOperateAction() {
+        mEditorDraw.mImageDraw.handleUndoOperateAction();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (activity != null) {
+            activity.removeHanderOperateListener();
+        }
+    }
+    //bug:A6090-1702-huangjian-001 20170124 add end
+}

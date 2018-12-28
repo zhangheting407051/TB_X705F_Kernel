@@ -1,0 +1,1533 @@
+/*
+ * Copyright (C) 2013 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.camera.ui;
+
+import android.animation.Animator;
+import android.animation.Animator.AnimatorListener;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import java.util.ArrayList;
+
+import org.codeaurora.snapcam.R;
+import com.android.camera.ui.ModuleSwitcher;
+import com.android.camera.ui.RotateImageView;
+import com.android.camera.ShutterButton;
+import com.android.camera.Storage;
+import com.android.camera.util.CameraUtil;
+import com.android.camera.TsMakeupManager;
+//qidongdong@wind-mobi.com on 2018.7.24 start
+import android.wind.WindCountryCodeUtils;
+import android.content.res.Configuration;
+//qidongdong@wind-mobi.com on 2018.7.24 end
+
+public class CameraControls extends RotatableLayout {
+
+    private static final String TAG = "CAM_Controls";
+
+    private View mBackgroundView;
+    private View mShutter;
+    private View mVideoShutter;
+    private ModuleSwitcher mSwitcher;//bug:A6000-175-zhaoyujie 20161115 delete
+    private View mMenu; //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+    private View mMute;
+    private View mFrontBackSwitcher;
+    private View mHdrSwitcher;
+    private View mFlashSwitcher;//bug:A6000-175-zhufeng 20161215 add
+    private View mPanoSwitcher;//bug:A6000-175-zhaoyujie 20161115 add
+    //private View mTsMakeupSwitcher; //bug:A6000-175-zhaoyujie 20161115 delete
+    private View mIndicators;
+    private View mPreview;
+    //private View mSceneModeSwitcher;//bug:A6000-175-zhaoyujie 20161115 delete
+    private View mFilterModeSwitcher;//bug:A6000-175-zhaoyujie 20161115 delete
+    private View mReviewDoneButton;
+    private View mReviewCancelButton;
+    private View mReviewRetakeButton;
+    private ArrowTextView mRefocusToast;
+
+    private int mSize;
+    private static final int WIDTH_GRID = 6;//bug:A6000-175-zhaoyujie 20161115 add
+    private static final int HEIGHT_GRID = 10;//bug:A6000-175-zhaoyujie 20161115 add
+    private static boolean isAnimating = false;
+    private ArrayList<View> mViewList;
+    private static final int FRONT_BACK_INDEX = 0;
+    private static final int HDR_INDEX = 1;
+    private static final int FLASH_INDEX = 2;//bug:A6000-175-zhaoyujie 20161115 add
+    private static final int TS_MAKEUP_INDEX = 1;
+    private static final int SCENE_MODE_INDEX = 2;
+    private static final int FILTER_MODE_INDEX = 3;
+    private static final int MENU_INDEX = 4;
+    private static final int SWITCHER_INDEX = 5;
+    private static final int SHUTTER_INDEX = 6;
+    private static final int PREVIEW_INDEX = 7;
+    private static final int INDICATOR_INDEX = 8;
+    private static final int MUTE_INDEX = 9;
+    private static final int VIDEO_SHUTTER_INDEX = 10;
+    private static final int PANO_INDEX = 11;//bug:A6000-175-zhaoyujie 20161115 add
+    private static final int ANIME_DURATION = 300;
+    private float[][] mLocX = new float[4][12];//bug:A6000-175-zhaoyujie 20161115 modify
+    private float[][] mLocY = new float[4][12];//bug:A6000-175-zhaoyujie 20161115 modify
+    private boolean mLocSet = false;
+    private boolean mHideRemainingPhoto = false;
+    private LinearLayout mRemainingPhotos;
+    private TextView mRemainingPhotosText;
+    private int mCurrentRemaining = -1;
+    private int mOrientation;
+
+    private int mPreviewRatio;
+    private static int mTopMargin = 0;
+    private static int mBottomMargin = 0;
+
+    private Paint mPaint;
+
+    private static final int LOW_REMAINING_PHOTOS = 20;
+    private static final int HIGH_REMAINING_PHOTOS = 1000000;
+    //zhuzhibin@wind-mobi.com add 20180503 start
+    public boolean fromEmodeFlag = false;
+    //zhuzhibin@wind-mobi.com add 20180503 end
+
+    //qidongdong@wind-mobi.com on 2018.7.24 start
+    //modify for TABFIVEP-3621
+    private boolean isConfigChanged = false;
+    //qidongdong@wind-mobi.com on 2018.7.24 end
+
+    AnimatorListener outlistener = new AnimatorListener() {
+        @Override
+        public void onAnimationStart(Animator animation) {
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            resetLocation(0, 0);
+            //bug:A6000-175-zhaoyujie 20161115 modify begin
+            mFrontBackSwitcher.setVisibility(View.INVISIBLE);
+//            if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                mTsMakeupSwitcher.setVisibility(View.INVISIBLE);
+//            } else {
+                mHdrSwitcher.setVisibility(View.INVISIBLE);
+				mFlashSwitcher.setVisibility(View.INVISIBLE);//bug:A6000-175-zhufeng 20161215 add
+//            }
+            //mSceneModeSwitcher.setVisibility(View.INVISIBLE);
+            mFilterModeSwitcher.setVisibility(View.INVISIBLE);
+            //bug:A6000-175-zhaoyujie 20161115 modify end
+            mPanoSwitcher.setVisibility(View.INVISIBLE);//bug:A6000-175-zhaoyujie 20161115 add
+            //mSwitcher.setVisibility(View.INVISIBLE);//bug:A6000-175-zhaoyujie 20161115 delete
+            mShutter.setVisibility(View.INVISIBLE);
+            mVideoShutter.setVisibility(View.INVISIBLE);
+            mMenu.setVisibility(View.INVISIBLE); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+            mMute.setVisibility(View.INVISIBLE);
+            mIndicators.setVisibility(View.INVISIBLE);
+            mPreview.setVisibility(View.INVISIBLE);
+            isAnimating = false;
+            enableTouch(true);
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+            resetLocation(0, 0);
+
+          //bug:A6000-175-zhaoyujie 20161115 modify begin
+            mFrontBackSwitcher.setVisibility(View.INVISIBLE);
+//            if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                mTsMakeupSwitcher.setVisibility(View.INVISIBLE);
+//            } else {
+                mHdrSwitcher.setVisibility(View.INVISIBLE);
+				mFlashSwitcher.setVisibility(View.INVISIBLE);//bug:A6000-175-zhufeng 20161215 add
+//            }
+//            mSceneModeSwitcher.setVisibility(View.INVISIBLE);
+            mFilterModeSwitcher.setVisibility(View.INVISIBLE);
+              //bug:A6000-175-zhaoyujie 20161115 modify end
+            mPanoSwitcher.setVisibility(View.INVISIBLE);//bug:A6000-175-zhaoyujie 20161115 add
+            //mSwitcher.setVisibility(View.INVISIBLE);//bug:A6000-175-zhaoyujie 20161115 delete
+            mShutter.setVisibility(View.INVISIBLE);
+            mVideoShutter.setVisibility(View.INVISIBLE);
+            mMenu.setVisibility(View.INVISIBLE); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+            mMute.setVisibility(View.INVISIBLE);
+            mIndicators.setVisibility(View.INVISIBLE);
+            mPreview.setVisibility(View.INVISIBLE);
+            isAnimating = false;
+            enableTouch(true);
+        }
+    };
+
+    AnimatorListener inlistener = new AnimatorListener() {
+        @Override
+        public void onAnimationStart(Animator animation) {
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            isAnimating = false;
+            resetLocation(0, 0);
+            enableTouch(true);
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+            isAnimating = false;
+            resetLocation(0, 0);
+            enableTouch(true);
+        }
+    };
+
+    public CameraControls(Context context, AttributeSet attrs) {
+        super(context, attrs);
+
+        mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        setWillNotDraw(false);
+
+        mRefocusToast = new ArrowTextView(context);
+        addView(mRefocusToast);
+        setClipChildren(false);
+
+        setMeasureAllChildren(true);
+    }
+
+    public CameraControls(Context context) {
+        this(context, null);
+    }
+
+    public static boolean isAnimating() {
+        return isAnimating;
+    }
+
+    public void enableTouch(boolean enable) {
+        if (enable) {
+            ((ShutterButton) mShutter).setPressed(false);
+            mVideoShutter.setPressed(false);
+            //mSwitcher.setPressed(false);//bug:A6000-175-zhaoyujie 20161115 delete
+            mPanoSwitcher.setPressed(false);//bug:A6000-175-zhaoyujie 20161115 add
+            mMenu.setPressed(false); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+            mMute.setPressed(false);
+            mFrontBackSwitcher.setPressed(false);
+          //bug:A6000-175-zhaoyujie 20161115 modify begin
+//            if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                mTsMakeupSwitcher.setPressed(false);
+//            } else {
+                mFilterModeSwitcher.setPressed(false);
+                mHdrSwitcher.setPressed(false);
+                mFlashSwitcher.setPressed(false);//bug:A6000-175-zhufeng 20161215 add
+            //}
+            //mSceneModeSwitcher.setPressed(false);
+            //bug:A6000-175-zhaoyujie 20161115 modify end
+        }
+
+
+        ((ShutterButton) mShutter).enableTouch(enable);
+        mVideoShutter.setClickable(enable);
+        //((ModuleSwitcher) mSwitcher).enableTouch(enable);//bug:A6000-175-zhaoyujie 20161115 delete
+        mMenu.setEnabled(enable); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+        mPanoSwitcher.setEnabled(enable);;//bug:A6000-175-zhaoyujie 20161115 add
+        mMute.setEnabled(enable);
+        //zhuzhibin@wind-mobi.com modify 20180503 start
+        if( fromEmodeFlag && mFrontBackSwitcher != null ){
+            mFrontBackSwitcher.setEnabled(false);
+        }else{
+            mFrontBackSwitcher.setEnabled(enable);
+        }
+        //zhuzhibin@wind-mobi.com modify 20180503 end
+      //bug:A6000-175-zhaoyujie 20161115 modify begin
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher.setEnabled(enable);
+//        } else {
+            mFilterModeSwitcher.setPressed(enable);
+            mHdrSwitcher.setEnabled(enable);
+            mFlashSwitcher.setEnabled(enable);//bug:A6000-175-zhufeng 20161215 add
+        //}
+        //mSceneModeSwitcher.setEnabled(enable);
+        mPreview.setEnabled(enable);
+      //bug:A6000-175-zhaoyujie 20161115 modify end
+
+    }
+
+  //bug:A6000-175-zhaoyujie 20161115 modify
+    private void markVisibility() {
+        mViewList = new ArrayList<View>();
+        if (mFrontBackSwitcher.getVisibility() == View.VISIBLE)
+            mViewList.add(mFrontBackSwitcher);
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            if (mTsMakeupSwitcher.getVisibility() == View.VISIBLE)
+//                mViewList.add(mTsMakeupSwitcher);
+//        } else {
+         if (mFilterModeSwitcher.getVisibility() == View.VISIBLE)
+             mViewList.add(mFilterModeSwitcher);
+            if (mHdrSwitcher.getVisibility() == View.VISIBLE)
+                mViewList.add(mHdrSwitcher);
+            if (mFlashSwitcher.getVisibility() == View.VISIBLE)//bug:A6000-175-zhufeng 20161215 add
+                mViewList.add(mFlashSwitcher);
+//        }
+//        if (mSceneModeSwitcher.getVisibility() == View.VISIBLE)
+//            mViewList.add(mSceneModeSwitcher);
+        if (mFilterModeSwitcher.getVisibility() == View.VISIBLE)
+            mViewList.add(mFilterModeSwitcher);
+        if (mShutter.getVisibility() == View.VISIBLE)
+            mViewList.add(mShutter);
+        if (mVideoShutter.getVisibility() == View.VISIBLE)
+            mViewList.add(mVideoShutter);
+        //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 start
+        if (mMenu.getVisibility() == View.VISIBLE){
+            mViewList.add(mMenu);
+        }
+        //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 end
+        if (mMute.getVisibility() == View.VISIBLE)
+            mViewList.add(mMute);
+        if (mIndicators.getVisibility() == View.VISIBLE)
+            mViewList.add(mIndicators);
+        if (mMute.getVisibility() == View.VISIBLE)
+            mViewList.add(mMute);
+        //bug:A6000-175-zhaoyujie 20161115 modify begin
+        if (mPanoSwitcher.getVisibility() == View.VISIBLE)
+            mViewList.add(mPanoSwitcher);
+        //bug:A6000-175-zhaoyujie 20161115 modify end
+    }
+
+    public void removeFromViewList(View view) {
+        if(mViewList != null) {
+            mViewList.remove(view);
+        }
+    }
+
+    @Override
+    public void onFinishInflate() {
+        super.onFinishInflate();
+        mBackgroundView = findViewById(R.id.blocker);
+        mSwitcher = (ModuleSwitcher) findViewById(R.id.camera_switcher);//bug:A6000-175-zhaoyujie 20161115 delete
+        mShutter = findViewById(R.id.shutter_button);
+        mVideoShutter = findViewById(R.id.video_button);
+        mFrontBackSwitcher = findViewById(R.id.front_back_switcher);
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher = findViewById(R.id.ts_makeup_switcher);
+//        } else {
+            mHdrSwitcher = findViewById(R.id.hdr_switcher);
+            mFlashSwitcher = findViewById(R.id.flash_switcher);//bug:A6000-175-zhufeng 20161215 add
+//        }
+
+        mMenu = findViewById(R.id.menu); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+        mMute = findViewById(R.id.mute_button);
+        mIndicators = findViewById(R.id.on_screen_indicators);
+        mPreview = findViewById(R.id.preview_thumb);
+        //mSceneModeSwitcher = findViewById(R.id.scene_mode_switcher);
+        mFilterModeSwitcher = findViewById(R.id.filter_mode_switcher);
+        mRemainingPhotos = (LinearLayout) findViewById(R.id.remaining_photos);
+        mRemainingPhotosText = (TextView) findViewById(R.id.remaining_photos_text);
+        mPanoSwitcher = findViewById(R.id.pano_switch);//bug:A6000-175-zhaoyujie 20161115 add
+    }
+
+    @Override
+    public void onLayout(boolean changed, int l, int t, int r, int b) {
+        int orientation = getResources().getConfiguration().orientation;
+        int size = getResources().getDimensionPixelSize(R.dimen.camera_controls_size);
+        int rotation = getUnifiedRotation();
+        adjustBackground();
+        // As l,t,r,b are positions relative to parents, we need to convert them
+        // to child's coordinates
+        r = r - l;
+        b = b - t;
+        l = 0;
+        t = 0;
+        for (int i = 0; i < getChildCount(); i++) {
+            View v = getChildAt(i);
+            v.layout(l, t, r, b);
+        }
+        Rect shutter = new Rect();
+        center(mShutter, l, t, r, b, orientation, rotation, shutter, SHUTTER_INDEX);
+        mSize = 96;//(int) (Math.max(shutter.right - shutter.left, shutter.bottom - shutter.top) * 1.2f);//bug:A6000-175-zhaoyujie 20161115 modify
+        center(mBackgroundView, l, t, r, b, orientation, rotation, new Rect(), -1);
+        mBackgroundView.setVisibility(View.GONE);
+        setLocation(r - l, b - t);
+
+        View retake = findViewById(R.id.btn_retake);
+        if (retake != null) {
+            mReviewRetakeButton = retake;
+            mReviewCancelButton = findViewById(R.id.btn_cancel);
+            //liuyangyang@wind-mobi.com 2018.06.01 start
+            //mReviewDoneButton = findViewById(R.id.btn_done);
+            mReviewDoneButton = findViewById(R.id.done_button);
+            //liuyangyang@wind-mobi.com 2018.06.01 end
+            //bug:A6001-420-zhaoyujie 20161115 begin modify
+            center(mReviewCancelButton, shutter, rotation);
+            toLeft(mReviewRetakeButton, shutter, rotation);
+            toRight(mReviewDoneButton, shutter, rotation);
+            //bug:A6001-420-zhaoyujie 20161115 end modify
+        } else {
+            mReviewRetakeButton = null;
+            mReviewCancelButton = null;
+            mReviewDoneButton = null;
+        }
+        layoutRemaingPhotos();
+        //qidongdong@wind-mobi.com on 2018.7.24 start
+        //modify for TABFIVEP-3621
+        if(isConfigChanged){
+            isConfigChanged = false;
+            resetLocation(0, 0);
+        }
+        //qidongdong@wind-mobi.com on 2018.7.24 end
+    }
+
+    //qidongdong@wind-mobi.com on 2018.7.24 start
+    //modify for TABFIVEP-3621
+    @Override
+    public void onConfigurationChanged(Configuration config) {
+        // TODO Auto-generated method stub
+        super.onConfigurationChanged(config);
+        isConfigChanged = true;
+    }
+    //qidongdong@wind-mobi.com on 2018.7.24 end
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (mTopMargin != 0) {
+            int rotation = getUnifiedRotation();
+            int w = canvas.getWidth(), h = canvas.getHeight();
+            switch (rotation) {
+                case 90:
+                    canvas.drawRect(0, 0, mTopMargin, h, mPaint);
+                    canvas.drawRect(w - mBottomMargin, 0, w, h, mPaint);
+                    break;
+                case 180:
+                    canvas.drawRect(0, 0, w, mBottomMargin, mPaint);
+                    canvas.drawRect(0, h - mTopMargin, w, h, mPaint);
+                    break;
+                case 270:
+                    canvas.drawRect(0, 0, mBottomMargin, h, mPaint);
+                    canvas.drawRect(w - mTopMargin, 0, w, h, mPaint);
+                    break;
+                default:
+                    canvas.drawRect(0, 0, w, mTopMargin, mPaint);
+                    canvas.drawRect(0, h - mBottomMargin, w, h, mPaint);
+                    break;
+            }
+        }
+    }
+
+    private void setLocation(int w, int h) {
+        int rotation = getUnifiedRotation();
+        //toIndex(mSwitcher, w, h, rotation, 4, 0, SWITCHER_INDEX);//bug:A6000-175-zhaoyujie 20161115 delete
+        toIndex(mFrontBackSwitcher, w, h, rotation, 5, 1, FRONT_BACK_INDEX);
+        toIndex(mPanoSwitcher, w, h, rotation, 5, 2, PANO_INDEX);//bug:A6000-175-zhaoyujie 20161115 add
+        toIndex(mVideoShutter, w, h, rotation, 5, 5, VIDEO_SHUTTER_INDEX);
+        toIndex(mShutter, w, h, rotation, 5, 4, SHUTTER_INDEX);//bug:A6000-175-zhaoyujie 20161115 add
+        toIndex(mPreview, w, h, rotation, 5, 7, PREVIEW_INDEX);
+
+        toIndex(mMute, w, h, rotation, 3, 0, MUTE_INDEX);
+
+        //qidongdong@wind-mobi.com on 2018.7.7 start
+        //modify for bug#TABFIVEP-2250 align center && mdify for BUG#TABFIVEP-3237
+        String countryCode = WindCountryCodeUtils.getCountryCode();
+        if (rotation == 90 || rotation == 270) {
+//          toIndex1(mFrontBackSwitcher, w, h, rotation, 0, 2.25, FRONT_BACK_INDEX);
+            if(("RU").equalsIgnoreCase(countryCode)){
+                toIndex1(mFilterModeSwitcher, w, h, rotation, 0, 2.25, FILTER_MODE_INDEX);
+                toIndex1(mHdrSwitcher, w, h, rotation, 0, 3.75, HDR_INDEX);
+                toIndex1(mFlashSwitcher, w, h, rotation, 0, 5.25, FLASH_INDEX);
+                toIndex1(mMenu, w, h, rotation, 0, 6.75, MENU_INDEX);
+            }else{
+                toIndex1(mFilterModeSwitcher, w, h, rotation, 0, 3, FILTER_MODE_INDEX);
+                toIndex1(mHdrSwitcher, w, h, rotation, 0, 4.5, HDR_INDEX);
+                toIndex1(mFlashSwitcher, w, h, rotation, 0, 6, FLASH_INDEX);
+                toIndex1(mMenu, w, h, rotation, 0, 7.5, MENU_INDEX);
+            }
+        } else {
+//          toIndex1(mFrontBackSwitcher, w, h, rotation, 0, 3, FRONT_BACK_INDEX);
+            if(("RU").equalsIgnoreCase(countryCode)){
+                toIndex1(mFilterModeSwitcher, w, h, rotation, 0, 3, FILTER_MODE_INDEX);
+                toIndex1(mHdrSwitcher, w, h, rotation, 0, 4, HDR_INDEX);
+                toIndex1(mFlashSwitcher, w, h, rotation, 0, 5, FLASH_INDEX);
+                toIndex1(mMenu, w, h, rotation, 0, 6, MENU_INDEX);
+            }else{
+                toIndex1(mFilterModeSwitcher, w, h, rotation, 0, 3.5, FILTER_MODE_INDEX);
+                toIndex1(mHdrSwitcher, w, h, rotation, 0, 4.5, HDR_INDEX);
+                toIndex1(mFlashSwitcher, w, h, rotation, 0, 5.5, FLASH_INDEX);
+                toIndex1(mMenu, w, h, rotation, 0, 6.5, MENU_INDEX);
+            }
+//          toIndex1(mIndicators, w, h, rotation, 0, 6.5, INDICATOR_INDEX);
+        }
+        //qidongdong@wind-mobi.com on 2018.7.7 end
+        //if(TsMakeupManager.HAS_TS_MAKEUP) {
+        //    toIndex(mTsMakeupSwitcher, w, h, rotation, 3, 0, TS_MAKEUP_INDEX);
+        //} else {
+//            toIndex(mHdrSwitcher, w, h, rotation, 3, 0, HDR_INDEX);
+//        }
+//        toIndex(mFilterModeSwitcher, w, h, rotation, 1, 0, FILTER_MODE_INDEX);
+//        toIndex(mSceneModeSwitcher, w, h, rotation, 0, 0, SCENE_MODE_INDEX);
+        layoutToast(mRefocusToast, w, h, rotation);
+    }
+
+    private void layoutToast(final View v, int w, int h, int rotation) {
+        int tw = v.getMeasuredWidth();
+        int th = v.getMeasuredHeight();
+        int l, t, r, b, c;
+        switch (rotation) {
+            case 90:
+                c = (int) (h / WIDTH_GRID * (WIDTH_GRID - 0.5));
+                t = c - th / 2;
+                b = c + th / 2;
+                r = (int) (w / HEIGHT_GRID * (HEIGHT_GRID - 1.25));
+                l = r - tw;
+                mRefocusToast.setArrow(tw, th / 2, tw + th / 2, th, tw, th);
+                break;
+            case 180:
+                t = (int) (h / HEIGHT_GRID * 1.25);
+                b = t + th;
+                r = (int) (w / WIDTH_GRID * (WIDTH_GRID - 0.25));
+                l = r - tw;
+                mRefocusToast.setArrow(tw - th / 2, 0, tw, 0, tw, - th / 2);
+                break;
+            case 270:
+                c = (int) (h / WIDTH_GRID * 0.5);
+                t = c - th / 2;
+                b = c + th / 2;
+                l = (int) (w / HEIGHT_GRID * 1.25);
+                r = l + tw;
+                mRefocusToast.setArrow(0, 0, 0, th / 2, - th / 2, 0);
+                break;
+            default:
+                l = w / WIDTH_GRID / 4;
+                b = (int) (h / HEIGHT_GRID * (HEIGHT_GRID - 1.25));
+                r = l + tw;
+                t = b - th;
+                mRefocusToast.setArrow(0, th, th / 2, th, 0, th * 3 / 2);
+                break;
+        }
+        mRefocusToast.layout(l, t, r, b);
+    }
+
+    private void center(View v, int l, int t, int r, int b, int orientation, int rotation,
+            Rect result, int idx) {
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) v.getLayoutParams();
+        int tw = lp.leftMargin + v.getMeasuredWidth() + lp.rightMargin;
+        int th = lp.topMargin + v.getMeasuredHeight() + lp.bottomMargin;
+        switch (rotation) {
+            case 0:
+                // phone portrait; controls bottom
+                //result.left = (r + l) / 2 - tw / 2 + lp.leftMargin;
+                //result.right = (r + l) / 2 + tw / 2 - lp.rightMargin;
+                //result.bottom = b - lp.bottomMargin;
+                //result.top = b - th + lp.topMargin;
+                result.right = r - lp.rightMargin;
+                result.left = r - tw + lp.leftMargin;
+                result.top = (b + t) / 2 - th / 2 + lp.topMargin;
+                result.bottom = (b + t) / 2 + th / 2 - lp.bottomMargin;
+                break;
+            case 90:
+                // phone landscape: controls right
+                result.right = r - lp.rightMargin;
+                result.left = r - tw + lp.leftMargin;
+                result.top = (b + t) / 2 - th / 2 + lp.topMargin;
+                result.bottom = (b + t) / 2 + th / 2 - lp.bottomMargin;
+                break;
+            case 180:
+                // phone upside down: controls top
+                //result.left = (r + l) / 2 - tw / 2 + lp.leftMargin;
+                //result.right = (r + l) / 2 + tw / 2 - lp.rightMargin;
+                //result.top = t + lp.topMargin;
+                //result.bottom = t + th - lp.bottomMargin;
+                result.right = r - lp.rightMargin;
+                result.left = r - tw + lp.leftMargin;
+                result.top = (b + t) / 2 - th / 2 + lp.topMargin;
+                result.bottom = (b + t) / 2 + th / 2 - lp.bottomMargin;
+                break;
+            case 270:
+                // reverse landscape: controls left
+//                result.left = l + lp.leftMargin;
+//                result.right = l + tw - lp.rightMargin;
+//                result.top = (b + t) / 2 - th / 2 + lp.topMargin;
+//                result.bottom = (b + t) / 2 + th / 2 - lp.bottomMargin;
+                result.right = r - lp.rightMargin;
+                result.left = r - tw + lp.leftMargin;
+                result.top = (b + t) / 2 - th / 2 + lp.topMargin;
+                result.bottom = (b + t) / 2 + th / 2 - lp.bottomMargin;
+                break;
+        }
+        v.layout(result.left, result.top, result.right, result.bottom);
+        if (idx != -1) {
+            int idx1 = rotation / 90;
+            int idx2 = idx;
+            mLocX[idx1][idx2] = result.left;
+            mLocY[idx1][idx2] = result.top;
+        }
+    }
+
+    private void resetLocation(float x, float y) {
+        int rotation = getUnifiedRotation();
+        int idx1 = rotation / 90;
+
+        mFrontBackSwitcher.setX(mLocX[idx1][FRONT_BACK_INDEX] - x);
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher.setX(mLocX[idx1][TS_MAKEUP_INDEX] + x);
+//        } else {
+            mHdrSwitcher.setX(mLocX[idx1][HDR_INDEX] + x);
+            mFlashSwitcher.setX(mLocX[idx1][FLASH_INDEX] + x);//bug:A6000-175-zhufeng 20161215 add
+        //}
+        //mSceneModeSwitcher.setX(mLocX[idx1][SCENE_MODE_INDEX] + x);
+        mFilterModeSwitcher.setX(mLocX[idx1][FILTER_MODE_INDEX] + x);
+        mMenu.setX(mLocX[idx1][MENU_INDEX] + x); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+        mMute.setX(mLocX[idx1][MUTE_INDEX] + x);
+        //mSwitcher.setX(mLocX[idx1][SWITCHER_INDEX] - x);//bug:A6000-175-zhaoyujie 20161115 delete
+        mPanoSwitcher.setX(mLocX[idx1][PANO_INDEX] - x);//bug:A6000-175-zhaoyujie 20161115 add
+        mShutter.setX(mLocX[idx1][SHUTTER_INDEX] - x);
+        mVideoShutter.setX(mLocX[idx1][VIDEO_SHUTTER_INDEX] - x);
+        mIndicators.setX(mLocX[idx1][INDICATOR_INDEX] - x);
+        mPreview.setX(mLocX[idx1][PREVIEW_INDEX] - x);
+
+        mFrontBackSwitcher.setY(mLocY[idx1][FRONT_BACK_INDEX] - y);
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher.setY(mLocY[idx1][TS_MAKEUP_INDEX] + y);
+//        } else {
+            mHdrSwitcher.setY(mLocY[idx1][HDR_INDEX] + y);
+            mFlashSwitcher.setY(mLocY[idx1][FLASH_INDEX] + y);//bug:A6000-175-zhufeng 20161215 add
+        //}
+        //mSceneModeSwitcher.setY(mLocY[idx1][SCENE_MODE_INDEX] + y);
+        mFilterModeSwitcher.setY(mLocY[idx1][FILTER_MODE_INDEX] + y);
+        mMenu.setY(mLocY[idx1][MENU_INDEX] + y); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+        mMute.setY(mLocY[idx1][MUTE_INDEX] + y);
+        //mSwitcher.setY(mLocY[idx1][SWITCHER_INDEX] - y);//bug:A6000-175-zhaoyujie 20161115 delete
+        mPanoSwitcher.setY(mLocY[idx1][PANO_INDEX] - y);//bug:A6000-175-zhaoyujie 20161115 add
+        mShutter.setY(mLocY[idx1][SHUTTER_INDEX] - y);
+        mVideoShutter.setY(mLocY[idx1][VIDEO_SHUTTER_INDEX] - y);
+        mIndicators.setY(mLocY[idx1][INDICATOR_INDEX] - y);
+        mPreview.setY(mLocY[idx1][PREVIEW_INDEX] - y);
+    }
+//bug:A6000-175-zhaoyujie 20161115 modify begin
+    public void setTitleBarVisibility(int status){
+        setTitleBarVisibility(status, false);
+    }
+       public void setTitleBarVisibility(int status, boolean isFrontCam){
+        mFrontBackSwitcher.setVisibility(status);
+        //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 start
+        if(("RU").equalsIgnoreCase(WindCountryCodeUtils.getCountryCode())){
+            mMenu.setVisibility(status);
+        }else{
+            mMenu.setVisibility(View.INVISIBLE);
+        }
+        //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 end
+        if (isFrontCam) {
+            mFilterModeSwitcher.setVisibility(View.INVISIBLE);
+            mHdrSwitcher.setVisibility(View.INVISIBLE);
+            mFlashSwitcher.setVisibility(View.INVISIBLE);
+        } else {
+            mFilterModeSwitcher.setVisibility(status);
+            mHdrSwitcher.setVisibility(status);
+            mFlashSwitcher.setVisibility(status);//bug:A6000-175-zhufeng 20161215 add
+        }
+    }
+
+    public void hideUI() {
+        if(!isAnimating)
+            enableTouch(false);
+        isAnimating = true;
+        int rotation = getUnifiedRotation();
+        mFrontBackSwitcher.animate().cancel();
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher.animate().cancel();
+//        } else {
+            mHdrSwitcher.animate().cancel();
+            mFlashSwitcher.animate().cancel();//bug:A6000-175-zhufeng 20161215 add
+//        }
+        //mSceneModeSwitcher.animate().cancel();
+        mFilterModeSwitcher.animate().cancel();
+        //mSwitcher.animate().cancel();//bug:A6000-175-zhaoyujie 20161115 delete
+        mShutter.animate().cancel();
+        mVideoShutter.animate().cancel();
+        mMenu.animate().cancel(); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+        mMute.animate().cancel();
+        mIndicators.animate().cancel();
+        mPreview.animate().cancel();
+        mPanoSwitcher.animate().cancel();//bug:A6000-175-zhaoyujie 20161115 add
+        mFrontBackSwitcher.animate().setListener(outlistener);
+        //((ModuleSwitcher) mSwitcher).removePopup();//bug:A6000-175-zhaoyujie 20161115 delete
+        resetLocation(0, 0);
+        markVisibility();
+        switch (rotation) {
+            case 0:
+//                mFrontBackSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                } else {
+//                    mHdrSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                }
+//                mSceneModeSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mFilterModeSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mMenu.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mMute.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//
+//                mSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mShutter.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mVideoShutter.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mIndicators.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mPreview.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+                mFrontBackSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(-mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+            case 90:
+                mFrontBackSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(-mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+            case 180:
+//                mFrontBackSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                } else {
+//                    mHdrSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                }
+//                mSceneModeSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mFilterModeSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mMenu.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mMute.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//
+//                mSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mShutter.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mVideoShutter.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mIndicators.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mPreview.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+                mFrontBackSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(-mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+            case 270:
+//                mFrontBackSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                } else {
+//                    mHdrSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                }
+//                mSceneModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                mFilterModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                mMenu.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                mMute.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//
+//                mSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                mShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                mVideoShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                mIndicators.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                mPreview.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mFrontBackSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(-mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+        }
+        mRemainingPhotos.setVisibility(View.INVISIBLE);
+        mRefocusToast.setVisibility(View.GONE);
+    }
+
+    public void showUI() {
+        if(!isAnimating)
+            enableTouch(false);
+        isAnimating = true;
+        int rotation = getUnifiedRotation();
+        mFrontBackSwitcher.animate().cancel();
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher.animate().cancel();
+//        } else {
+            mHdrSwitcher.animate().cancel();
+            mFlashSwitcher.animate().cancel();//bug:A6000-175-zhufeng 20161215 add
+//        }
+        //mSceneModeSwitcher.animate().cancel();
+        mFilterModeSwitcher.animate().cancel();
+        //mSwitcher.animate().cancel();//bug:A6000-175-zhaoyujie 20161115 delete
+        mShutter.animate().cancel();
+        mVideoShutter.animate().cancel();
+        mMenu.animate().cancel(); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+        mMute.animate().cancel();
+        mIndicators.animate().cancel();
+        mPreview.animate().cancel();
+        mPanoSwitcher.animate().cancel();//bug:A6000-175-zhaoyujie 20161115 add
+        if (mViewList != null)
+            for (View v : mViewList) {
+                v.setVisibility(View.VISIBLE);
+            }
+        //((ModuleSwitcher) mSwitcher).removePopup();//bug:A6000-175-zhaoyujie 20161115 delete
+		//lifeifei@wind-mobi.com 20180711 begin
+        /*AnimationDrawable shutterAnim = (AnimationDrawable) mShutter.getBackground();
+        if (shutterAnim != null)
+            shutterAnim.stop();*/
+		//lifeifei@wind-mobi.com 20180711 end
+
+        // qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 start
+        if (("RU").equalsIgnoreCase(WindCountryCodeUtils.getCountryCode())) {
+            mMenu.setVisibility(View.VISIBLE);
+        } else {
+            mMenu.setVisibility(View.INVISIBLE);
+        }
+        // qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 end
+        mIndicators.setVisibility(View.VISIBLE);
+        mPreview.setVisibility(View.VISIBLE);
+
+        mFrontBackSwitcher.animate().setListener(inlistener);
+        switch (rotation) {
+            case 0:
+//                resetLocation(0, -mSize);
+//
+//                mFrontBackSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                } else {
+//                    mHdrSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                }
+//                mSceneModeSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mFilterModeSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mMenu.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mMute.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//
+//                mSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mShutter.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mVideoShutter.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mIndicators.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mPreview.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+                resetLocation(-mSize, 0);
+
+                mFrontBackSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+            case 90:
+                resetLocation(-mSize, 0);
+
+                mFrontBackSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+            case 180:
+//                resetLocation(0, mSize);
+//
+//                mFrontBackSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                } else {
+//                    mHdrSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                }
+//                mSceneModeSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mFilterModeSwitcher.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mMenu.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//                mMute.animate().translationYBy(-mSize).setDuration(ANIME_DURATION);
+//
+//                mSwitcher.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mShutter.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mVideoShutter.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mIndicators.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+//                mPreview.animate().translationYBy(mSize).setDuration(ANIME_DURATION);
+                resetLocation(-mSize, 0);
+
+                mFrontBackSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+            case 270:
+//                resetLocation(mSize, 0);
+//
+//                mFrontBackSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                } else {
+//                    mHdrSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                }
+//                mSceneModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                mFilterModeSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                mMenu.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                mMute.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//
+//                mSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                mShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                mVideoShutter.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                mIndicators.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                mPreview.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                resetLocation(-mSize, 0);
+
+                mFrontBackSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+//                if(TsMakeupManager.HAS_TS_MAKEUP) {
+//                    mTsMakeupSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+//                } else {
+                    mHdrSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                    mFlashSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhufeng 20161215 add
+//                }
+                //mSceneModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mFilterModeSwitcher.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+                mMenu.animate().translationXBy(mSize).setDuration(ANIME_DURATION); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+                mMute.animate().translationXBy(mSize).setDuration(ANIME_DURATION);
+
+                //mSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 delete
+                mShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mVideoShutter.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mIndicators.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPreview.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);
+                mPanoSwitcher.animate().translationXBy(-mSize).setDuration(ANIME_DURATION);//bug:A6000-175-zhaoyujie 20161115 add
+                break;
+        }
+        if ((mRemainingPhotos.getVisibility() == View.INVISIBLE) &&
+                !mHideRemainingPhoto){
+            mRemainingPhotos.setVisibility(View.INVISIBLE);
+        }
+        mRefocusToast.setVisibility(View.GONE);
+    }
+    //bug:A6000-175-zhaoyujie 20161115 modify end
+
+    //bug:A6001-238-zhaoyujie 20170105 modify begin
+    private void center(View v, Rect other, int rotation) {
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) v.getLayoutParams();
+        int tw = lp.leftMargin + v.getMeasuredWidth() + lp.rightMargin;
+        int th = lp.topMargin + v.getMeasuredHeight() + lp.bottomMargin;
+        int cx = (other.left + other.right) / 2;
+        int cy = (other.top + other.bottom) / 2;
+        int l = 0, r = 0, t = 0, b = 0;
+        switch (rotation) {
+            case 0:
+                // portrait, to left of anchor at bottom
+                l = other.right - tw +lp.leftMargin;;
+                r = other.right + lp.rightMargin;
+                t = cy - th / 2 + lp.topMargin;
+                b = cy + th / 2 - lp.bottomMargin;
+                break;
+            case 90:
+                // phone landscape: below anchor on right
+                l = cx - tw / 2 + lp.leftMargin;
+                r = cx + tw / 2 - lp.rightMargin;
+                t = cy - th / 2+ lp.topMargin;
+                b = cy + th / 2 - lp.bottomMargin;
+                break;
+            case 180:
+                // phone upside down: right of anchor at top
+                l = cx - tw / 2 +lp.leftMargin;;
+                r = cx + tw / 2 + lp.rightMargin;
+                t = cy - th / 2 + lp.topMargin;
+                b = cy + th / 2 - lp.bottomMargin;
+                break;
+            case 270:
+                // reverse landscape: above anchor on left
+                l = cx - tw / 2 + lp.leftMargin;
+                r = cx + tw / 2 - lp.rightMargin;
+                t = cy - th / 2+ lp.topMargin;
+                b = cy + th / 2 - lp.bottomMargin;
+                break;
+        }
+        v.layout(l, t, r, b);
+    }
+    //bug:A6001-238-zhaoyujie 20170105 modify end
+
+    private void toIndex1(View v, int w, int h, int rotation, int index, double index2, int index3) {
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) v.getLayoutParams();
+        int tw = v.getMeasuredWidth();
+        int th = v.getMeasuredHeight();
+        int l = 0, r = 0, t = 0, b = 0;
+
+        int wnumber = WIDTH_GRID;
+        int hnumber = HEIGHT_GRID;
+        int windex = 0;
+        double hindex = 0;
+        switch (rotation) {
+            case 0:
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                break;
+            case 90:
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                break;
+            case 180:
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                break;
+            case 270:
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                break;
+        }
+
+        int boxh = h / hnumber;
+        int boxw = w / wnumber;
+        int cx = (2 * windex + 1) * boxw / 2;
+        int cy = (int)(2 * hindex + 1) * boxh / 2;
+
+        if (index == 0) {
+        	cx = cx/2;
+        }
+        l = cx - tw / 2;
+        r = cx + tw / 2;
+        t = cy - th / 2;
+        b = cy + th / 2;
+
+        if (index3 != -1) {
+            int idx1 = rotation / 90;
+            int idx2 = index3;
+            mLocX[idx1][idx2] = l;
+            mLocY[idx1][idx2] = t;
+        }
+        v.layout(l, t, r, b);
+    }
+    private void toIndex(View v, int w, int h, int rotation, int index, int index2, int index3) {
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) v.getLayoutParams();
+        int tw = v.getMeasuredWidth();
+        int th = v.getMeasuredHeight();
+        int l = 0, r = 0, t = 0, b = 0;
+
+        int wnumber = WIDTH_GRID;
+        int hnumber = HEIGHT_GRID;
+        int windex = 0;
+        int hindex = 0;
+        switch (rotation) {
+            case 0:
+                // portrait, to left of anchor at bottom
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                break;
+            case 90:
+                // phone landscape: below anchor on right
+//                wnumber = HEIGHT_GRID;
+//                hnumber = WIDTH_GRID;
+//                windex = index2;
+//                hindex = hnumber - index - 1;
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                //qidongdong@wind-mobi.com on 2018.4.19 start
+                //modify for pano_switch layout wrong
+                /*if (index3 == PANO_INDEX) {
+                	hindex--;
+                } else */
+                //qidongdong@wind-mobi.com on 2018.4.19 end
+                if (index3 == PREVIEW_INDEX) {
+                	hindex++;
+                }
+                break;
+            case 180:
+                // phone upside down: right of anchor at top
+//                wnumber = WIDTH_GRID;
+//                hnumber = HEIGHT_GRID;
+//                windex = wnumber - index - 1;
+//                hindex = hnumber - index2 - 1;
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                break;
+            case 270:
+                // reverse landscape: above anchor on left
+//                wnumber = HEIGHT_GRID;
+//                hnumber = WIDTH_GRID;
+//                windex = wnumber - index2 - 1;
+//                hindex = index;
+                wnumber = WIDTH_GRID;
+                hnumber = HEIGHT_GRID;
+                windex = index;
+                hindex = index2;
+                //qidongdong@wind-mobi.com on 2018.4.19 start
+                //modify for pano_switch layout wrong
+                /*if (index3 == PANO_INDEX) {
+                	hindex--;
+                } else */
+                //qidongdong@wind-mobi.com on 2018.4.19 end
+                if (index3 == PREVIEW_INDEX) {
+                	hindex++;
+                }
+                break;
+        }
+
+        int boxh = h / hnumber;
+        int boxw = w / wnumber;
+        int cx = (2 * windex + 1) * boxw / 2;
+        int cy = (2 * hindex + 1) * boxh / 2;
+
+        if (index == 0) {
+        	cx = cx/2;
+        }
+        if (index == 5 && (index2 == 4 || index2 == 5) ) {
+            switch (rotation) {
+                case 90:
+                    if (index2 == 4) {
+                        cy = (5 * hindex + 1)* boxh / 5;
+                    } else if (index2 == 5) {
+                        cy = (5 * hindex + 4) * boxh / 5;
+                    }
+                    break;
+//                case 180:
+//                    cy = h - mTopMargin / 2;
+//                    break;
+                case 270:
+                    if (index2 == 4) {
+                        cy = (5 * hindex + 1)* boxh / 5;
+                    } else if (index2 == 5) {
+                        cy = (5 * hindex + 4) * boxh / 5;
+                    }
+                    break;
+//                default:
+//                    cy = mTopMargin / 2;
+//                    break;
+            }
+        }
+
+        if ((mSwitcher.getCurrentIndex() == ModuleSwitcher.WIDE_ANGLE_PANO_MODULE_INDEX) && (index3 == SHUTTER_INDEX)) {
+            cy = hindex * boxh;
+        }
+
+        l = cx - tw / 2;
+        r = cx + tw / 2;
+        t = cy - th / 2;
+        b = cy + th / 2;
+
+        if (index3 != -1) {
+            int idx1 = rotation / 90;
+            int idx2 = index3;
+            mLocX[idx1][idx2] = l;
+            mLocY[idx1][idx2] = t;
+        }
+        v.layout(l, t, r, b);
+    }
+
+    //bug:A6001-238-zhaoyujie 20170105 modify begin
+    private void toLeft(View v, Rect other, int rotation) {
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) v.getLayoutParams();
+        int tw = lp.leftMargin + v.getMeasuredWidth() + lp.rightMargin;
+        int th = lp.topMargin + v.getMeasuredHeight() + lp.bottomMargin;
+        int cx = (other.left + other.right) / 2;
+        int cy = (other.top + other.bottom) / 2;
+        int l = 0, r = 0, t = 0, b = 0;
+        switch (rotation) {
+            case 0:
+                // portrait, to left of anchor at bottom
+                l = other.right - tw +lp.leftMargin;
+                r = other.right + lp.rightMargin;
+                t = other.top - th + lp.topMargin;
+                b = other.top - lp.bottomMargin;
+//                l = cx - tw / 2 + lp.leftMargin;
+//                r = other.right + tw - lp.rightMargin;
+//                t = cy - th / 2 + lp.topMargin;
+//                b = cy + th / 2 - lp.bottomMargin;
+                break;
+            case 90:
+                // phone landscape: below anchor on right
+//                l = cx - tw / 2 + lp.leftMargin;
+//                r = cx + tw / 2 - lp.rightMargin;
+//                t = other.bottom + lp.topMargin;
+//                b = other.bottom + th - lp.bottomMargin;
+                l = cx - tw / 2 + lp.leftMargin;
+                r = cx + tw / 2 - lp.rightMargin;
+                t = other.top - th + lp.topMargin;
+                b = other.top - lp.bottomMargin;
+                break;
+            case 180:
+                // phone upside down: right of anchor at top
+//                l = other.right + lp.leftMargin;
+//                r = other.right + tw - lp.rightMargin;
+//                t = cy - th / 2 + lp.topMargin;
+//                b = cy + th / 2 - lp.bottomMargin;
+                l = cx - tw / 2 +lp.leftMargin;
+                r = cx + tw / 2 + lp.rightMargin;
+                t = other.top - th + lp.topMargin;
+                b = other.top - lp.bottomMargin;
+                break;
+            case 270:
+                // reverse landscape: above anchor on left
+                l = cx - tw / 2 + lp.leftMargin;
+                r = cx + tw / 2 - lp.rightMargin;
+                t = other.top - th + lp.topMargin;
+                b = other.top - lp.bottomMargin;
+                break;
+        }
+        v.layout(l, t, r, b);
+    }
+    //bug:A6001-238-zhaoyujie 20170105 modify end
+
+    //bug:A6001-238-zhaoyujie 20170105 modify begin
+    private void toRight(View v, Rect other, int rotation) {
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) v.getLayoutParams();
+        int tw = lp.leftMargin + v.getMeasuredWidth() + lp.rightMargin;
+        int th = lp.topMargin + v.getMeasuredHeight() + lp.bottomMargin;
+        int cx = (other.left + other.right) / 2;
+        int cy = (other.top + other.bottom) / 2;
+        int l = 0, r = 0, t = 0, b = 0;
+        switch (rotation) {
+            case 0:
+//                l = other.right + lp.leftMargin;
+//                r = other.right + tw - lp.rightMargin;
+//                t = cy - th / 2 + lp.topMargin;
+//                b = cy + th / 2 - lp.bottomMargin;
+              l = other.right - tw +lp.leftMargin;;
+              r = other.right + lp.rightMargin;
+              t = other.bottom + lp.topMargin;
+              b = other.bottom + th - lp.bottomMargin;
+                break;
+            case 90:
+//                l = cx - tw / 2 + lp.leftMargin;
+//                r = cx + tw / 2 - lp.rightMargin;
+//                t = other.top - th + lp.topMargin;
+//                b = other.top - lp.bottomMargin;
+                l = cx - tw / 2 + lp.leftMargin;
+                r = cx + tw / 2 - lp.rightMargin;
+                t = other.bottom + lp.topMargin;
+                b = other.bottom + th - lp.bottomMargin;
+                break;
+            case 180:
+//                l = other.left - tw + lp.leftMargin;
+//                r = other.left - lp.rightMargin;
+//                t = cy - th / 2 + lp.topMargin;
+//                b = cy + th / 2 - lp.bottomMargin;
+                l = cx - tw / 2 + lp.leftMargin;;
+                r = cx + tw / 2 + lp.rightMargin;
+                t = other.bottom + lp.topMargin;
+                b = other.bottom + th - lp.bottomMargin;
+                break;
+            case 270:
+                l = cx - tw / 2 + lp.leftMargin;
+                r = cx + tw / 2 - lp.rightMargin;
+                t = other.bottom + lp.topMargin;
+                b = other.bottom + th - lp.bottomMargin;
+                break;
+        }
+        v.layout(l, t, r, b);
+    }
+    //bug:A6001-238-zhaoyujie 20170105 modify end
+
+    private void adjustBackground() {
+        int rotation = getUnifiedRotation();
+        // remove current drawable and reset rotation
+        mBackgroundView.setBackgroundDrawable(null);
+        mBackgroundView.setRotationX(0);
+        mBackgroundView.setRotationY(0);
+        // if the switcher background is top aligned we need to flip the
+        // background
+        // drawable vertically; if left aligned, flip horizontally
+        switch (rotation) {
+            case 180:
+                mBackgroundView.setRotationX(180);
+                break;
+            case 270:
+                mBackgroundView.setRotationY(180);
+                break;
+            default:
+                break;
+        }
+        //bug:A6000-175-zhaoyujie 20161010 delete begin
+        mBackgroundView.setBackgroundResource(R.drawable.switcher_bg);
+        //bug:A6000-175-zhaoyujie 20161010 delete end
+    }
+
+    private void layoutRemaingPhotos() {
+        int rl = mPreview.getLeft();
+        int rt = mPreview.getTop();
+        int rr = mPreview.getRight();
+        int rb = mPreview.getBottom();
+        int w = mRemainingPhotos.getMeasuredWidth();
+        int h = mRemainingPhotos.getMeasuredHeight();
+        int m = getResources().getDimensionPixelSize(R.dimen.remaining_photos_margin);
+
+        int hc = (rl + rr) / 2;
+        int vc = (rt + rb) / 2 - m;
+        if (mOrientation == 90 || mOrientation == 270) {
+            vc -= w / 2;
+        }
+        if(hc < w/2) {
+            mRemainingPhotos.layout(0, vc - h / 2, w, vc + h / 2);
+        } else {
+            mRemainingPhotos.layout(hc - w / 2, vc - h / 2, hc + w / 2, vc + h / 2);
+        }
+        mRemainingPhotos.setRotation(-mOrientation);
+    }
+
+    public void updateRemainingPhotos(int remaining) {
+        long remainingStorage = Storage.getAvailableSpace() - Storage.LOW_STORAGE_THRESHOLD_BYTES;
+        if ((remaining < 0 && remainingStorage <= 0) || mHideRemainingPhoto) {
+            mRemainingPhotos.setVisibility(View.GONE);
+        } else {
+            for (int i = mRemainingPhotos.getChildCount() - 1; i >= 0; --i) {
+                mRemainingPhotos.getChildAt(i).setVisibility(View.VISIBLE);
+            }
+            if (remaining < LOW_REMAINING_PHOTOS) {
+                mRemainingPhotosText.setText("<" + LOW_REMAINING_PHOTOS + " ");
+            } else if (remaining >= HIGH_REMAINING_PHOTOS) {
+                mRemainingPhotosText.setText(">" + HIGH_REMAINING_PHOTOS);
+            } else {
+                mRemainingPhotosText.setText(remaining + " ");
+            }
+        }
+        mCurrentRemaining = remaining;
+    }
+
+    public void setMargins(int top, int bottom) {
+        mTopMargin = top;
+        mBottomMargin = bottom;
+    }
+
+    public void setPreviewRatio(float ratio, boolean panorama) {
+        if (panorama) {
+            mPaint.setColor(Color.TRANSPARENT);
+        } else {
+            int r = CameraUtil.determineRatio(ratio);
+            mPreviewRatio = r;
+            if (mPreviewRatio == CameraUtil.RATIO_4_3 && mTopMargin != 0) {
+                //bug:A6000-175-zhangyang 20161220 modify begin
+                //mPaint.setColor(getResources().getColor(R.color.camera_control_bg_transparent));
+                mPaint.setColor(Color.TRANSPARENT);
+                //bug:A6000-175-zhangyang 20161220 modify end
+            } else {
+            	//bug:A6000-175-zhaoyujie 20161115 modify
+                mPaint.setColor(Color.TRANSPARENT);
+                //mPaint.setColor(getResources().getColor(R.color.camera_control_bg_transparent));
+            }
+        }
+        invalidate();
+    }
+
+    //bug:A6000-175-zhaoyujie 20161115 modify begin
+    public void showRefocusToast(boolean show) {
+        mRefocusToast.setVisibility(show ? View.VISIBLE : View.GONE);
+        if ((mCurrentRemaining > 0 ) && !mHideRemainingPhoto) {
+            mRemainingPhotos.setVisibility(View.GONE);
+        }
+    }
+    //bug:A6000-175-zhaoyujie 20161115 modify end
+
+    public void setOrientation(int orientation, boolean animation) {
+//        mOrientation = orientation;
+//        View[] views = {
+//            mSceneModeSwitcher, mFilterModeSwitcher, mFrontBackSwitcher,
+//            TsMakeupManager.HAS_TS_MAKEUP ? mTsMakeupSwitcher : mHdrSwitcher,
+//            mMenu, mShutter, mPreview, mSwitcher, mMute, mReviewRetakeButton,
+//            mReviewCancelButton, mReviewDoneButton
+//        };
+//        for (View v : views) {
+//            if (v != null) {
+//                ((RotateImageView) v).setOrientation(orientation,
+//                                                     animation);
+//            }
+//        }
+//        layoutRemaingPhotos();
+    }
+
+    public void hideCameraSettings() {
+        mFrontBackSwitcher.setVisibility(View.INVISIBLE);
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher.setVisibility(View.INVISIBLE);
+//        } else {
+            mHdrSwitcher.setVisibility(View.INVISIBLE);
+            mFlashSwitcher.setVisibility(View.INVISIBLE);//bug:A6000-175-zhufeng 20161215 add
+//        }
+        //mSceneModeSwitcher.setVisibility(View.INVISIBLE);
+        mFilterModeSwitcher.setVisibility(View.INVISIBLE);
+        mMenu.setVisibility(View.INVISIBLE); //qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237
+    }
+
+    //bug:A6000-175-zhaoyujie 20161115 modify begin
+    public void showCameraSettings() {
+        mFrontBackSwitcher.setVisibility(View.VISIBLE);
+//        if(TsMakeupManager.HAS_TS_MAKEUP) {
+//            mTsMakeupSwitcher.setVisibility(View.VISIBLE);
+//        } else {
+            mHdrSwitcher.setVisibility(View.VISIBLE);
+            mFlashSwitcher.setVisibility(View.VISIBLE);//bug:A6000-175-zhufeng 20161215 add
+//        }
+        //mSceneModeSwitcher.setVisibility(View.GONE);
+        mFilterModeSwitcher.setVisibility(View.VISIBLE);
+        // qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 start
+        if (("RU").equalsIgnoreCase(WindCountryCodeUtils.getCountryCode())) {
+            mMenu.setVisibility(View.VISIBLE);
+        } else {
+            mMenu.setVisibility(View.INVISIBLE);
+        }
+        // qidongdong@wind-mobi.com on 2018.7.7 mdify for BUG#TABFIVEP-3237 end
+    }
+   //bug:A6000-175-zhaoyujie 20161115 modify end
+
+    public void hideRemainingPhotoCnt() {
+        mHideRemainingPhoto = true;
+        mRemainingPhotos.setVisibility(View.GONE);
+        mRemainingPhotosText.setVisibility(View.GONE);
+    }
+
+    private class ArrowTextView extends TextView {
+        private static final int TEXT_SIZE = 14;
+        private static final int PADDING_SIZE = 18;
+        private static final int BACKGROUND = 0x80000000;
+
+        private Paint mPaint;
+        private Path mPath;
+
+        public ArrowTextView(Context context) {
+            super(context);
+
+            setText(context.getString(R.string.refocus_toast));
+            setBackgroundColor(BACKGROUND);
+            setVisibility(View.GONE);
+            setLayoutParams(new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+            setTextSize(TEXT_SIZE);
+            setPadding(PADDING_SIZE, PADDING_SIZE, PADDING_SIZE, PADDING_SIZE);
+
+            mPaint = new Paint();
+            mPaint.setStyle(Paint.Style.FILL);
+            mPaint.setColor(BACKGROUND);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (mPath != null) {
+                canvas.drawPath(mPath, mPaint);
+            }
+        }
+
+        public void setArrow(float x1, float y1, float x2, float y2, float x3, float y3) {
+            mPath = new Path();
+            mPath.reset();
+            mPath.moveTo(x1, y1);
+            mPath.lineTo(x2, y2);
+            mPath.lineTo(x3, y3);
+            mPath.lineTo(x1, y1);
+        }
+    }
+}

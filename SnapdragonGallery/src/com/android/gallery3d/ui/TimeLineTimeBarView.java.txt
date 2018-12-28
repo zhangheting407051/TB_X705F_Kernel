@@ -1,0 +1,176 @@
+
+package com.android.gallery3d.ui;
+
+import java.lang.ref.SoftReference;
+import java.util.HashMap;
+
+import org.codeaurora.gallery.R;
+
+import com.android.gallery3d.common.Utils;
+import com.android.gallery3d.glrenderer.GLCanvas;
+import com.android.gallery3d.glrenderer.NinePatchTexture;
+import com.android.gallery3d.glrenderer.StringTexture;
+import com.android.gallery3d.util.GalleryUtils;
+
+import android.content.Context;
+import android.os.Handler;
+import android.text.TextUtils;
+import android.util.Log;
+
+public class TimeLineTimeBarView extends GLView {
+
+    private static final String TAG = "TimeLineTimeBarView";
+
+    private static final long NO_ANIMATION = -1;
+    private static final long ANIM_TIME = 200;
+
+    private HashMap<String, SoftReference<StringTexture>> mTimeMap = null;
+    private StringTexture mTimeTexture = null;
+    private NinePatchTexture mPanel = null;
+    private String mCurrentTime = "";
+    private Handler mHandler = new Handler();
+
+    private int mBarHeight;
+    private int mBarWidth;
+    private int mBarMarginLeft;
+    private int mBarMarginTop;
+    private int mTextColor;
+    private int mTextSize;
+
+    private float mFromAlpha;
+    private float mToAlpha;
+    private float mAlpha;
+    private long mAnimationStartTime = NO_ANIMATION;
+    private boolean mOverFullScreen = false;
+
+    public TimeLineTimeBarView(Context context) {
+
+        mBarMarginLeft = GalleryUtils.dpToPixel(16);
+        mBarMarginTop = GalleryUtils.dpToPixel(5);
+        mTextSize = (int) context.getResources().getDimension(R.dimen.timeline_video_time_size);
+        mTextColor = context.getResources().getColor(R.color.timeline_video_time);
+
+        mPanel = new NinePatchTexture(context, R.drawable.panel_undo_holo);
+        mTimeMap = new HashMap<String, SoftReference<StringTexture>>();
+    }
+
+    private Runnable showTimeBarRunnable = new Runnable() {
+
+        @Override
+        public void run() {
+            animateVisibility(VISIBLE);
+        }
+    };
+
+    private Runnable hideTimeBarRunnable = new Runnable() {
+
+        @Override
+        public void run() {
+            animateVisibility(INVISIBLE);
+        }
+    };
+
+    @Override
+    protected void onMeasure(int widthSpec, int heightSpec) {
+        setMeasuredSize(mBarWidth, mBarHeight);
+    }
+
+    @Override
+    protected void render(GLCanvas canvas) {
+        super.render(canvas);
+        advanceAnimation();
+
+        canvas.save(GLCanvas.SAVE_FLAG_ALPHA);
+        canvas.multiplyAlpha(1.0f);
+
+        int panelX = getWidth();
+        mPanel.draw(canvas, 0, 0, panelX, mBarHeight * 3 / 2);
+
+        if (mTimeTexture != null) {
+            mTimeTexture.draw(canvas, mBarWidth / 3, mBarHeight - 12);
+        } else {
+            Log.e(TAG, "mTimeTexture is NULL");
+        }
+        canvas.restore();
+    }
+
+    public void setTimeBarTime(String time,boolean overFullScreen) {
+        mOverFullScreen = overFullScreen;
+        if (!mOverFullScreen) {
+            hideTimeBar();
+        } else {
+            mHandler.removeCallbacks(showTimeBarRunnable);
+            mHandler.post(showTimeBarRunnable);
+        }
+
+        if (TextUtils.isEmpty(time) || mCurrentTime.equals(time.toUpperCase())) {
+            return;
+        }
+        mCurrentTime = time;
+        StringTexture texture = null;
+        if (mTimeMap.get(mCurrentTime) != null) {
+            texture = mTimeMap.get(mCurrentTime).get();
+        }
+
+        if (texture == null) {
+            texture = StringTexture
+                    .newInstance(mCurrentTime, mTextSize, mTextColor, 0, false);
+            mTimeMap.put(mCurrentTime, new SoftReference<StringTexture>(texture));
+        }
+        mTimeTexture = texture;
+        // get string texture width
+        mBarWidth = mTimeTexture.getWidth();
+        mBarHeight = mTimeTexture.getTextureHeight() + mBarMarginTop * 2;
+        measure(mBarWidth, mBarHeight);
+    }
+
+    private void hideTimeBar() {
+        mHandler.removeCallbacks(hideTimeBarRunnable);
+        mHandler.post(hideTimeBarRunnable);
+    }
+
+    private static float getTargetAlpha(int visibility) {
+        return (visibility == VISIBLE) ? 1f : 0f;
+    }
+
+
+    @Override
+    public void setVisibility(int visibility) {
+        mAlpha = getTargetAlpha(visibility);
+        mAnimationStartTime = NO_ANIMATION;
+        super.setVisibility(visibility);
+        invalidate();
+    }
+
+    private void animateVisibility(int visibility) {
+        float target = getTargetAlpha(visibility);
+//        if (mAnimationStartTime == NO_ANIMATION && Math.abs(mAlpha - target) < 0.0000001)
+//            return;
+//        if (mAnimationStartTime == NO_ANIMATION && Math.abs(mToAlpha - target) < 0.0000001)
+//            return;
+
+        mFromAlpha = mAlpha;
+        mToAlpha = target;
+        mAnimationStartTime = AnimationTime.startTime();
+
+        super.setVisibility(visibility);
+        invalidate();
+    }
+
+    private void advanceAnimation() {
+//        if (mAnimationStartTime == NO_ANIMATION)
+//            return;
+
+        float delta = (float) (AnimationTime.get() - mAnimationStartTime) / ANIM_TIME;
+        mAlpha = mFromAlpha + ((mToAlpha > mFromAlpha) ? delta : -delta);
+        mAlpha = Utils.clamp(mAlpha, 0f, 1f);
+
+        if (Math.abs(mAlpha - mToAlpha) < 0.0000001) {
+            mAnimationStartTime = NO_ANIMATION;
+            if (mAlpha == 0) {
+                super.setVisibility(INVISIBLE);
+            }
+        }
+        invalidate();
+    }
+}

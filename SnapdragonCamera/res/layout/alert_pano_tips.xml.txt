@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2015 Qualcomm Technologies, Inc.
+All Rights Reserved.
+Confidential and Proprietary - Qualcomm Technologies, Inc.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/camera_preview"
+    android:layout_width="@dimen/alert_pano_tips_layout_widght"
+    android:layout_height="@dimen/alert_pano_tips_layout_height"
+    android:layout_gravity="center"
+    android:orientation="vertical" >
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="@dimen/alert_pano_tips_textview_height"
+        android:layout_gravity="top"
+        android:gravity="center"
+        android:background="@drawable/bg_pano_tips"
+        android:text="@string/pano_dialog_title"
+        android:textColor="#000000"
+        android:textSize="@dimen/alert_pano_tips_textview_size" />
+
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:background="#FAFAFA" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:layout_gravity="center_vertical" >
+
+    <ScrollView
+            android:id="@+id/myScrollView"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/alert_pano_tips_scrollview_height"
+            android:layout_marginLeft="@dimen/alert_pano_tips_scrollview_marginleft"
+            android:layout_marginRight="@dimen/alert_pano_tips_scrollview_marginright"
+            android:layout_marginTop="@dimen/alert_pano_tips_scrollview_margintop">
+        <TextView
+            android:id="@+id/displayPanoTipHorizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/pano_tips_summary"
+            android:textColor="#1F1F1F"
+            android:textSize="@dimen/alert_pano_tips_scrollview_textview_size" />
+        </ScrollView>
+
+        <CheckBox
+            android:id="@+id/no_more_tip"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/alert_pano_tips_ll_checkbox_height"
+            android:layout_gravity="start"
+            android:layout_marginStart="@dimen/alert_pano_tips_scrollview_marginleft"
+            android:layout_marginTop="@dimen/alert_pano_tips_scrollview_margintop"
+            android:button="@drawable/icon_checkbox_state"
+            android:checked="false"
+            android:paddingStart="20px"
+            android:text="@string/no_more_remind"
+            android:textColor="#767676"
+            android:textSize="@dimen/alert_pano_tips_scrollview_checkbox_textview_size" />
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:background="#FAFAFA" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="@dimen/alert_pano_tips_textview_height"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_pano_tips_bottom"
+        android:gravity="center" >
+
+        <TextView
+            android:id="@+id/close_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/alert_pano_tips_ll_textview_height"
+            android:layout_gravity="center"
+            android:clickable="true"
+            android:paddingStart="150px"
+            android:paddingEnd="150px"
+            android:text="@string/close"
+            android:textColor="#478CFE"
+            android:textSize="@dimen/alert_pano_tips_ll_textSize" />
+    </LinearLayout>
+
+</LinearLayout>

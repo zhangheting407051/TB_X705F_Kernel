@@ -1,0 +1,27 @@
+/**
+ * Create by lishunbo@wind-mobi.com 20180912 for baidu-dock feature
+ */
+package com.lenovo.android.hishow;
+
+import com.lenovo.android.hishow.AlarmInfo;
+
+/**
+* {@hide}
+*/
+interface IHiShowManager{
+    void lockScreen();
+    void putIntToSystem(String key, int value);
+    int getIntFromSystem(String key, int def);
+    void setProp(String key, String value);
+    void enableStatusBar(boolean enable, int flag);
+    void controlFloatButton(boolean enable, int type);
+    void setAppToHomeApp(String key);
+    void resetPrevHomeApp();
+    List<AlarmInfo> queryAllAlarmInfo();
+    int addNewAlarm(in AlarmInfo alarmInfo);
+    boolean deleteAlarm(int alarmId);
+    boolean controlAlarm(boolean enable);
+    void closeCurrentAlarm();
+    void setActivityController(in List<String> pkgWhiteList, in List<String> actWhiteList, in List<String> pkgBlackList, in List<String> actBlackList);
+    void cancelActivityController();
+}

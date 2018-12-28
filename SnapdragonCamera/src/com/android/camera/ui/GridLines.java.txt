@@ -1,0 +1,70 @@
+//qidongdong@wind-mobi.com on 2018.3.14 start
+//add for Feature-10054 add GridLines
+package com.android.camera.ui;
+
+import com.android.camera.util.PreviewChangeHelper.PreviewAreaChangedListener;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.util.AttributeSet;
+import android.view.View;
+import org.codeaurora.snapcam.R;
+
+public class GridLines extends View implements PreviewAreaChangedListener{
+
+    private Rect mDrawBounds;
+    Paint mPaint = new Paint();
+
+    public GridLines(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        // TODO Auto-generated constructor stub
+        mPaint.setStrokeWidth(getResources().getDimensionPixelSize(R.dimen.grid_line_width));
+        mPaint.setColor(getResources().getColor(R.color.grid_line));
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        // TODO Auto-generated method stub
+        super.onDraw(canvas);
+        if (mDrawBounds != null) {
+            int widthsplit = 0;
+            int heightsplit = 0;
+            if(mDrawBounds.width() > mDrawBounds.height()){
+                widthsplit = 4;
+                heightsplit = 3;
+            }else{
+                widthsplit = 3;
+                heightsplit = 4;
+            }
+            float thirdWidth = mDrawBounds.width() / widthsplit;
+            float thirdHeight = mDrawBounds.height() / heightsplit;
+            for (int i = 1; i < widthsplit; i++) {
+                // Draw the vertical lines.
+                final float x = thirdWidth * i;
+                canvas.drawLine(mDrawBounds.left + x, mDrawBounds.top,
+                        mDrawBounds.left + x, mDrawBounds.bottom, mPaint);
+            }
+            for (int i = 1; i < heightsplit; i++) {
+                // Draw the horizontal lines.
+                final float y = thirdHeight * i;
+                canvas.drawLine(mDrawBounds.left, mDrawBounds.top + y,
+                        mDrawBounds.right, mDrawBounds.top + y, mPaint);
+            }
+        }
+    }
+
+    private void setDrawBounds(final Rect previewArea) {
+        mDrawBounds = new Rect(previewArea);
+        invalidate();
+    }
+
+    @Override
+    public void onPreviewAreaChanged(Rect previewArea) {
+        // TODO Auto-generated method stub
+        setDrawBounds(previewArea);
+    }
+
+}
+//qidongdong@wind-mobi.com on 2018.3.14 end

@@ -1,0 +1,159 @@
+package com.wantjoin.childmode;
+
+import android.content.Context;
+import android.os.SystemProperties;
+
+
+/**
+ * 用户信息接口
+ */
+public class AccessUserProvider {
+
+    /**
+     *
+     * @param context
+     * @param userId  目标用户id
+     * @return 儿童用户的间隔时间, 单位: 分钟
+     *          0: 不限制
+     *          -1:获取信息失败
+     *          其他值为正常时间
+     */
+    public static int getChildIntervalForId(Context context, int userId) {
+        if (context != null) {
+            try {
+                AccessCtrlInfo.KidUserInfo.KidUser kidUser = AccessSqlOper.getUserByUsrID(context, userId);
+                if (kidUser != null) {
+                    return kidUser.nIntervalTime;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 使用时间为0的话,间隔时间无效
+     *
+     * @param context
+     * @param userId
+     * @param minute  minute = 0 , 不限制间隔时间, 时间到了可继续解锁使用
+     *                minute = 1-999(包含1和999), 间隔休息时间为设置的具体数值
+     * @return 设置儿童用户的间隔时间
+     *          -1:设置失败
+     *          -2:时间范围不正确
+     *          其他值为正常
+     */
+    public static int setChildIntervalForId(Context context, int userId, int minute) {
+        if (context != null) {
+            try {
+                if (minute == 0 || (minute >= 1 && minute <= 999)) {
+                    AccessCtrlInfo.KidUserInfo.KidUser kidUser = AccessSqlOper.getUserByUsrID(context, userId);
+                    if (kidUser != null) {
+                        kidUser.nIntervalTime = minute;
+                        return AccessSqlOper.InsertOrUpdateKidUserInfo(context, kidUser, false);
+                    }
+                    return -1;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        }
+        return -2;
+    }
+
+    /**
+     * @param context
+     * @param userId
+     * @return 获取儿童用户的使用时间, 单位: 分钟
+     *           0: 不限制
+     *          -1:获取信息失败
+     *          其他值为正常时间
+     */
+    public static int getChildUsageTimeForId(Context context, int userId) {
+        if (context != null) {
+            try {
+                AccessCtrlInfo.KidUserInfo.KidUser kidUser = AccessSqlOper.getUserByUsrID(context, userId);
+                if (kidUser != null) {
+                    return kidUser.nUsageTime;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 使用时间为0的话,间隔时间无效
+     * @param context
+     * @param userId
+     * @param minute  minute = 0, 不限制使用时间, 可以无限制的使用
+     *                minute = 1-999(包含1和999), 使用时间为具体设置时间
+     * @return 设置儿童用户的使用时间
+     *           -1:设置失败
+     *           -2:时间范围不正确
+     *          其他值为正常
+     */
+    public static int setChildUsageTimeForId(Context context, int userId, int minute) {
+        if (context != null) {
+            try {
+                if (minute == 0 || (minute >= 1 && minute <= 999)) {
+                    AccessCtrlInfo.KidUserInfo.KidUser kidUser = AccessSqlOper.getUserByUsrID(context, userId);
+                    if (kidUser != null) {
+                        kidUser.nUsageTime = minute;
+                        return AccessSqlOper.InsertOrUpdateKidUserInfo(context, kidUser, false);
+                    }
+                    return -1;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        }
+        return -2;
+    }
+
+    /**
+     * get kid's Sex by UserId
+     * @param userId
+     * @return
+     * SEX_BOY = 1
+     * SEX_GIRY    = 2
+     */
+    public static int getChildSexByUserId(int userId) {
+        String s = null;
+        try {
+            s = SystemProperties.get("persist.sys.childsex" + userId);
+            if (s.length() > 0) {
+                return Integer.valueOf(s);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * get kid's Birthday by UserId
+     * @param context
+     * @param userId userId
+     * @return
+     */
+    public static String getChildBirthdayByUserId(Context context, int userId){
+        if (context != null && userId > 0){
+            try {
+                AccessCtrlInfo.KidUserInfo.KidUser kidUser = AccessSqlOper.getUserByUsrID(context, userId);
+                if (kidUser != null){
+                    return kidUser.sBirthday;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+}

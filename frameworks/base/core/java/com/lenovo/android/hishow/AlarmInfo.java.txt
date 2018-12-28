@@ -1,0 +1,266 @@
+/*
+ * Create by lishunbo@wind-mobi.com 20180912 for baidu-dock feature
+ */
+
+package com.lenovo.android.hishow;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.net.Uri;
+import android.content.ContentResolver;
+import android.database.Cursor;
+import java.util.List;
+import java.util.ArrayList;
+import android.util.Log;
+import android.content.ContentUris;
+import android.content.ContentValues;
+
+public class AlarmInfo implements Parcelable{
+    public static final String TAG = "AlarmInfo";
+
+    private int id;
+    private boolean enabled;
+    private int hour;
+    private int minutes;
+    private int daysOfWeek;
+    private boolean vibrate;
+    private String label;
+    private String alert;
+
+    private final static String DESKCLOCK_AUTHORITY = "com.android.deskclock";
+    private final static Uri ALARMS_URI = Uri.parse("content://" + DESKCLOCK_AUTHORITY + "/alarms");
+
+    private final static String COLUMN_ID = "_id";
+    private final static String COLUMN_HOUR = "hour";
+    private final static String COLUMN_MINUTES = "minutes";
+    private final static String COLUMN_DAYS_OF_WEEK = "daysofweek";
+    private final static String COLUMN_ENABLED = "enabled";
+    private final static String COLUMN_VIBRATE = "vibrate";
+    private final static String COLUMN_LABEL = "label";
+    private final static String COLUMN_RINGTONE = "ringtone";
+    private final static String COLUMN_DELETE_AFTER_USE = "delete_after_use";
+
+    private static final int ID_INDEX = 0;
+    private static final int HOUR_INDEX = 1;
+    private static final int MINUTES_INDEX = 2;
+    private static final int DAYS_OF_WEEK_INDEX = 3;
+    private static final int ENABLED_INDEX = 4;
+    private static final int VIBRATE_INDEX = 5;
+    private static final int LABEL_INDEX = 6;
+    private static final int RINGTONE_INDEX = 7;
+    private static final int DELETE_AFTER_USE_INDEX = 8;
+
+    private static final int COLUMN_COUNT = DELETE_AFTER_USE_INDEX + 1;
+
+    public static final int INVALID_ID = -1;
+    public static final String DEFAULT_ALERT = "content://settings/system/alarm_alert";
+    
+    //for daysOfWeek
+    public static int MONDAY = 1;
+    public static int TUESDAY = 1 << 1;
+    public static int WEDNESDAY = 1 << 2;
+    public static int THURSDAY = 1 << 3;
+    public static int FRIDAY = 1 << 4;
+    public static int SATURDAY = 1 << 5;
+    public static int SUNDAY = 1 << 6;
+
+    public AlarmInfo() {
+        this.id = INVALID_ID;
+        this.hour = 0;
+        this.minutes = 0;
+        this.daysOfWeek = 0;
+        this.vibrate = true;
+        this.label = "";
+        this.alert = DEFAULT_ALERT;
+        this.enabled = true;
+    }
+
+    @Override
+    public String toString() {
+        return "AlarmInfo{" +
+                "alert=" + alert +
+                ", id=" + id +
+                ", enabled=" + enabled +
+                ", hour=" + hour +
+                ", minutes=" + minutes +
+                ", daysOfWeek=" + daysOfWeek +
+                ", vibrate=" + vibrate +
+                ", label='" + label + '\'' +
+                '}';
+    }
+
+    public static boolean deleteAlarm(ContentResolver contentResolver, int alarmId) {
+        if (alarmId == INVALID_ID) return false;
+        int deletedRows = contentResolver.delete(getContentUri(alarmId), "", null);
+        return deletedRows == 1;
+    }
+
+    private static Uri getContentUri(long alarmId) {
+        return ContentUris.withAppendedId(ALARMS_URI, alarmId);
+    }
+
+    public static int addAlarm(ContentResolver contentResolver, AlarmInfo alarmInfo) {
+        ContentValues values = createContentValues(alarmInfo);
+        Uri uri = contentResolver.insert(ALARMS_URI, values);
+        int id = getId(uri);
+        return id;
+    }
+
+    private static int getId(Uri contentUri) {
+        return (int) ContentUris.parseId(contentUri);
+    }
+
+    private static ContentValues createContentValues(AlarmInfo alarm) {
+        ContentValues values = new ContentValues(COLUMN_COUNT);
+        if (alarm.id != INVALID_ID) {
+            values.put(COLUMN_ID, alarm.id);
+        }
+
+        values.put(COLUMN_ENABLED, alarm.enabled ? 1 : 0);
+        values.put(COLUMN_HOUR, alarm.hour);
+        values.put(COLUMN_MINUTES, alarm.minutes);
+        values.put(COLUMN_DAYS_OF_WEEK, alarm.daysOfWeek);
+        values.put(COLUMN_VIBRATE, alarm.vibrate ? 1 : 0);
+        values.put(COLUMN_LABEL, alarm.label);
+        values.put(COLUMN_DELETE_AFTER_USE, 0);
+        if (alarm.alert == null) {
+            // We want to put null, so default alarm changes
+            values.putNull(COLUMN_RINGTONE);
+        } else {
+            values.put(COLUMN_RINGTONE, alarm.alert);
+        }
+
+        return values;
+
+    }
+
+    public static List<AlarmInfo> queryAlarm(ContentResolver contentResolver) {
+        Cursor cursor = contentResolver.query(ALARMS_URI, null, null, null, null);
+        if (cursor == null) {
+            Log.i(TAG, "baidu-dock-AlarmInfo-queryAlarm-cursor is null!!!!:");
+            return null;
+        }
+        Log.i(TAG, "baidu-dock-AlarmInfo-queryAlarm-cursor count is :" + cursor.getCount());
+
+        List<AlarmInfo> allAlarm = new ArrayList<AlarmInfo>();
+        for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+            AlarmInfo ai = new AlarmInfo();
+            ai.setId(cursor.getInt(cursor.getColumnIndex(COLUMN_ID)));
+            ai.setEnabled(cursor.getInt(cursor.getColumnIndex(COLUMN_ENABLED)) == 1 ? true:false);
+            ai.setHour(cursor.getInt(cursor.getColumnIndex(COLUMN_HOUR)));
+            ai.setMinutes(cursor.getInt(cursor.getColumnIndex(COLUMN_MINUTES)));
+            ai.setDaysOfWeek(cursor.getInt(cursor.getColumnIndex(COLUMN_DAYS_OF_WEEK)));
+            ai.setVibrate(cursor.getInt(cursor.getColumnIndex(COLUMN_VIBRATE)) == 1 ? true:false);
+            ai.setAlert(cursor.getString(cursor.getColumnIndex(COLUMN_RINGTONE)));
+            ai.setLabel(cursor.getString(cursor.getColumnIndex(COLUMN_LABEL)));
+            Log.i(TAG, "baidu-dock-AlarmInfo-queryAlarm-cursor.toString:"+ai.toString());
+            allAlarm.add(ai);
+        }
+        return allAlarm;
+
+    }
+
+    protected AlarmInfo(Parcel in) {
+        id = in.readInt();
+        enabled = in.readByte() != 0;
+        hour = in.readInt();
+        minutes = in.readInt();
+        daysOfWeek = in.readInt();
+        vibrate = in.readByte() != 0;
+        label = in.readString();
+        alert = in.readString();
+    }
+
+    public static final Creator<AlarmInfo> CREATOR = new Creator<AlarmInfo>() {
+        @Override
+        public AlarmInfo createFromParcel(Parcel in) {
+            return new AlarmInfo(in);
+        }
+
+        @Override
+        public AlarmInfo[] newArray(int size) {
+            return new AlarmInfo[size];
+        }
+    };
+
+    public int getId() {
+        return this.id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public int getHour() {
+        return this.hour;
+    }
+
+    public void setHour(int hour) {
+        this.hour = hour;
+    }
+
+    public int getMinutes() {
+        return this.minutes;
+    }
+
+    public void setMinutes(int minutes) {
+        this.minutes = minutes;
+    }
+
+    public int getDaysOfWeek() {
+        return this.daysOfWeek;
+    }
+
+    public void setDaysOfWeek(int daysOfWeek) {
+        this.daysOfWeek = daysOfWeek;
+    }
+
+    public boolean isVibrate() {
+        return this.vibrate;
+    }
+
+    public void setVibrate(boolean vibrate) {
+        this.vibrate = vibrate;
+    }
+
+    public String getLabel() {
+        return this.label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public String getAlert() {
+        return this.alert;
+    }
+
+    public void setAlert(String alert) {
+        this.alert = alert;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeByte((byte) (enabled ? 1 : 0));
+        dest.writeInt(hour);
+        dest.writeInt(minutes);
+        dest.writeInt(daysOfWeek);
+        dest.writeByte((byte) (vibrate ? 1 : 0));
+        dest.writeString(label);
+        dest.writeString(alert);
+    }
+}

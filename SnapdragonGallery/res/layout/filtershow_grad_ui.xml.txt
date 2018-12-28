@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:visibility="visible"
+    android:background="#0D0D0D">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.8"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/por_grad_brightness"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/editor_grad_brightness"
+            android:textSize="16sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_selected"
+        />
+
+        <Button
+            android:id="@+id/por_grad_saturation"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/editor_grad_saturation"
+            android:textSize="16sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+        <Button
+            android:id="@+id/por_grad_contrast"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:text="@string/editor_grad_contrast"
+            android:textSize="16sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_original"
+        />
+
+    </LinearLayout>
+
+    <include layout="@layout/filtershow_por_seekbar"/>
+
+    <!--fix feature#10896 mahui01@wind-mobi.com 2018/4/8 begin-->
+    <!-- <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.5"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/gradAddButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center_vertical"
+            android:gravity="start"
+            android:scaleType="centerInside"
+            android:layout_weight="0"
+            android:background="@drawable/filtershow_button_background"
+            android:src="@drawable/addspot"
+            android:paddingBottom="2dp"
+            android:layout_marginStart="48dp" />
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="8dp"
+            android:layout_weight="1"/>
+
+        <ImageButton
+            android:id="@+id/gradDelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:gravity="end"
+            android:scaleType="centerInside"
+            android:layout_weight="0"
+            android:background="@drawable/filtershow_button_background"
+            android:src="@drawable/delete"
+            android:paddingBottom="2dp"
+            android:layout_marginEnd="48dp" />
+    </LinearLayout> -->
+    <!--fix feature#10896 mahui01@wind-mobi.com 2018/4/8 end-->
+
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

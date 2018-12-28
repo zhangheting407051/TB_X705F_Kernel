@@ -1,0 +1,141 @@
+package com.wantjoin.childmode;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+
+import java.io.ByteArrayOutputStream;
+
+/**
+ * 处理bitmap drawable byte[]之间的转换
+ * Created by Robot on 2016/12/5.
+ */
+
+public class BitmapUtils {
+    public static BitmapFactory.Options sOptions;
+
+    static {
+        sOptions = new BitmapFactory.Options();
+        sOptions.inJustDecodeBounds = true;
+    }
+
+    /**
+     * 获取大图
+     *
+     * @param pathName
+     * @return
+     */
+    public static Bitmap getBitmap(String pathName) {
+        Bitmap bitmap = BitmapFactory.decodeFile(pathName);
+        return bitmap;
+    }
+
+    /**
+     * 获取缩略图
+     *
+     * @param pathName
+     * @return
+     */
+    public static Bitmap getBitmapThumbnail(String pathName) {
+        Bitmap bitmap = null;
+
+        return bitmap;
+    }
+
+    /**
+     * bitmap 转byte[]
+     *
+     * @param bitmap
+     * @return
+     */
+    public static byte[] getByteForBitmap(Bitmap bitmap) {
+        byte[] stream = null;
+        if (bitmap == null) return null;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);
+        stream = bos.toByteArray();
+        return stream;
+    }
+
+    /**
+     * drawable转byte[]
+     *
+     * @param drawable
+     * @return
+     */
+    public static byte[] getByteForDrawable(Drawable drawable) {
+        byte[] stream = null;
+        if (drawable == null) return null;
+        Bitmap bitmap = getBitmapForDrawable(drawable);
+        stream = getByteForBitmap(bitmap);
+        return stream;
+    }
+
+    /**
+     * bitmap 转 drawable
+     * @param bitmap
+     * @return
+     */
+    public static Drawable getDrawableForBitmap(Bitmap bitmap){
+        if (bitmap == null)return null;
+        BitmapDrawable drawable = new BitmapDrawable(bitmap);
+        return drawable;
+    }
+    /**
+     * bitmap 转 drawable
+     *
+     * @param drawable
+     * @return
+     */
+    public static Bitmap getBitmapForDrawable(Drawable drawable) {
+        Bitmap bitmap;
+
+        if (drawable instanceof BitmapDrawable) {
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            if (bitmapDrawable.getBitmap() != null) {
+                return bitmapDrawable.getBitmap();
+            }
+        }
+
+        if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+            bitmap = Bitmap.createBitmap(1, 1,
+                    Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+        } else {
+            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(),
+                    Bitmap.Config.ARGB_8888);
+        }
+
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
+    /**
+     * 字节流转换drawable
+     *
+     * @param stream
+     * @return
+     */
+    public static Drawable byteToDrawable(byte[] stream) {
+        if (stream == null) return null;
+        Bitmap bitmap = byteToBitmap(stream);
+        Drawable drawable = getDrawableForBitmap(bitmap);
+        return drawable;
+    }
+
+    /**
+     * byte[] 转换 bitmap
+     *
+     * @param stream
+     * @return
+     */
+    public static Bitmap byteToBitmap(byte[] stream) {
+        Bitmap bitmap = null;
+        if (stream == null) return null;
+        bitmap = BitmapFactory.decodeByteArray(stream, 0, stream.length);
+        return bitmap;
+    }
+}

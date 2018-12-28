@@ -1,0 +1,219 @@
+/*
+ * Copyright (C) 2012 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.gallery3d.filtershow.editors;
+
+import android.content.Context;
+import android.content.res.Configuration;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import com.android.gallery3d.filtershow.imageshow.Spline;
+import android.util.Log;
+
+import org.codeaurora.gallery.R;
+import com.android.gallery3d.filtershow.FilterShowActivity;
+import com.android.gallery3d.filtershow.filters.FilterCurvesRepresentation;
+import com.android.gallery3d.filtershow.filters.FilterRepresentation;
+import com.android.gallery3d.filtershow.imageshow.ImageCurves;
+
+public class EditorCurves extends Editor implements View.OnClickListener,Spline.UpdateCurvesListener{
+    public static final int ID = R.id.imageCurves;
+    ImageCurves mImageCurves;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    private Context mContext;
+
+    private LinearLayout controls;
+
+    private Button mCurvesRGB;
+    private Button mCurvesRed;
+    private Button mCurvesGreen;
+    private Button mCurvesBlue;
+    private Button mLastPressButton;
+
+    private ImageButton mSlideCancel;
+    private ImageButton mSlideSave;
+    private TextView mCurvesInput;
+    private TextView mCurvesOutput;
+    private int mCurrentPick = 0;
+
+    private int mLastViewId = R.id.curves_channel_rgb;
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+    public EditorCurves() {
+        super(ID);
+        int k =R.menu.filtershow_menu_curves;
+    }
+
+    @Override
+    protected void updateText() {
+
+    }
+
+    @Override
+    public boolean showsPopupIndicator() {
+        return true;
+    }
+
+    @Override
+    public void createEditor(Context context, FrameLayout frameLayout) {
+        super.createEditor(context, frameLayout);
+        mView = mImageShow = mImageCurves = new ImageCurves(context);
+        mImageCurves.setEditor(this);
+        mContext = context;
+    }
+
+    @Override
+    public void reflectCurrentFilter() {
+        super.reflectCurrentFilter();
+        FilterRepresentation rep = getLocalRepresentation();
+        if (rep != null && getLocalRepresentation() instanceof FilterCurvesRepresentation) {
+            FilterCurvesRepresentation drawRep = (FilterCurvesRepresentation) rep;
+            mImageCurves.setFilterDrawRepresentation(drawRep);
+            mImageCurves.getSpline(mCurrentPick).registUpdateCurvesListener(this);
+        }
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    @Override
+    public void setEditPanelUI(View editControl) {
+        LinearLayout group = (LinearLayout) editControl;
+        LayoutInflater inflater =
+                (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        controls = (LinearLayout) inflater.inflate(
+                R.layout.filtershow_curves_controls, group, false);
+        ViewGroup.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        controls.setLayoutParams(lp);
+        group.removeAllViews();
+        group.addView(controls);
+
+        mCurvesRGB = (Button)controls.findViewById(R.id.curves_channel_rgb);
+        mCurvesRed = (Button)controls.findViewById(R.id.curves_channel_red);
+        mCurvesGreen = (Button)controls.findViewById(R.id.curves_channel_green);
+        mCurvesBlue = (Button)controls.findViewById(R.id.curves_channel_blue);
+
+        mSlideCancel = (ImageButton)controls.findViewById(R.id.slider_cancel);
+        mSlideSave = (ImageButton)controls.findViewById(R.id.slider_save);
+
+        mCurvesRGB.setOnClickListener(this);
+        mCurvesRed.setOnClickListener(this);
+        mCurvesGreen.setOnClickListener(this);
+        mCurvesBlue.setOnClickListener(this);
+
+        if (mSlideCancel != null && mSlideSave != null) {
+            mSlideCancel.setOnClickListener(mOnClickListener);
+            mSlideSave.setOnClickListener(mOnClickListener);
+        }
+
+        mCurvesOutput  = (TextView) controls.findViewById(R.id.curves_output);
+        mCurvesInput = (TextView) controls.findViewById(R.id.curves_input);
+        commitLocalRepresentation();
+    }
+
+    @Override
+    public boolean showsSeekBar() {
+        return false;
+    }
+
+    @Override
+    public boolean showsActionBar() {
+        if (useCompact(mContext)) {
+            mImageCurves.checkCurvesOrientation(false);
+            return false;
+        } else {
+            mImageCurves.checkCurvesOrientation(true);
+            return true;
+        }
+    }
+
+    @Override
+    public void onClick(View view) {
+        int viewId = view.getId();
+        if (mLastViewId != viewId) {
+            mLastPressButton = (Button)controls.findViewById(mLastViewId);
+            setButtonOrginal(mLastPressButton);
+        }
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/4/4 begin
+        if(viewId != R.id.curves_channel_rgb){
+            setButtonOrginal(mCurvesRGB);
+        }
+        //fix feature#10896 xiangkezhu@wind-mobi.com 2018/4/4 end
+        switch (viewId){
+            case R.id.curves_channel_rgb: {
+                mCurvesRGB.setBackground(mContext.getResources().getDrawable(R.drawable.button_selected));
+                mCurrentPick = 0;
+                break;
+            }
+            case R.id.curves_channel_red: {
+                mCurvesRed.setBackground(mContext.getResources().getDrawable(R.drawable.button_selected));
+                mCurrentPick = 1;
+                break;
+            }
+            case R.id.curves_channel_green: {
+                mCurvesGreen.setBackground(mContext.getResources().getDrawable(R.drawable.button_selected));
+                mCurrentPick = 2;
+                break;
+            }
+            case R.id.curves_channel_blue: {
+                mCurvesBlue.setBackground(mContext.getResources().getDrawable(R.drawable.button_selected));
+                mCurrentPick = 3;
+                break;
+            }
+        }
+        mLastViewId = viewId;
+        mImageCurves.setColorChannel(viewId);
+        mImageCurves.getSpline(mCurrentPick).registUpdateCurvesListener(this);
+    }
+
+    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            int viewId = view.getId();
+            switch (viewId){
+                case R.id.slider_cancel: {
+                    ((FilterShowActivity)mContext).cancelFilter();
+                    break;
+                }
+                case R.id.slider_save: {
+                    commitLocalRepresentation();
+                    ((FilterShowActivity)mContext).applyFilter(EditorCurves.this);
+                    break;
+                }
+            }
+        }
+    };
+
+    private void setButtonOrginal(Button button){
+        button.setBackground(mContext.getResources().getDrawable(R.drawable.button_original));
+    }
+
+    protected static boolean useCompact(Context context) {
+        return context.getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_PORTRAIT;
+    }
+
+    @Override
+    public void updateCurvesOutputAndInputText(float input, float output) {
+        mCurvesInput.setText(String.valueOf((int)input));
+        mCurvesOutput.setText(String.valueOf((int)output));
+    }
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+}

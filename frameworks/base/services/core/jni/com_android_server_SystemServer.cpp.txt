@@ -1,0 +1,136 @@
+/*
+ * Copyright (C) 2007 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <jni.h>
+#include <nativehelper/JNIHelp.h>
+
+#include <hidl/HidlTransportSupport.h>
+
+#include <schedulerservice/SchedulingPolicyService.h>
+#include <sensorservice/SensorService.h>
+#include <sensorservicehidl/SensorManager.h>
+
+#include <cutils/properties.h>
+#include <utils/Log.h>
+#include <utils/misc.h>
+#include <utils/AndroidThreads.h>
+//chusuxia@wind-mobi.com 20180503 start
+#include "com_android_server_policy_PhoneWindowManager.h"
+//chusuxia@wind-mobi.com 20180503 end
+//zhuzhibin@wind-mobi.com add 20180820 start
+#ifdef ENABLE_RPMB_CHECK
+#include <stdint.h>
+#include "QSEEComAPI.h"
+#include "stdio.h"
+#endif
+//zhuzhibin@wind-mobi.com add 20180820 end
+
+namespace android {
+
+static void android_server_SystemServer_startSensorService(JNIEnv* /* env */, jobject /* clazz */) {
+    char propBuf[PROPERTY_VALUE_MAX];
+    property_get("system_init.startsensorservice", propBuf, "1");
+    if (strcmp(propBuf, "1") == 0) {
+        SensorService::instantiate();
+    }
+
+}
+
+static void android_server_SystemServer_startHidlServices(JNIEnv* env, jobject /* clazz */) {
+    using ::android::frameworks::schedulerservice::V1_0::ISchedulingPolicyService;
+    using ::android::frameworks::schedulerservice::V1_0::implementation::SchedulingPolicyService;
+    using ::android::frameworks::sensorservice::V1_0::ISensorManager;
+    using ::android::frameworks::sensorservice::V1_0::implementation::SensorManager;
+    using ::android::hardware::configureRpcThreadpool;
+
+    status_t err;
+
+    configureRpcThreadpool(5, false /* callerWillJoin */);
+
+    JavaVM *vm;
+    LOG_ALWAYS_FATAL_IF(env->GetJavaVM(&vm) != JNI_OK, "Cannot get Java VM");
+
+    sp<ISensorManager> sensorService = new SensorManager(vm);
+    err = sensorService->registerAsService();
+    ALOGE_IF(err != OK, "Cannot register %s: %d", ISensorManager::descriptor, err);
+
+    sp<ISchedulingPolicyService> schedulingService = new SchedulingPolicyService();
+    err = schedulingService->registerAsService();
+    ALOGE_IF(err != OK, "Cannot register %s: %d", ISchedulingPolicyService::descriptor, err);
+}
+
+//zhuzhibin@wind-mobi.com add 20180820 start
+//check rpmb
+#ifdef ENABLE_RPMB_CHECK
+jint qsc_rpmb_check() {
+	int ret = 0;
+	uint32_t status;
+    char s[50];
+
+	ret = QSEECom_send_service_cmd(NULL, 0, &status, sizeof(uint32_t),
+			QSEECOM_RPMB_CHECK_PROV_STATUS_COMMAND);
+	if(ret)
+		printf("Failed to check RPMB status, ret = %d\n", ret);
+	else {
+		switch (status) {
+		case 0:
+            __android_log_print(ANDROID_LOG_DEBUG,"qsc_rpmb_check","RPMB Key status: RPMB_KEY_PROVISIONED_AND_OK (%x)\n", status);
+            sprintf(s,"RPMB_KEY_PROVISIONED_AND_OK");
+			break;
+		case QSEECOM_RPMB_KEY_NOT_PROVISIONED:
+            __android_log_print(ANDROID_LOG_DEBUG,"qsc_rpmb_check","RPMB Key status: RPMB_KEY_NOT_PROVISIONED (%x)\n", status);
+            sprintf(s,"RPMB_KEY_NOT_PROVISIONED");
+			break;
+		case QSEECOM_RPMB_KEY_PROVISIONED_BUT_MAC_MISMATCH:
+            __android_log_print(ANDROID_LOG_DEBUG,"qsc_rpmb_check","RPMB Key status: RPMB_KEY_PROVISIONED_BUT_MAC_MISMATCH (%x)\n", status);
+            sprintf(s,"RPMB_KEY_PROVISIONED_BUT_MAC_MISMATCH");
+			break;
+		default:
+            __android_log_print(ANDROID_LOG_DEBUG,"qsc_rpmb_check","RPMB Key status: Others (%x)\n", status);
+            sprintf(s,"Others");
+			break;
+		}
+        property_set("gsm.wind.rpmb.status",s);
+	}
+	return (jint)ret;
+}
+#endif
+//zhuzhibin@wind-mobi.com add 20180820 end
+
+/*
+ * JNI registration.
+ */
+static const JNINativeMethod gMethods[] = {
+    /* name, signature, funcPtr */
+    { "startSensorService", "()V", (void*) android_server_SystemServer_startSensorService },
+    { "startHidlServices", "()V", (void*) android_server_SystemServer_startHidlServices },
+    //chusuxia@wind-mobi.com 201805003 start  
+    { "readFactoryNVServer","()Ljava/lang/String;", (void*)android_server_policy_PhoneWindowManager_readFactoryNV },
+    //chusuxia@wind-mobi.com 201805003 end
+    //zhuzhibin@wind-mobi.com add 20180820 start
+    #ifdef ENABLE_RPMB_CHECK
+    { "qscRpmbCheck","()I", (void*)qsc_rpmb_check },
+    #endif
+    //zhuzhibin@wind-mobi.com add 20180820 end
+};
+
+int register_android_server_SystemServer(JNIEnv* env)
+{
+    return jniRegisterNativeMethods(env, "com/android/server/SystemServer",
+            gMethods, NELEM(gMethods));
+}
+
+}; // namespace android

@@ -1,0 +1,492 @@
+package com.wantjoin.childmode;
+
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.provider.BaseColumns;
+
+/**
+*
+* 说明：数据库相关
+*
+* @author  	孟祥生
+* @version	2016年10月19日
+* 
+*/
+public class AccessCtrlInfo {
+	
+	//URI头
+//	public static final String	AUTHORITY			= "com.wantjoin.android.access.commfile.sql.AccessCtrlInfo";	//上层测试版
+	public static final String	AUTHORITY			= "com.wantjoin.childmode.AccessCtrlInfo";		//底层实现版
+
+	// 新的MIME类型-多个
+	public static final String	CONTENT_TYPE		= "vnd.android.cursor.dir/vnd.wantjoin.AccessCtrl";
+
+	// 新的MIME类型-单个
+	public static final String	CONTENT_ITEM_TYPE	= "vnd.android.cursor.item/vnd.wantjoin.AccessCtrl";
+	
+	//用户信息表定义
+	public static final class KidUserInfo implements BaseColumns {
+		
+		public static final Uri		CONTENT_URI					= Uri.parse("content://" + AUTHORITY + "/user");
+		public static final Uri		CONTENT_LOGINUSER_URI		= Uri.parse("content://" + AUTHORITY + "/loginuser");
+	
+		//字段
+		public static final String	NAME				= "name";			//帐号
+		public static final String	TYPE				= "type";			//帐号类型		
+		public static final String	SEX					= "sex";			//性别		
+		public static final String	BIRTHDAY			= "birthday";		//生日	固定格式：2010/05/16
+		public static final String	TOTALTIME			= "TotalTime";		//每天累计使用最大时长，单位：分钟
+		public static final String	CONTINUETIME		= "ContinueTime";	//每次累计使用最大时长，单位：分钟
+		public static final String	DURATIONTODAY		= "DurationToday";	//今天累计使用时长，单位：分钟
+		public static final String	LASTLOGINDATE		= "LastLoginDate";	//最后一次登录日期，固定格式：2010-05-16 10:11:00
+		//时间控制
+		public static final String	USAGETIME			= "UsageTime";	//每段可用时间，单位：分钟
+		public static final String	INTERVALTIME		= "IntervalTime";	//间隔时间，单位：分钟
+		//设置默认的时间属性,当读取到值为-1时,就从默认的中读取
+		public static final int 	USAGETIME_DEFAULT 	= 0;//默认的使用时间
+		public static final int		INTERVALTIME_DEFAULT = 0;//默认的间隔时间,使用同上
+		//web控制启用标记
+		public static final String 	ENABLE_WEB_CTRL	= "EnableWebCtrl";	//启用web控制
+		//头像设置控制
+		public static final String USER_PHOTO_CHANGED = "UserPhotoChanged";//头像是否被用户设置过
+		//是否显示Welcom页面
+		public static final String IF_SHOW_WELCOME = "WelUser";//是否第一次进入该用户
+		//用户类型
+		public static final int	TYPE_UNKNOWN		= 0;	//未知类型
+		public static final int	TYPE_SUPERADMIN	= 1;	//超级管理员，可能是老师
+		public static final int	TYPE_ADMIN			= 2;	//一般管理员，可能是家长
+		public static final int	TYPE_LIMITED		= 3;	//受控帐号，可能是学生
+	
+		//性别
+		public static final int	SEX_BOY		= 1;	//男孩
+		public static final int	SEX_GIRY	= 2;	//女孩
+		
+		public class KidUser
+		{
+			public int nID;
+			public String sName;
+			public int nType;
+			public int nSex;
+			public String sBirthday;
+			public int nTotalTime;				//单位，分
+			public int nContinueTime;			//单位，分
+			public int nDurationToday;			//单位，分
+			public String sLastLoginDate;
+			public int nUsageTime;
+			public int nIntervalTime;
+			public boolean bEnableWebCtrl;
+			public boolean bEnableUserPhoto;
+			public boolean bEnableWelcomeActivity;
+
+			public KidUser()
+			{
+				nID = 0;
+				sName = "";
+				nType = TYPE_LIMITED;
+				nSex = SEX_BOY;
+				sBirthday = "";
+				nTotalTime = 12 * 60;
+				nContinueTime = 12 * 60;
+				nDurationToday = 0;
+				sLastLoginDate = "";
+				nUsageTime = 0;//初始化为-1,为了和设置的值区分开,如果读取的值为-1,说明没有设置过,使用默认
+				nIntervalTime = 0;//初始化为-1,为了和设置的值区分开,如果读取的值为-1,说明没有设置过,使用默认
+				bEnableWebCtrl = false;//默认不开启控制,可以访问网络
+				bEnableUserPhoto = false;
+				bEnableWelcomeActivity = false;
+			}
+		}
+	}
+	
+	//时间段表定义
+	public static final class CtrlTimeInfo implements BaseColumns {
+
+		public static final Uri		CONTENT_URI			= Uri.parse("content://" + AUTHORITY + "/ctrltime");
+
+		//字段
+		public static final String	SESSIONTIME		= "SessionTime";	//有效时间，单位：分钟
+		public static final String	INTERVALTIME		= "IntervalTime";	//间隔时间，单位：分钟
+		public static final String	USERID				= "UserID";			//用户
+	}
+
+	public static final class CtrlTime
+	{
+		public int nID;
+		public int nSessionTime;
+		public int nIntervalTime;
+		public int nUserID;
+
+		public CtrlTime()
+		{
+			nID = 0;
+			nSessionTime = 0;
+			nIntervalTime = 0;
+			nUserID = 0;
+		}
+	}
+
+	//控制信息表定义
+	public static final class CtrlInfo implements BaseColumns {
+		
+		public static final Uri		CONTENT_URI			= Uri.parse("content://" + AUTHORITY + "/ctrl");
+	
+		//字段
+		public static final String	OBJECT				= "object";		//控制项
+		public static final String	USERID				= "userid";		//用户
+		public static final String	LIMITED				= "limited";	//控制项类型，是下面几项的组合值
+		public static final String	APPUID				= "appuid";		//应用程序（apk）的uid
+		public static final String  PHOTO				= "photo";		//控制项对应的图片,网址的logo/app的图标
+
+		//限制类型
+		public static final int TYPE_APP						= 0x0001;	//应用程序
+		public static final int TYPE_WEB_ADDR					= 0x0002;	//网址
+		public static final int TYPE_WEB_IP						= 0x0004;	//IP地址
+		public static final int TYPE_WEB_ADDR_WIHT_WILDCARD		= 0x0008;	//带通配符的网址
+		
+		//是否受限
+		public static final int LIMITED_TRUE			= 0x0010;	//受控
+		public static final int LIMITED_FALSE			= 0x0020;	//不受控
+		public static final int LIMITED_SHORT 			= 0x0040;	//临时禁止(网址使用)
+
+		public class Ctrl implements Comparable<Ctrl>
+		{
+			public int nID;
+			public String sObject;
+			public int nUserID;
+			public int nLimited;
+			public int nAppUid;
+            public byte[] bStream;//头像对应的字节流
+			public Bitmap bitmap;//头像bitmap
+			public Ctrl()
+			{
+				nID = 0;
+				sObject = "";
+				nUserID = 0;
+				nLimited = LIMITED_FALSE;
+				nAppUid = 0;
+				bStream = null;
+				bitmap = null;
+			}
+			
+			@Override
+			public int compareTo(Ctrl another) {
+				
+				return compareString(this.sObject, another.sObject);
+				//return String.CASE_INSENSITIVE_ORDER.compare(this.sObject, another.sObject);
+				//排序的时候，去掉前面的www.及*.
+//				String sThisObject = this.sObject;
+//				String sAnotherObject = another.sObject;
+//				if(sThisObject.startsWith("www") || sThisObject.startsWith("*") || sThisObject.startsWith("WWW"))
+//				{
+//					sThisObject = sThisObject.substring(sThisObject.indexOf("."));
+//				}
+//				if(sAnotherObject.startsWith("www") || sAnotherObject.startsWith("*") || sAnotherObject.startsWith("WWW"))
+//				{
+//					sAnotherObject = sAnotherObject.substring(sAnotherObject.indexOf("."));
+//				}
+
+				//return String.CASE_INSENSITIVE_ORDER.compare(sThisObject, sAnotherObject);
+//				return compare(sThisObject, sAnotherObject);
+			}
+			
+	        /**
+	         * 
+	         * 改造后的字符串比较函数
+	         * 
+	         * @param s1
+	         * @param s2
+	         * @return
+	         */
+	        public int compareString(String s1, String s2) {
+	        	
+	        	int n1Start = 0, n2Start = 0; 
+	            int n1=s1.length(), n2=s2.length();
+	            //跳过匹配符，直接进行实体比较
+	            if(s1.startsWith("www") || s1.startsWith("*") || s1.startsWith("WWW"))
+	            {
+	            	n1Start = s1.indexOf(".") + 1;
+	            }
+	            if(s2.startsWith("www") || s2.startsWith("*") || s2.startsWith("WWW"))
+	            {
+	            	n2Start = s2.indexOf(".") + 1;
+	            }
+	            
+	            //顺序比较字符
+	            for (int i1 = n1Start, i2 = n2Start; (i1 < n1) && (i2 < n2); i1++, i2++) {
+	                char c1 = s1.charAt(i1);
+	                char c2 = s2.charAt(i2);
+	                if (c1 != c2) {
+	                    c1 = Character.toUpperCase(c1);
+	                    c2 = Character.toUpperCase(c2);
+	                    if (c1 != c2) {
+	                        c1 = Character.toLowerCase(c1);
+	                        c2 = Character.toLowerCase(c2);
+	                        if (c1 != c2) {
+	                            return c1 - c2;
+	                        }
+	                    }
+	                }
+	            }
+	            return (n1 - n1Start) - (n2 - n2Start);
+	        }
+
+			@Override
+			public boolean equals(Object o) {
+				if(!( o instanceof Ctrl))
+				{
+					return false;
+				}
+				
+				//当前设计只处理控制项
+				Ctrl anotherCtrl = (Ctrl)o;
+				if ((anotherCtrl.sObject == null) || (this.sObject == null))
+				{
+					return false;
+				}
+				
+				if(compareString(this.sObject, anotherCtrl.sObject) == 0)		//相等
+				{
+					return true;
+				}
+				else{
+					return false;
+				}
+			}
+			
+//			@Override
+//			public boolean equals(Object o) {
+//				if(!( o instanceof Ctrl))
+//				{
+//					return false;
+//				}
+//				
+//				//当前设计只处理控制项
+//				Ctrl ctrl = (Ctrl)o;
+//				if ((ctrl.sObject == null) || (this.sObject == null))
+//				{
+//					return false;
+//				}
+//				//大小写不敏感
+//				String sObject = ctrl.sObject.toUpperCase();
+//				String sThisObject = this.sObject.toUpperCase();
+//				
+//				if (sObject.equals(sThisObject))		//控制项一致
+//				{
+//					return true;
+//				}
+//				else{		//处理：*.sina.com与www.sina.com，逆向比较
+//					if ((sObject.indexOf("*") == 0) || (sThisObject.indexOf("*") == 0))		//存在首位的通配符
+//					{
+//						int i, j;
+//						for (i = sObject.length() - 1, j = sThisObject.length() - 1; (i >= 0) && (j >= 0); i--, j--)
+//						{
+//							if (sObject.charAt(i) != sThisObject.charAt(j))
+//							{
+//								break;
+//							}
+//						}
+//						if ((i >= 0) && (j >= 0))
+//						{
+//							if ((sObject.charAt(i) == '*') || (sThisObject.charAt(j) == '*'))
+//							{
+//								return true;
+//							}
+//						}
+//						else{		//*.baidu.com与baidu.com
+//							if((i > j) && (sObject.charAt(i) == '.'))
+//							{
+//								return true;
+//							}
+//							else if((j > i) && (sThisObject.charAt(j) == '.'))
+//							{
+//								return true;
+//							}							
+//						}
+//					}
+//				}
+//				
+//				return false;
+//			}
+			
+			@Override
+			public int hashCode() {
+				int result = 17;
+				result = 31 * result + nID;
+				result = 31 * result + nUserID;
+				result = 31 * result + nLimited;
+				
+				return result;
+			}			
+		}			
+	}	
+	
+	
+	//网络日志信息表定义
+	public static final class NetLogInfo implements BaseColumns {
+		
+		public static final Uri		CONTENT_URI			= Uri.parse("content://" + AUTHORITY + "/netlog");
+	
+		//字段
+		public static final String	HOST				= "host";			//web地址
+//		public static final String	APPUID				= "appuid";			//apk uid
+		public static final String	APPLOGID			= "applogid";		//网络日志对应的app记录ID
+		public static final String	APPPKGNAME			= "apppkgname";		//应用程序包名称
+		public static final String	LOGTIME				= "lasttime";		//日志写入时间
+		public static final String	SENDCOUNT			= "sendcnt";		//发送数
+		public static final String	RECVCOUNT			= "recvcnt";		//接收数
+		public static final String	USERID				= "userid";			//用户ID
+		public static final String	HOST_TITLE			= "hosttitle";		//网站主题
+
+		public class NetLog
+		{
+			public int nID;
+//			public int nAppUid;
+			public int nAppLogID;
+			public String sPkgName;
+			public String sHost;
+			public String sAppName;
+			public long lLogTime;
+			public long lSendCnt;
+			public long lRecvCnt;
+			public int nUserID;
+			public String sHostTitle;
+			
+			public NetLog()
+			{
+				nID = 0;
+//				nAppUid = 0;
+				nAppLogID = 0;
+				sPkgName = "";
+				sHost = "";
+				sAppName = "";
+				lLogTime = 0;
+				lSendCnt = 0;
+				lRecvCnt = 0;
+				nUserID = 0;
+				sHostTitle = "";
+			}
+		}
+	}		
+	
+	
+	//应用程序日志信息表定义
+	public static final class AppLogInfo implements BaseColumns {
+		
+		public static final Uri		CONTENT_URI			= Uri.parse("content://" + AUTHORITY + "/applog");
+	
+		//字段
+//		public static final String	APPUID				= "appuid";			//应用程序名称
+		public static final String	APPPKGNAME			= "apppkgname";		//应用程序包名称
+		public static final String	APPNAME				= "appname";		//应用程序标签名称
+		public static final String	BEGINTIME			= "begintime";		//使用开始时间
+		public static final String	ENDTIME				= "endtime";		//使用结束时间
+		public static final String	LOGTIME				= "logtime";		//日志写入时间
+		public static final String	USERID				= "userid";			//用户ID
+		
+		public class AppLog
+		{
+			public int nID;
+//			public int nAppUid;
+			public String sPkgName;
+			public String sAppName;
+			public long lBeginTime;
+			public long lEndTime;
+			public long lLogTime;
+			public int nUserID;
+			
+			public AppLog()
+			{
+				nID = 0;
+//				nAppUid = 0;
+				sPkgName = "";
+				sAppName = "";
+				lLogTime = 0;
+				lBeginTime = 0;
+				lEndTime = 0;
+				nUserID = 0;
+			}
+		}
+	}	
+	
+	//系统应用程序列表
+	public static final class AppInfo implements BaseColumns {
+		
+		public static final Uri		CONTENT_URI			= Uri.parse("content://" + AUTHORITY + "/app");
+	
+		//字段
+		public static final String	NAME				= "Name";			//应用程序名称
+		public static final String	PACKAGE				= "Package";		//包名称
+		public static final String	UID					= "UID";			//apk uid
+		public static final String	REGTIME				= "RegTime";		//登记日期
+		public static final String	INSTALLSTATE		= "InstallState";	//程序状态
+		public static final String	UNINSTALL			= "CanUninstall";		//是否可删除（1，可删除；0，不可删除）
+		
+		//程序状态
+		public static final int TYPE_APP_NEW			= 0x0001;	//新安装的程序
+		public static final int TYPE_APP_DEL			= 0x0002;	//已删除的程序
+		public static final int TYPE_APP_NOR			= 0x0003;	//正常的程序
+		
+		public class App
+		{
+			public int nID;
+			public String sName;
+			public String sPackage;
+			public int nUid;
+			public String sRegTime;
+			public int nInstallState;
+			public int nUninstall;
+
+			public App()
+			{
+				nID = 0;
+				sName = "";
+				sPackage = "";
+				nUid = 0;
+				sRegTime = "";
+				nInstallState = TYPE_APP_NEW;
+				nUninstall = 1;
+			}
+		}
+	}	
+	
+	//设备状态记录表
+	public static final class DeviceStatusInfo implements BaseColumns {
+		
+		public static final Uri		CONTENT_URI			= Uri.parse("content://" + AUTHORITY + "/devicestatus");
+	
+		//字段
+		public static final String	NAME				= "KeyName";			//状态名称
+		public static final String	VALUE				= "KeyValue";			//状态内容
+		
+		//程序状态
+		public static final String 	LOCK_TYPE			= "locktype";			//锁屏状态
+		
+		public class DeviceStatus
+		{
+			public String sKeyName;
+			public String sKeyValue;
+
+			public DeviceStatus()
+			{
+				sKeyName = "";
+				sKeyValue = "";
+			}
+		}
+	}
+	
+	
+	//数据库相关常量
+	public static final String DATABASE_NAME		= "AccessCtrlInfo.db";		//数据库名
+	public static final String USER_TABLE_NAME		= "user";					//用户信息表名
+	public static final String CTRLTIME_TABLE_NAME	= "CtrlTime";				//不受限时间段表名
+	public static final String CTRL_TABLE_NAME		= "ctrl";					//权限控制表名
+	public static final String NETLOG_TABLE_NAME	= "NetLog";					//网站日志信息表名
+	public static final String APPLOG_TABLE_NAME	= "AppLog";					//应用程序日志信息表名
+	public static final String APP_TABLE_NAME		= "App";					//应用程序列表表名
+	public static final String DEVICE_TABLE_NAME	= "DeviceStatus";			//设备状态记录表
+		
+	//sqlite_sequence SQLite数据库内置表格，记录序列（新建数据的_ID初始值）
+	public static final String SQLITE_TABLE_NAME	= "sqlite_sequence";		//SQLite数据库内置表名
+	public static final String SQLITE_SEQ_NAME		= "name";		//序列对应表名
+	public static final String SQLITE_SEQ_VALUE		= "seq";		//序列值
+}

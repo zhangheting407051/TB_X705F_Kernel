@@ -1,0 +1,453 @@
+package com.android.systemui.lenovo.screenshot;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.CornerPathEffect;
+import android.graphics.DashPathEffect;
+import android.graphics.Paint;
+import android.graphics.PathEffect;
+import android.graphics.Paint.Style;
+import android.graphics.Path;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+/**
+ *
+ * @author ligr3
+ *
+ */
+public class DrawableView extends View {
+    private static final float DEFAULT_LINE_STROKE_WIDTH_PX = 2.0f;
+    private static final float DEFAULT_STROKE_WIDTH_DP = 10.0f;
+    private static final int CAPTURE_LINE_COLOR  = 0xFFFFFFFF;//0xFF00B4FF;
+
+    private static final int OUTSIDE_COLOR = 0x66000000;
+    private static final float TOUCH_TOLERANCE = 4;    // 最小点间距，小于这个间距则不进行绘制，优化性能
+    private static final int MAX_UNDO_STEP = 10;    // 最多可回退步数，优化性能
+    private static final String TAG = ScreenShotUtil.TAG;
+
+    private boolean bIsPrepared;    // 是否已准备好进行画图
+    private boolean bIsPainting;    // 是否正在进行绘制
+
+    private Paint mPaint;    // 绘图刷子
+    private Paint mOutsidePaint;    // 外部刷子
+    private Paint mRectLinePaint;    // 线框刷子
+    private Path mRectlinePath;
+    private int mOutsizeRectColor;    // 方框外颜色
+    private Path mCurrentPath;    // 当前形状
+    private int mCurrentColor;    // 当前颜色
+    private float mCurrentStrokeWidth;    // 当前粗细
+
+    private List<DrawedPath> mDrawedPaths;    // 已绘制的形状
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+    private List<DrawedPath> mRedoDrawedPaths;
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+    private Bitmap mDrawedBitmap;    // 已绘制的图形（不含可回退的图形）
+    private Rect mDrawableRect;    // 可绘制区域，为空即为全屏可绘制
+    private int mWidth, mHeight;    // 尺寸
+    private float mLastX, mLastY;    // 上一次坐标
+    private boolean bIsSizeSetted;    // 是否已经设置Size
+
+    private boolean bIsDrawing;    // If it's drawing now
+    private Context mContext;
+    private OnPaintEventListener mListener;    // Event listener
+    private PathEffect mRectEffect;
+    private boolean isDrawLine = false;
+    private boolean isOutRect = false;
+
+    // ======== Contructors Start =====================
+    public DrawableView(Context context) {
+        super(context);
+        mContext = context;
+    }
+
+    private void initData() {
+        mPaint = new Paint();    // 初始化画刷
+        mCurrentColor = Color.RED;
+        mPaint.setColor(mCurrentColor);
+        mCurrentStrokeWidth = dip2pix(mContext, DEFAULT_STROKE_WIDTH_DP);
+        mOutsidePaint = new Paint();
+        mOutsizeRectColor = OUTSIDE_COLOR;    // 方框外，阴暗效果
+        mOutsidePaint.setColor(mOutsizeRectColor);
+        mOutsidePaint.setStyle(Style.FILL);
+        mRectLinePaint = new Paint();
+        mRectLinePaint.setStrokeWidth(dip2pix(mContext, 1.0f));
+        mRectLinePaint.setColor(CAPTURE_LINE_COLOR);
+        mRectLinePaint.setStyle(Style.STROKE);
+        mRectLinePaint.setAntiAlias(true);
+        mRectEffect=new DashPathEffect(new float[]{3,6},1);
+        mRectLinePaint.setPathEffect(mRectEffect);
+        mPaint.setStrokeWidth(mCurrentStrokeWidth);
+        mPaint.setStyle(Style.STROKE);
+        mPaint.setAntiAlias(true);    // 抗锯齿
+        /* Lenovo-sw ligr3 added 2015-02-03 begin, for optimize painting function */
+        mPaint.setStrokeJoin(Paint.Join.ROUND);
+        mPaint.setStrokeCap(Paint.Cap.ROUND);
+        mPaint.setDither(true);
+        mPaint.setPathEffect(new CornerPathEffect(10.0f));
+        /* Lenovo-sw ligr3 added 2015-02-03 end, for optimize painting function */
+        mDrawedPaths = new ArrayList<DrawedPath>();
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+        mRedoDrawedPaths = new ArrayList<DrawedPath>();
+        //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+        bIsSizeSetted = false;
+        bIsDrawing = false;
+    }
+
+    public DrawableView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mContext = context;
+    }
+
+    // ======== Contructors End =====================
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if(mListener != null){
+            mListener.onStartPaint();
+        }
+        float x = event.getX();
+        float y = event.getY();
+        switch (event.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+            if(!isInDrawableRect(x, y)){
+                break;
+            }
+            mCurrentPath = new Path();
+            mCurrentPath.moveTo(x, y);
+            mLastX = x;
+            mLastY = y;
+            bIsDrawing = true;
+            isOutRect = false;
+            invalidate();
+            break;
+        case MotionEvent.ACTION_MOVE:
+            if(!bIsDrawing){
+                break;
+            }
+            if(isInDrawableRect(x, y)){
+                isDrawLine = true;
+            } else {
+                if (!isOutRect && isInDrawableRect(mLastX, mLastY)){
+                    isDrawLine = true;
+                    isOutRect = true;
+                    x = Math.max(x, mDrawableRect.left + mCurrentStrokeWidth / 2);
+                    y = Math.max(y, mDrawableRect.top + mCurrentStrokeWidth / 2);
+                    x = Math.min(x, mDrawableRect.right - mCurrentStrokeWidth / 2);
+                    y = Math.min(y, mDrawableRect.bottom - mCurrentStrokeWidth / 2);
+                }else{
+                    isDrawLine = false;
+                }
+            }
+            if(isDrawLine){
+                float dx = Math.abs(x - mLastX);
+                float dy = Math.abs(y - mLastY);
+                if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
+                    mCurrentPath.lineTo(x, y);
+                    mLastX = x;
+                    mLastY = y;
+                    invalidate();
+                }
+            } else{
+                if(mCurrentPath.isEmpty()){
+                    break;
+                }
+                stopDraw();
+            }
+            break;
+        case MotionEvent.ACTION_UP:
+            if(!bIsDrawing){
+                break;
+            }
+            if(mCurrentPath.isEmpty()){
+                break;
+            }
+            stopDraw();
+            break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+    private void stopDraw() {
+        // 超出可回退的最大步骤数，将最早的图形绘制到Bitmap上，以节省内存
+        if(mDrawedPaths.size() >= MAX_UNDO_STEP){
+            Canvas canvas = new Canvas(mDrawedBitmap);
+            DrawedPath drawedPath = mDrawedPaths.get(0);
+            mPaint.setColor(drawedPath.color);
+            mPaint.setStrokeWidth(drawedPath.strokeSize);
+            canvas.drawPath(drawedPath.path, mPaint);
+            mDrawedPaths.remove(0);
+        }
+        DrawedPath dp = new DrawedPath();
+        dp.path = mCurrentPath;
+        dp.color = mCurrentColor;
+        dp.strokeSize = mCurrentStrokeWidth;
+        mDrawedPaths.add(dp);
+        if (mRedoDrawedPaths.size() > 0) {
+            mRedoDrawedPaths.clear();
+        }
+        checkUndoStatus();
+        checkRedoStatus();
+        mCurrentPath = null;
+        bIsDrawing = false;
+        invalidate();
+    }
+
+    public void checkRedoStatus() {
+        if(mRedoDrawedPaths == null || mRedoDrawedPaths.isEmpty()){
+            if(mListener != null){
+                mListener.onRedoEnabledChanged(false);
+            }
+        } else{
+            if(mListener != null){
+                mListener.onRedoEnabledChanged(true);
+            }
+        }
+    }
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+
+    /**
+     * Check if undo is available
+     */
+    public void checkUndoStatus() {//bug:A6000-8356-Changzuoyong-001 20170907 modify
+        if(mDrawedPaths == null || mDrawedPaths.isEmpty()){
+            if(mListener != null){
+                mListener.onUndoEnabledChanged(false);
+            }
+        } else{
+            if(mListener != null){
+                mListener.onUndoEnabledChanged(true);
+            }
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if(!bIsPrepared){
+            return;
+        }
+        if(mDrawedBitmap != null && !mDrawedBitmap.isRecycled()){
+            canvas.drawBitmap(mDrawedBitmap, 0f,  0f, null);
+        }
+        drawUnCachedPaths(canvas);
+        if(bIsPainting){
+            drawOutside(canvas);
+            drawRectLine(canvas);
+        }
+    }
+
+    /**
+     * 绘制可绘制区域外的阴暗效果
+     * @param canvas
+     */
+    private void drawOutside(Canvas canvas) {
+        if(mDrawableRect == null){
+            return;
+        }
+        canvas.drawRect(0, 0, mWidth, mDrawableRect.top, mOutsidePaint);
+        canvas.drawRect(0, mDrawableRect.top, mDrawableRect.left, mHeight, mOutsidePaint);
+        canvas.drawRect(mDrawableRect.right, mDrawableRect.top, mWidth, mHeight, mOutsidePaint);
+        canvas.drawRect(mDrawableRect.left, mDrawableRect.bottom, mDrawableRect.right, mHeight, mOutsidePaint);
+    }
+
+    private void drawRectLine(Canvas canvas){
+        if(mRectlinePath != null){
+            canvas.drawPath(mRectlinePath, mRectLinePaint);
+        }
+    }
+
+    /**
+     * 绘制还未缓存到Bitmap的图形
+     * @param canvas
+     */
+    private void drawUnCachedPaths(Canvas canvas) {
+        mPaint.setStyle(Style.STROKE);
+        for(DrawedPath dp : mDrawedPaths){
+            mPaint.setColor(dp.color);
+            mPaint.setStrokeWidth(dp.strokeSize);
+            canvas.drawPath(dp.path, mPaint);
+        }
+        if(mCurrentPath != null && !mCurrentPath.isEmpty()){
+            mPaint.setColor(mCurrentColor);
+            mPaint.setStrokeWidth(mCurrentStrokeWidth);
+            canvas.drawPath(mCurrentPath, mPaint);
+        }
+    }
+
+    /**
+     * 回收资源，节省内存
+     */
+    public void recycleResources(){
+        if(!bIsPrepared){
+            return;
+        }
+        mPaint = null;
+        mDrawedBitmap = null;
+        mDrawedPaths = null;
+        mDrawableRect = null;
+        mRectlinePath = null;
+        bIsPrepared = false;
+    }
+
+    /**
+     * Prepared resources, should be called before drawing starts
+     */
+    public void prepareResources(){
+        if(bIsPrepared){
+            return;
+        }
+        initData();
+        bIsPrepared = true;
+    }
+
+    public void setIsPainting(boolean isPainting){
+        bIsPainting = isPainting;
+        invalidate();
+    }
+
+    /**
+     * set drawable view size
+     * @param scale
+     */
+    public void setSize(int width, int height){
+        if(!bIsSizeSetted && width > 0 && height > 0){
+            Log.d(TAG, "setSize, " + width + " x " + height);
+            mWidth = width;
+            mHeight = height;
+            if(mDrawedBitmap != null && !mDrawedBitmap.isRecycled()){
+                mDrawedBitmap.recycle();
+            }
+            mDrawedBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            bIsSizeSetted = true;
+        }
+    }
+
+    /**
+     * Set the Rect for drawing
+     * @param rect
+     */
+    public void setDrawableRect(Rect rect){
+        mDrawableRect = rect;
+        if(mDrawableRect != null){
+            mRectlinePath = new Path();
+            mRectlinePath.addRect(new RectF(mDrawableRect), Path.Direction.CW);
+        } else{
+            mRectlinePath = null;
+        }
+    }
+
+    /**
+     * Set Color
+     * @param color
+     */
+    public void setPaintColor(int color){
+        mCurrentColor = color;
+    }
+
+    /**
+     * Set stroke width of current Paint
+     * @param width
+     */
+    public void setPaintStrokeWidth(float width){
+        mCurrentStrokeWidth = width;
+    }
+
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+    /**
+     * Undo painting
+     */
+    public void undo(){
+        if(!bIsPrepared){
+            return;
+        }
+        if(mDrawedPaths.size() > 0){
+            mRedoDrawedPaths.add(mDrawedPaths.get(mDrawedPaths.size() - 1));
+            mDrawedPaths.remove(mDrawedPaths.size() - 1);
+            checkUndoStatus();
+            checkRedoStatus();
+            invalidate();
+        }
+    }
+
+    public void redo(){
+        if(!bIsPrepared){
+            return;
+        }
+        if(mRedoDrawedPaths.size() > 0){
+            mDrawedPaths.add(mRedoDrawedPaths.get(mRedoDrawedPaths.size() - 1));
+            mRedoDrawedPaths.remove(mRedoDrawedPaths.size() - 1);
+            checkUndoStatus();
+            checkRedoStatus();
+            invalidate();
+        }
+    }
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+
+    /**
+     * Get painted result as a Bitmap
+     * @return
+     */
+    public Bitmap getPaintResult(){
+        if(mDrawedBitmap == null || mDrawedBitmap.isRecycled()){
+            return null;
+        }
+        Canvas canvas = new Canvas(mDrawedBitmap);
+        drawUnCachedPaths(canvas);
+        return mDrawedBitmap;
+    }
+
+    public void setOnPaintEventListener(OnPaintEventListener l){
+        mListener = l;
+    }
+
+    private static class DrawedPath{
+        public Path path;    // The shape
+        public int color;    // color
+        public float strokeSize;    // Stroke Width
+    }
+
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 start
+    /**
+     * Interface for Receive draw event, added by Lenovo-sw ligr3
+     * @author Lenovo-sw ligr3
+     *
+     */
+    public static interface OnPaintEventListener{
+        public void onUndoEnabledChanged(boolean enabled);
+        public void onRedoEnabledChanged(boolean enabled);
+        public void onStartPaint();
+    }
+    //shiyaru@wind-mobi.com add redo button 2018.6.7 end
+
+    private float dip2pix(Context context, float dipValue) {
+        if(context == null){
+            return DEFAULT_LINE_STROKE_WIDTH_PX;
+        }
+        final  float scale = context.getResources().getDisplayMetrics().density;
+        return (dipValue * scale + 0.5f);
+    }
+
+    /**
+     * If point is in drawable rect area
+     * @param x
+     * @param y
+     * @return
+     */
+    private boolean isInDrawableRect(float x, float y){
+        if(mDrawableRect == null){
+            return true;
+        }
+        return new RectF(mDrawableRect).contains(x, y);
+    }
+}

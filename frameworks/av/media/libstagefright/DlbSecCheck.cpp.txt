@@ -1,0 +1,107 @@
+/******************************************************************************
+ *  This program is protected under international and U.S. copyright laws as
+ *  an unpublished work. This program is confidential and proprietary to the
+ *  copyright owners. Reproduction or disclosure, in whole or in part, or the
+ *  production of derivative works therefrom without the express permission of
+ *  the copyright owners is prohibited.
+ *
+ *                 Copyright (C) 2018 by Dolby Laboratories,
+ *                             All rights reserved.
+ ******************************************************************************/
+#define LOG_TAG "DlbSecCheck"
+//#define DOLBY_SEC_CHECK_LOG_ENABLE 1
+
+#include "DlbLog.h"
+#include "DlbSecCheck.h"
+#include <cutils/properties.h>
+
+namespace android {
+
+DlbSecCheck::DlbSecCheck()
+{
+}
+
+DlbSecCheck::~DlbSecCheck()
+{
+}
+
+void DlbSecCheck::unmangle(const char* buff, char* outputBuff, int buffLen, const char* manglingSeq, int seqLen)
+{
+    int i,j;
+    for (i = 0, j = buffLen % seqLen; i < buffLen; ++i, ++j) {
+        outputBuff[i] = (char)(buff[i] ^ manglingSeq[j % seqLen]);
+    }
+}
+
+bool DlbSecCheck::check()
+{
+    char propStr[PROPERTY_VALUE_MAX];
+    char value[PROPERTY_VALUE_MAX];
+    int securityPass = 0;
+
+#ifdef DOLBY_SEC_CHECK_LOG_ENABLE
+    ALOGI("%s", __FUNCTION__);
+#endif
+
+    /* property = "ro.product.model" */
+    char str1[] = { 0xa4, 0x8a, 0x45, 0xa5, 0x29, 0xb9, 0x81, 0x1e, 0xb6, 0x2f, 0xf8, 0x88, 0x04, 0xb1, 0x3e, 0xba };
+    const size_t str1Len = 16;
+    unmangle(str1, propStr, str1Len, mMangleSeq, mMangleSeqLen);
+    propStr[str1Len] = '\0';
+    if( !property_get(propStr, value, NULL) ) return false;  // property:ro.product.model
+    if( !refModel.compare(android::String8(value)) ) securityPass++;
+#ifdef DOLBY_SEC_CHECK_LOG_ENABLE
+    ALOGI("%s ro.product.model = %s, reference model = %s", __FUNCTION__, value, refModel.string());
+#endif
+
+    /* property = "ro.product.brand" */
+    char str2[] = { 0xa4, 0x8a, 0x45, 0xa5, 0x29, 0xb9, 0x81, 0x1e, 0xb6, 0x2f, 0xf8, 0x87, 0x19, 0xb4, 0x35, 0xb2 };
+    const size_t str2Len = 16;
+    unmangle(str2, propStr, str2Len, mMangleSeq, mMangleSeqLen);
+    propStr[str2Len] = '\0';
+    if( !property_get(propStr, value, NULL) ) return false;  // property:ro.product.brand
+    if( !refBrand.compare(android::String8(value)) ) securityPass++;
+#ifdef DOLBY_SEC_CHECK_LOG_ENABLE
+    ALOGI("%s ro.product.brand = %s, reference brand = %s", __FUNCTION__, value, refBrand.string());
+#endif
+
+    /* property = "ro.product.manufacturer" */
+    char str3[] = { 0x19, 0xba, 0x75, 0xa6, 0x97, 0x04, 0xb1, 0x2e, 0xb5, 0x91, 0x45, 0xb8, 0x3a, 0xb8, 0x90, 0x0d, 0xb4, 0x38, 0xa2, 0x90, 0x19, 0xb0, 0x29 };
+    const size_t str3Len = 23;
+    unmangle(str3, propStr, str3Len, mMangleSeq, mMangleSeqLen);
+    propStr[str3Len] = '\0';
+
+    if( !property_get(propStr, value, NULL) ) return false;  // property:ro.product.manufacturer
+    if( !refManufacturer.compare(android::String8(value)) ) securityPass++;
+#ifdef DOLBY_SEC_CHECK_LOG_ENABLE
+    ALOGI("%s ro.product.manufacturer = %s, reference manufacturer = %s", __FUNCTION__, value, refManufacturer.string());
+#endif
+
+    /* property = "ro.product.device" */
+    char str4[] = { 0x97, 0x04, 0xfb, 0x2b, 0xa4, 0x8a, 0x0f, 0xa0, 0x38, 0xa2, 0xcb, 0x0f, 0xb0, 0x2d, 0xbf, 0x86, 0x0e };
+    const size_t str4Len = 17;
+    unmangle(str4, propStr, str4Len, mMangleSeq, mMangleSeqLen);
+    propStr[str4Len] = '\0';
+
+    if( !property_get(propStr, value, NULL) ) return false;  // property:ro.product.device
+    if( !refDevice.compare(android::String8(value)) ) securityPass++;
+#ifdef DOLBY_SEC_CHECK_LOG_ENABLE
+    ALOGI("%s ro.product.device = %s, reference device = %s", __FUNCTION__, value, refDevice.string());
+#endif
+
+    if( securityPass == mSecurityCriteriaNum )
+    {
+#ifdef DOLBY_SEC_CHECK_LOG_ENABLE
+        ALOGI("%s Dolby Security Check is PASS.", __FUNCTION__);
+#endif
+        return true;
+    }
+    else
+    {
+#ifdef DOLBY_SEC_CHECK_LOG_ENABLE
+        ALOGE("%s Dolby Security Check is FAIL.", __FUNCTION__);
+#endif
+        return false;
+    }
+}
+};   // namespace android

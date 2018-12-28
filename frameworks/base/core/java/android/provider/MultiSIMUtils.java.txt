@@ -1,0 +1,176 @@
+//jiangbo@wind-mobi.com on 18.3.2 start
+package android.provider;
+
+import android.content.Context;
+import android.os.SystemProperties;
+import android.telephony.CellLocation;
+import android.telephony.TelephonyManager;
+import android.util.Log;
+
+public class MultiSIMUtils {
+    private static final String TAG = "MultiSIMUtils";
+    private static Context mContext;
+    private static MultiSIMUtils sInstance;
+    private static TelephonyManager telephonyManager;
+
+    private MultiSIMUtils(Context context) {
+        mContext = context.getApplicationContext();
+        Log.d(TAG, "mContext=" + mContext);
+        telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+    }
+
+    public static synchronized MultiSIMUtils getDefault(Context context) {
+        if (sInstance == null) {
+            sInstance = new MultiSIMUtils(context);
+        }
+        return sInstance;
+    }
+
+    // API-T01
+    public String getDeviceId(int slotId) {
+        try {
+            return telephonyManager.getDeviceId(slotId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getDeviceId", e);
+            return null;
+        }
+    }
+
+    // API-T02
+    // Returns the unique subscriber ID, for example, the IMSI for a GSM phone
+    // for a subscription.
+    public String getSubscriberId(int subId) {
+        try {
+            return telephonyManager.getSubscriberId(subId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getSubscriberId", e);
+            return null;
+        }
+    }
+
+    // API-T03
+    /**
+     * Returns the numeric name (MCC+MNC) of current registered operator
+     * for a particular subscription.
+     * @param subId
+     */
+    public String getNetworkOperator(int subId) {
+        try {
+            return telephonyManager.getNetworkOperator(subId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getNetworkOperator", e);
+            return null;
+        }
+    }
+
+    // API-T04
+    public String getSimOperator(int simid) {
+        try {
+            return telephonyManager.getSimOperator(simid);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getSimOperator", e);
+            return null;
+        }
+    }
+
+    // API-T05
+    public String getSimSerialNumber(int simid) {
+        try {
+            return telephonyManager.getSimSerialNumber(simid);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getSimSerialNumber", e);
+            return null;
+        }
+    }
+
+    // API-T06
+    // Returns the current location of the device.
+    public CellLocation getCellLocation(int simid) {
+        try {
+            return telephonyManager.getCellLocation(simid);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getCellLocation", e);
+            return null;
+        }
+    }
+
+    // API-T07
+    public String getScAddress(int simid) {
+        try {
+            return telephonyManager.getScAddress(simid);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getScAddress", e);
+            return null;
+        }
+    }
+
+    // API-T08
+    /* Returns a constant indicating the state of the device SIM card in a slot.
+     * @param simid
+     * @return
+        SIM_STATE_UNKNOWN = 0;
+        SIM_STATE_ABSENT = 1;
+        SIM_STATE_PIN_REQUIRED = 2;
+        SIM_STATE_PUK_REQUIRED = 3;
+        SIM_STATE_NETWORK_LOCKED = 4;
+        SIM_STATE_READY = 5; */
+    public int getSimState(int simid) {
+        //return TelephonyManager.SIM_STATE_UNKNOWN;
+        try {
+            return telephonyManager.getSimState(simid);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getSimState", e);
+            return 0;
+        }
+    }
+
+    // API-T09
+    /**
+     * Returns a constant indicating the device phone type for a subscription.
+     *
+     * @see #PHONE_TYPE_NONE
+     * @see #PHONE_TYPE_GSM
+     * @see #PHONE_TYPE_CDMA
+     */
+    public int getPhoneType(int simid) {
+        //return TelephonyManager.PHONE_TYPE_NONE;
+        try {
+            return telephonyManager.getPhoneType(simid);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getPhoneType", e);
+            return 0;
+        }
+    }
+
+    // API-T10
+    public String getIMEI(int slotId) {
+        try {
+            return telephonyManager.getImei(slotId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getIMEI", e);
+            return null;
+        }
+    }
+
+    // API-T11
+    public String getMEID() {
+        try {
+            return telephonyManager.getMeid();
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling MultiSIMUtils#getMEID", e);
+            return null;
+        }
+    }
+
+    // API-T12
+    public String getDeviceSn() {
+        return SystemProperties.get("gsm.serialno", "Lenovo");
+    }
+
+    // API-T13
+    public String getDevicePn() {
+        return SystemProperties.get("gsm.pcbaserialno", "Lenovo");
+    }
+
+}
+//jiangbo@wind-mobi.com on 18.3.2 end

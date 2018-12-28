@@ -1,0 +1,183 @@
+package com.android.systemui.statusbar.phone;
+
+import android.app.Dialog;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Typeface;
+import android.os.UserHandle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.CheckBox;
+import android.widget.TextView;
+import android.provider.Settings;
+import com.android.systemui.R;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class ProductivityModeDialog {
+
+    private static final String KEYBOARD_SHORTCUTS_RECEIVER_PKG_NAME = "com.android.systemui";
+    private static final String KEYBOARD_SHORTCUTS_RECEIVER_CLASS_NAME = "com.android.systemui.statusbar.KeyboardShortcutsReceiver";
+
+    private static Context mContext = null;
+
+    private static CheckBox checkBox = null;
+
+    private static Callback mCallback = null;
+
+    public interface Callback {
+        void dissmissDialog();
+    }
+
+    public static final View getSwitchToNormalDialog(Context context,
+            Callback callback) {
+        mCallback = callback;
+        mContext = context;
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View view = inflater.inflate(R.layout.productivity_mode_switch_dialog,
+                null);
+        // fontType
+        Typeface MediumType = Typeface.createFromAsset(context.getAssets(),
+                "fonts/Roboto-Medium.ttf");
+        Typeface RegularType = Typeface.createFromAsset(context.getAssets(),
+                "fonts/Roboto-Regular.ttf");
+        // title view
+        TextView titleView = (TextView) view.findViewById(R.id.title);
+        titleView.setTypeface(MediumType);
+        titleView.setText(R.string.normal_mode_dialog_title);
+        // message view
+        TextView messageView = (TextView) view.findViewById(R.id.message);
+        messageView.setTypeface(RegularType);
+        messageView.setText(R.string.normal_mode_dialog_message);
+
+        checkBox = (CheckBox) view.findViewById(R.id.checkbox);
+
+        TextView helper = (TextView) view.findViewById(R.id.helper);
+        helper.setOnClickListener(listener);
+
+        TextView switch_tv = (TextView) view.findViewById(R.id.switch_tv);
+        switch_tv.setTag("normal_mode");
+        switch_tv.setOnClickListener(listener);
+
+        TextView cance_tv = (TextView) view.findViewById(R.id.cance_tv);
+        cance_tv.setTag("normal_mode");
+        cance_tv.setOnClickListener(listener);
+
+        return view;
+
+    }
+
+    public static final View getSwitchToProductivityModeDialog(Context context,
+            Callback callback) {
+        mCallback = callback;
+        mContext = context;
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View view = inflater.inflate(R.layout.productivity_mode_switch_dialog,
+                null);
+        // fontType
+        Typeface MediumType = Typeface.createFromAsset(context.getAssets(),
+                "fonts/Roboto-Medium.ttf");
+        Typeface RegularType = Typeface.createFromAsset(context.getAssets(),
+                "fonts/Roboto-Regular.ttf");
+        // title view
+        TextView titleView = (TextView) view.findViewById(R.id.title);
+        titleView.setTypeface(MediumType);
+        titleView.setText(R.string.productivity_mode_dialog_title);
+        // message view
+        TextView messageView = (TextView) view.findViewById(R.id.message);
+        messageView.setTypeface(RegularType);
+        messageView.setText(R.string.productivity_mode_dialog_message);
+
+        checkBox = (CheckBox) view.findViewById(R.id.checkbox);
+
+        TextView helper = (TextView) view.findViewById(R.id.helper);
+        helper.setOnClickListener(listener);
+
+        TextView switch_tv = (TextView) view.findViewById(R.id.switch_tv);
+        switch_tv.setTag("productivity_mode");
+        switch_tv.setOnClickListener(listener);
+
+        TextView cance_tv = (TextView) view.findViewById(R.id.cance_tv);
+        cance_tv.setTag("productivity_mode");
+        cance_tv.setOnClickListener(listener);
+
+        return view;
+    }
+
+    private static OnClickListener listener = new OnClickListener() {
+
+        public void onClick(View v) {
+            int id = v.getId();
+            boolean isChecked = checkBox.isChecked();
+            boolean isSwitchToProductivityMode = "productivity_mode"
+                    .equals(String.valueOf(v.getTag()));
+            switch (id) {
+                case R.id.helper:
+                    Intent intent = new Intent(
+                            Intent.ACTION_SHOW_KEYBOARD_SHORTCUTS);
+                    intent.setComponent(new ComponentName(
+                            KEYBOARD_SHORTCUTS_RECEIVER_PKG_NAME,
+                            KEYBOARD_SHORTCUTS_RECEIVER_CLASS_NAME));
+                    mContext.sendBroadcast(intent);
+                    break;
+                case R.id.switch_tv:
+                    if (isChecked) {
+                        if (isSwitchToProductivityMode) {
+                            Settings.System.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "no_need_show_again_productivity_mode", 1, UserHandle.USER_CURRENT);
+                            Settings.System.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "switch_mode_type_productivity", 1,UserHandle.USER_CURRENT);
+                            Settings.Secure.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "bookui_mode_on", 1,UserHandle.USER_CURRENT);
+                        } else {
+                            Settings.System.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "no_need_show_again_normal_mode", 1,UserHandle.USER_CURRENT);
+                            Settings.System.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "switch_mode_type_normal", 2,UserHandle.USER_CURRENT);
+                            Settings.Secure.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "bookui_mode_on", 0,UserHandle.USER_CURRENT);
+                        }
+                    } else {
+                        if (isSwitchToProductivityMode) {
+                            Settings.Secure.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "bookui_mode_on", 1,UserHandle.USER_CURRENT);
+                        } else {
+                            Settings.Secure.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "bookui_mode_on", 0,UserHandle.USER_CURRENT);
+                        }
+                    }
+                    if (mCallback != null)
+                        mCallback.dissmissDialog();
+                    break;
+                case R.id.cance_tv:
+                    if (isChecked) {
+                        if (isSwitchToProductivityMode) {
+                            Settings.System.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "no_need_show_again_productivity_mode", 1,UserHandle.USER_CURRENT);
+                        } else {
+                            Settings.System.putIntForUser(
+                                    mContext.getContentResolver(),
+                                    "no_need_show_again_normal_mode", 1,UserHandle.USER_CURRENT);
+                        }
+                        Settings.System.putIntForUser(mContext.getContentResolver(),
+                                "switch_mode_type", 0,UserHandle.USER_CURRENT);
+                    }
+                    if (mCallback != null)
+                        mCallback.dissmissDialog();
+                    break;
+            }
+        }
+    };
+
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

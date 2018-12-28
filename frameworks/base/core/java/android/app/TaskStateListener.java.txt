@@ -1,0 +1,76 @@
+package android.app;
+
+import android.os.Handler;
+import android.os.Message;
+import android.telephony.PhoneStateListener;
+import android.telephony.ServiceState;
+import android.os.LenovoSwitchManager;
+import android.util.Log;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+
+/**
+ * @hide
+ */
+public class TaskStateListener {
+    private String TAG = "TaskStateListener";
+    public static final int TASK_LISTENER_TASK_CREATE = 0;
+    public static final int TASK_LISTENER_TASK_CLOSE = 1;
+    public static final int TASK_LISTENER_TASK_FOCUSE_CHANGE = 2;
+    public static final int TASK_LISTENER_TASK_MINIMIZED = 3;
+    public static final int TASK_LISTENER_TASK_WINDOW_MODE_CHANGED = 4;
+    public static final int TASK_LISTENER_TASK_PROCESS_STARTED = 5;
+    public static final int TASK_LISTENER_TASK_ACTIVITY_WINDOW_VISIBLE = 6;
+
+    public TaskStateListener() {
+        if (LenovoSwitchManager.BUILD_MAIN_SWITCH_ON) {
+            try {
+                IActivityManager am = ActivityManager.getService();
+                am.registerTaskListener(callback);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    public void onTaskCreate(ActivityManager.RecentTaskInfo info) {
+    }
+
+    public void onTaskClose(ActivityManager.RecentTaskInfo info) {
+    }
+
+    public void onTaskFocuseChange(ActivityManager.RecentTaskInfo info) {
+    }
+
+    ITaskStateListenerCallback callback = new ITaskStateListenerCallback.Stub() {
+        public void onTaskCreate(ActivityManager.RecentTaskInfo info)
+                throws android.os.RemoteException {
+            Message.obtain(mHandler, TASK_LISTENER_TASK_CREATE, 0, 0, info).sendToTarget();
+        }
+
+        public void onTaskClose(ActivityManager.RecentTaskInfo info) throws android.os.RemoteException {
+            Message.obtain(mHandler, TASK_LISTENER_TASK_CLOSE, 0, 0, info).sendToTarget();
+        }
+
+        public void onTaskFocuseChange(ActivityManager.RecentTaskInfo info) {
+            Message.obtain(mHandler, TASK_LISTENER_TASK_FOCUSE_CHANGE, 0, 0, info).sendToTarget();
+        }
+    };
+
+    Handler mHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case TASK_LISTENER_TASK_CREATE:
+                    TaskStateListener.this.onTaskCreate((ActivityManager.RecentTaskInfo) msg.obj);
+                    break;
+                case TASK_LISTENER_TASK_CLOSE:
+                    TaskStateListener.this.onTaskClose((ActivityManager.RecentTaskInfo) msg.obj);
+                    break;
+                case TASK_LISTENER_TASK_FOCUSE_CHANGE:
+                    TaskStateListener.this.onTaskFocuseChange((ActivityManager.RecentTaskInfo) msg.obj);
+                    break;
+            }
+        }
+    };
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

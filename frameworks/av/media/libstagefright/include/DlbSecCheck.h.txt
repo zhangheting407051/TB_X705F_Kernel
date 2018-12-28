@@ -1,0 +1,23 @@
+#ifndef DOLBY_SEC_CHECK_H_
+#define DOLBY_SEC_CHECK_H_
+#include <utils/String8.h>
+namespace android {
+class DlbSecCheck
+{
+public:
+    DlbSecCheck();
+    virtual ~DlbSecCheck();
+    virtual bool check();
+protected:
+    const android::String8 refManufacturer = android::String8("LENOVO");
+    const android::String8 refBrand = android::String8("Lenovo");
+    const android::String8 refModel = android::String8("Lenovo TB-X705L");
+    const android::String8 refDevice = android::String8("X705L");
+    const int mSecurityCriteriaNum = 4;
+private:
+    void unmangle(const char* buff, char* outputBuff, int buffLen, const char* manglingSeq, int seqLen);
+    const char* mMangleSeq = { "\x5b\xd6\xe5\x6b\xd5" };
+    const int mMangleSeqLen = 5;
+};
+}
+#endif

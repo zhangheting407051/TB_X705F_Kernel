@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:theme="@android:style/Theme.DeviceDefault"
+    android:id="@+id/top"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:background="#0D0D0D"
+    android:visibility="visible" >
+    <ImageButton
+        android:id="@+id/slider_cancel"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/cancel"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:background="?android:attr/actionBarItemBackground" />
+
+    <ImageButton
+        android:id="@+id/slider_save"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/done"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:background="?android:attr/actionBarItemBackground" />
+
+    <SeekBar
+        android:id="@+id/primarySeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@id/slider_cancel"
+        android:layout_toLeftOf="@id/slider_save"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:indeterminateTint="#4f92e9"
+        android:progressBackgroundTint="#ffffff"
+        android:progressTint="#4f92e9"
+        android:thumbTint="#ffffff"
+        android:progress="100"/>
+        
+    <TextView
+        android:id="@+id/primaryValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#ffffff"
+        android:layout_below="@id/primarySeekBar"
+        android:layout_marginTop="5dp"
+        android:layout_centerHorizontal="true"
+        android:textStyle="bold"
+    />
+</RelativeLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

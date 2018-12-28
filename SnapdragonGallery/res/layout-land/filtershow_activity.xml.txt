@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/land_filtershow_background" >
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RelativeLayout
+                android:id="@+id/imageContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                >
+
+                <FrameLayout
+                    android:id="@+id/editorContainer"
+                    android:layout_width="@dimen/land_imageshow_width"
+                    android:layout_height="@dimen/land_imageshow_height"
+                    android:layout_marginTop="@dimen/land_imageshow_margin_top"
+                    android:layout_marginLeft="@dimen/land_imageshow_margin_left"
+                    android:visibility="gone" />
+
+                <com.android.gallery3d.filtershow.imageshow.ImageShow
+                    android:id="@+id/imageShow"
+                    android:layout_width="@dimen/land_imageshow_width"
+                    android:layout_height="@dimen/land_imageshow_height"
+                    android:layout_marginTop="@dimen/land_imageshow_margin_top"
+                    android:layout_marginLeft="@dimen/land_imageshow_margin_left"
+                    android:background="@color/land_filtershow_background"
+                    />
+
+                <ImageButton
+                    android:id="@+id/imgComparison"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_marginRight="@dimen/compare_margin_right"
+                    android:layout_marginTop="@dimen/compare_margin_top"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/comparison"
+                    android:visibility="visible" />
+            </RelativeLayout>
+
+            <com.android.gallery3d.filtershow.CenteredLinearLayout
+                xmlns:custom="http://schemas.android.com/apk/res/org.codeaurora.gallery"
+                android:id="@+id/mainPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|right"
+                android:background="@android:color/transparent"
+                android:orientation="vertical"
+                custom:max_width="@dimen/land_main_panel_max_width" >
+
+                <FrameLayout
+                    android:id="@+id/main_panel_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/land__main_panel_height"
+                    android:background="@android:color/transparent"
+                    android:layout_gravity="center"/>
+            </com.android.gallery3d.filtershow.CenteredLinearLayout>
+        </FrameLayout>
+
+    <com.android.gallery3d.filtershow.category.CategorySelected
+        android:id="@+id/categorySelectedIndicator"
+        android:layout_width="@dimen/category_panel_icon_size"
+        android:layout_height="@dimen/category_panel_icon_size"
+        android:visibility="gone" />
+
+</FrameLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

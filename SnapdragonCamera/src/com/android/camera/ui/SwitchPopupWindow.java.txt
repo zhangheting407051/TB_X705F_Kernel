@@ -1,0 +1,129 @@
+//qidongdong@wind-mobi.com on 2018.7.13 start
+//add for Feature-10054 add flashmode/HDR popupwindow
+package com.android.camera.ui;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
+import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.MeasureSpec;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+import android.widget.ListView;
+import android.widget.PopupWindow;
+import android.widget.TextView;
+
+import org.codeaurora.snapcam.R;
+
+public class SwitchPopupWindow extends PopupWindow{
+    private static final String TAG = "qdd";
+
+    private SwitchPopupWindowAdapter mSwitchPopupWindowAdapter;
+    private Listener mListener;
+    private Context mContext;
+    private int popupHeight;
+
+    public SwitchPopupWindow(final Activity context,CharSequence[] strArray,int[] imageIDs,int[] imageIDs_pressed,int index,Listener listener) {
+        // TODO Auto-generated constructor stub
+        super(context);
+        mContext = context;
+        mListener = listener;
+        initPopupWindow(strArray,imageIDs,imageIDs_pressed,index);
+    }
+
+    private void initPopupWindow(CharSequence[] strArray,int[] imageIDs,int[] imageIDs_pressed,int index){
+        DisplayMetrics metric = new DisplayMetrics();
+        WindowManager wm = ((Activity) mContext).getWindowManager();
+        wm.getDefaultDisplay().getMetrics(metric);
+        float density = metric.density;
+        int densityDpi = metric.densityDpi;
+        float titleItemHeight = density * 60;
+        float paddingWight = density * 12;
+        int width = wm.getDefaultDisplay().getWidth();
+        int height;
+        if(strArray.length > 5){
+            height = (int) (titleItemHeight * 5);
+        }else{
+            height = (int) (titleItemHeight * strArray.length);
+        }
+
+        popupHeight = height;
+
+        this.setWidth(LinearLayout.LayoutParams.WRAP_CONTENT);
+        this.setHeight(LinearLayout.LayoutParams.WRAP_CONTENT);
+        View contentView = LayoutInflater.from(mContext).inflate(R.layout.switch_popup_window, null);
+        this.setContentView(contentView);
+
+        ListView listView = (ListView)contentView.findViewById(R.id.lv_popupwindow);
+        mSwitchPopupWindowAdapter = new SwitchPopupWindowAdapter(mContext,strArray,imageIDs,imageIDs_pressed,index,titleItemHeight);
+        listView.setAdapter(mSwitchPopupWindowAdapter);
+
+        LinearLayout.LayoutParams lp;
+        lp = (LayoutParams) listView.getLayoutParams();
+        lp.height = height;
+        lp.width = 220;
+
+        int count = mSwitchPopupWindowAdapter.getCount();
+        View lView = null;
+
+        //measure childview to set listview width
+        for(int i = 0;i < count;i++){
+            lView = mSwitchPopupWindowAdapter.getView(i, null, listView);
+            lView.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+            if(lView.getMeasuredWidth() > lp.width){
+                lp.width = lView.getMeasuredWidth();
+            }
+        }
+
+        listView.setLayoutParams(lp);
+        if(mSwitchPopupWindowAdapter != null){
+            mSwitchPopupWindowAdapter = null;
+        }
+
+        this.setFocusable(true);
+        this.setOutsideTouchable(true);
+        this.setBackgroundDrawable(contentView.getResources().getDrawable(R.drawable.switch_popup_bg));
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // TODO Auto-generated method stub
+                dismiss();
+                mListener.onItemClickListener(position);
+            }
+        });
+
+        this.setOnDismissListener(new OnDismissListener() {
+
+            @Override
+            public void onDismiss() {
+                // TODO Auto-generated method stub
+                mListener.onPopupWindowDismissListener();
+            }
+        });
+
+    }
+
+    public void showAsDropRight(View view){
+        int switchWidth = view.getWidth();
+        int switchHeight = view.getHeight();
+        this.showAsDropDown(view, switchWidth + 10, -((popupHeight/2) + (switchHeight/2)));
+    }
+
+    public interface Listener{
+        void onPopupWindowDismissListener();
+        void onItemClickListener(int position);
+    }
+}
+//qidongdong@wind-mobi.com on 2018.7.13 end

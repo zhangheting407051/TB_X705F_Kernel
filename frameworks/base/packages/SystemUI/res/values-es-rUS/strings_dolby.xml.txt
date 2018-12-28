@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2013-2018 Dolby Laboratories
+
+     This program is protected under international and U.S. copyright laws as
+     an unpublished work. This program is confidential and proprietary to the
+     copyright owners. Reproduction or disclosure, in whole or in part, or the
+     production of derivative works therefrom without the express permission of
+     the copyright owners is prohibited.
+
+                   Copyright (C) 2013-2018 by Dolby Laboratories,
+                               All rights reserved.
+-->
+
+<resources>
+    <string name="accessibility_quick_settings_dolby">DOLBY</string>
+    <string name="accessibility_desc_dolby_dis">Dolby</string>
+    <string name="accessibility_desc_dolby_on">DOLBY ENC</string>
+    <string name="accessibility_desc_dolby_off">DOLBY APAG</string>
+    <string name="accessibility_desc_dolby_dynamic">Dinámico</string>
+    <string name="accessibility_desc_dolby_movie">Película</string>
+    <string name="accessibility_desc_dolby_music">Música</string>
+    <string name="accessibility_desc_dolby_custom">Personalizar</string>
+    <string name="accessibility_desc_dolby_dolby_atmos_off">Dolby Atmos está apagado.</string>
+</resources>

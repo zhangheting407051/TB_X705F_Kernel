@@ -1,0 +1,48 @@
+//zhuzhibin@wind-mobi.com 2018/03/01 start
+//add FeatureOptions API
+package android.options.wind;
+
+import android.app.ActivityThread;
+import android.content.Context;
+import android.os.SystemProperties;
+
+public class FeatureOptions {
+
+    public static final boolean WIND_DEF_P100_FACTORY = SystemProperties.get("ro.wind_def_p100_factory").equals("1");
+    public static final boolean WIND_COUNTRY_CODE_SUPPORT = SystemProperties.get("ro.wind_country_code_support").equals("1");
+
+    // yexumin@wind-mobi.com 2018/03/16 start
+    public static final boolean WIND_DEF_PRO_P100F = SystemProperties.get("ro.wind_def_pro_p100f").equals("1");
+    public static final boolean WIND_DEF_PRO_PRC = SystemProperties.get("ro.wind_def_pro_prc").equals("1");
+    public static final boolean WIND_DEF_PRO_ROW = SystemProperties.get("ro.wind_def_pro_row").equals("1");
+    public static final boolean WIND_DEF_PRO_P102F = SystemProperties.get("ro.wind_def_pro_p102f").equals("1");
+    public static final boolean WIND_DEF_OPTR_P100F_ROW = SystemProperties.get("ro.wind_def_optr_p100f_row").equals("1");
+    public static final boolean WIND_DEF_OPTR_P100F_PRC = SystemProperties.get("ro.wind_def_optr_p100f_prc").equals("1");
+    public static final boolean WIND_DEF_OPTR_P101F_ROW = SystemProperties.get("ro.wind_def_optr_p101f_row").equals("1");
+    public static final boolean WIND_DEF_OPTR_P101F_PRC = SystemProperties.get("ro.wind_def_optr_p101f_prc").equals("1");
+    public static final boolean WIND_DEF_OPTR_P102F_ROW = SystemProperties.get("ro.wind_def_optr_p102f_row").equals("1");
+    public static final boolean WIND_DEF_OPTR_P102F_PRC = SystemProperties.get("ro.wind_def_optr_p102f_prc").equals("1");
+    public static final boolean WIND_DEF_OPTR_P103F_ROW = SystemProperties.get("ro.wind_def_optr_p103f_row").equals("1");
+    public static final boolean WIND_DEF_OPTR_P103F_PRC = SystemProperties.get("ro.wind_def_optr_p103f_prc").equals("1");
+    public static final boolean WIND_CTA_PERMISSION = SystemProperties.get("ro.wind_cta_is_support").equals("1");
+    //yunbo@wind-mobi.com 20180821 st
+    public static final boolean WIND_DEF_OPTR_NEC = SystemProperties.get("ro.wind_def_optr_nec").equals("1");
+    public static final boolean WIND_DEF_OPTR_P102F_NEC = SystemProperties.get("ro.wind_def_optr_p102f_nec").equals("1");
+    //yunbo@wind-mobi.com 20180821 end
+    // yexumin@wind-mobi.com 2018/03/16 start
+    //zhuzhibin@wind-mobi.com add 20180419 start
+    public static final boolean WIND_DEF_ENABLE_ADB_USER_BUILD = SystemProperties.get("ro.wind_def_enable_adb_user_build").equals("1");
+    //zhuzhibin@wind-mobi.com add 20180419 end
+    //lijingwei@wind-mobi.com on 2018/5/15 start
+    public static final boolean WIND_DEF_WIFI_ONLY = SystemProperties.get("ro.wind_def_wifi_only").equals("1");
+    //lijingwei@wind-mobi.com on 2018/5/15 end
+    //chengrui@wind-mobi.com on 2018/8/5 start
+    public static final boolean WIND_DEF_DOCK_ENABLE = SystemProperties.get("ro.wind_def_dock_enable").equals("1");
+    //chengrui@wind-mobi.com on 2018/8/5 end
+    //jiangbo@wind-mobi.com on 18.6.18 start
+    public static Context getCurrentContext() {
+        return ActivityThread.currentApplication().getApplicationContext();
+    }
+    //jiangbo@wind-mobi.com on 18.6.18 end
+}
+//zhuzhibin@wind-mobi.com 2018/03/01 end

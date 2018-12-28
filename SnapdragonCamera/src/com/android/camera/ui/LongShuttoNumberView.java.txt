@@ -1,0 +1,89 @@
+/**
+ * LongShuttoNumberView
+ * @author zhaoyujie
+ * @date 20161129
+ */
+package com.android.camera.ui;
+
+import java.util.Locale;
+
+import android.content.Context;
+import android.content.res.Configuration;
+import android.media.AudioManager;
+import android.media.SoundPool;
+import android.os.Handler;
+import android.os.Message;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+
+import org.codeaurora.snapcam.R;
+
+public class LongShuttoNumberView extends FrameLayout {
+
+    private static final String TAG = "CAM_LongShuttoNumberView";
+    private static final int SET_TIMER_TEXT = 1;
+    private TextView mRemainingSecondsView;
+    private Context mContext;
+    private int mRemainingSecs = 0;
+    private final Handler mHandler = new MainHandler();
+
+    public LongShuttoNumberView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mContext = context;
+    }
+
+    private void remainingSecondsChanged(int newVal) {
+        mRemainingSecs = newVal;
+        if (newVal == 0) {
+            setVisibility(View.INVISIBLE);
+        } else {
+            Locale locale = getResources().getConfiguration().locale;
+            //qidongdong@wind-mobi.com on 2018.3.22 start
+            //modify for Feature-10054
+//            String localizedValue = String.format(locale, "%d", newVal);
+            String localizedValue = String.format(locale, "%02d", newVal);
+            //qidongdong@wind-mobi.com on 2018.3.22 end
+            mRemainingSecondsView.setText(localizedValue);
+            // Fade-out animation
+            // Schedule the next remainingSecondsChanged() call in 3 second
+            //mHandler.sendEmptyMessageDelayed(SET_TIMER_TEXT, 1000);
+        }
+    }
+
+    public void hideLongShuttonNumber() {
+        setVisibility(View.INVISIBLE);
+    }
+
+    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        mRemainingSecondsView = (TextView) findViewById(R.id.long_shutton_number_textview);
+    }
+
+    public void startLongShuttonNumber(int num) {
+        if (num <= 0) {
+            Log.w(TAG, "Invalid input for countdown timer: " + num + " seconds");
+            return;
+        }
+        setVisibility(View.VISIBLE);
+        remainingSecondsChanged(num);
+    }
+
+    private class MainHandler extends Handler {
+        @Override
+        public void handleMessage(Message message) {
+            if (message.what == SET_TIMER_TEXT) {
+                setVisibility(View.INVISIBLE);
+            }
+        }
+    }
+
+    public void setOrientation(int orientation) {
+        mRemainingSecondsView.setRotation(-orientation);
+    }
+}

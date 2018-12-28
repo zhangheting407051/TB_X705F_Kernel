@@ -1,0 +1,14 @@
+package com.android.systemui.wantjoin.lockscreenicon;
+
+import android.content.pm.UserInfo;
+
+/**
+ * Created by Admin on 2016/11/15.
+ */
+
+public interface OnFastLoopStopListener {
+    /**
+     * 选择回调接口
+     */
+    void selected(UserInfo userInfo);
+}

@@ -1,0 +1,16 @@
+service bootanim /system/bin/bootanimation
+    class core animation
+    #jiangbo@wind-mobi.com on 18.3.29 start
+    #add for custom animation
+    #user graphics
+    user media
+    #jiangbo@wind-mobi.com on 18.3.29 end
+    group graphics audio
+    disabled
+    oneshot
+    writepid /dev/stune/top-app/tasks
+#jiangbo@wind-mobi.com on 18.3.29 start
+#add for custom animation
+on property:persist.sys.boot_start=1
+    start bootanim
+#jiangbo@wind-mobi.com on 18.3.29 end

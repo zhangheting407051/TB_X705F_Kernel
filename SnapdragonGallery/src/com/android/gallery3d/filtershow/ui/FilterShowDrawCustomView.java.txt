@@ -1,0 +1,157 @@
+package com.android.gallery3d.filtershow.ui;
+
+import org.codeaurora.gallery.R;
+
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.util.AttributeSet;
+import android.view.View;
+
+import com.android.gallery3d.util.ScreenUtils;
+
+@TargetApi(23)
+@SuppressLint("DrawAllocation")
+public class FilterShowDrawCustomView extends View {
+    
+    public static final int SHOWCIRCLE = 0;
+    public static final int SHOWSTYLE = 1;
+
+    private static final int HIGHT_STYLE_VALUE = 10;
+    private static final int LOW_STYLE_VALUE = 6;
+
+    private Paint mPaint;
+    private Context mContext;
+    private int mBorderColor;
+    private int mCircleColor;
+    private int mCurrentShow = SHOWCIRCLE;
+    private int mStyleWidth;
+    private int mStyleHeight;
+    private int mNewCircleColor = 0;
+    private float rectWidth = 0;
+    private float mStyleSelect ;
+    private boolean mColorSelect;
+
+    int[] brushIcons = {
+            R.drawable.round,
+            R.drawable.square,
+            R.drawable.feather,
+            R.drawable.rectangle,
+            R.drawable.random
+    };
+
+    public FilterShowDrawCustomView(Context context) {
+        this(context, null);
+    }
+
+    public FilterShowDrawCustomView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public FilterShowDrawCustomView(Context context, AttributeSet attrs,
+            int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        mContext = context;
+        TypedArray array = context.getTheme().obtainStyledAttributes(attrs,
+                R.styleable.CustomButtonView, defStyleAttr, 0);
+        int n = array.getIndexCount();
+        for (int i = 0; i < n; i++) {
+            int attr = array.getIndex(i);
+            switch (attr) {
+            case R.styleable.CustomButtonView_boaderColor:
+                mBorderColor = array.getColor(attr,
+                        mContext.getColor(R.color.colorboarder));
+                break;
+            case R.styleable.CustomButtonView_circleColor:
+                mCircleColor = array.getColor(attr,
+                        mContext.getColor(R.color.colorboarder));
+                break;
+            case R.styleable.CustomButtonView_colorSelect:
+                mColorSelect = array.getBoolean(attr, false);
+                break;
+            case R.styleable.CustomButtonView_styleSelect:
+                mStyleSelect = array.getFloat(attr, 0);
+                break;
+            }
+        }
+        array.recycle();
+        mPaint = new Paint();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        initRectBean(MeasureSpec.getSize(widthMeasureSpec));
+    }
+
+    private void initRectBean(int width) {
+        rectWidth = width;
+    }
+
+    public void setCurrentSelect(boolean colorSelect) {
+        mColorSelect = colorSelect;
+        invalidate();
+    }
+
+    public void setCurrentShow(int currentShow) {
+        mCurrentShow = currentShow;
+    }
+
+    public void setCurrentCircleColor(int color) {
+        mNewCircleColor = color;
+        invalidate();
+    }
+
+    private String getCurrentCircleColor() {
+        String str = "000000" + Integer.toHexString(mNewCircleColor);
+        str = "#" + str.substring(str.length() - 6);
+        return str;
+    }
+
+    @SuppressLint("ResourceAsColor")
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        if (mColorSelect) {
+            mPaint.setColor(mBorderColor);
+            mPaint.setStyle(Paint.Style.STROKE);
+            mPaint.setAntiAlias(true);
+            mPaint.setStrokeWidth(2);
+            canvas.drawCircle(rectWidth / 2, rectWidth / 2, rectWidth / 2, mPaint);
+        }
+
+        if (mCurrentShow == SHOWCIRCLE) {
+            mPaint.setColor(mCircleColor);
+            String color = getCurrentCircleColor();
+            if (mNewCircleColor == 0) {
+                mPaint.setColor(mCircleColor);
+            } else {
+                mPaint.setColor(Color.parseColor(color));
+            }
+            mPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(rectWidth / 2, rectWidth / 2, rectWidth / 5 * 2, mPaint);
+        } else {
+            Bitmap bitmap = BitmapFactory.decodeResource(
+                    mContext.getResources(), brushIcons[(int) mStyleSelect]);
+            if (ScreenUtils.isHightResolutionSlab(mContext)){
+                mStyleWidth = (bitmap.getWidth() - HIGHT_STYLE_VALUE) * 2 ;
+                mStyleHeight = (bitmap.getHeight() - HIGHT_STYLE_VALUE) * 2;
+            } else {
+                mStyleWidth = (bitmap.getWidth() - LOW_STYLE_VALUE) * 2;
+                mStyleHeight = (bitmap.getWidth() - LOW_STYLE_VALUE) * 2;
+            }
+            bitmap = Bitmap.createScaledBitmap(bitmap, mStyleWidth , mStyleHeight, true);
+            mPaint.setFilterBitmap(true);
+            mPaint.setDither(true);
+            canvas.drawBitmap(bitmap, null, new Rect(0, 0, bitmap.getWidth() , bitmap.getWidth()), mPaint);
+        }
+    }
+}

@@ -1,0 +1,118 @@
+//mahui01@wind-mobi.com 2018/9/17 add for lenovo CSDK begin
+package com.lenovo.sdk;
+
+import android.content.Context;
+import android.provider.Settings;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class PackageWhiteListService extends IPackageWhiteListService.Stub {
+    private static Context mContext;
+
+    public PackageWhiteListService(Context context) {
+        mContext = context;
+    }
+
+    @Override
+    public boolean appWhiteListOpen() {
+        return Settings.Global.putInt(mContext.getContentResolver(), "Package_while_list", 1);
+    }
+
+    @Override
+    public boolean appWhiteListClose() {
+        return Settings.Global.putInt(mContext.getContentResolver(), "Package_while_list", 0);
+    }
+
+    @Override
+    public boolean isAppWhiteListOn() {
+        return Settings.Global.getInt(mContext.getContentResolver(), "Package_while_list", 0) == 1;
+    }
+
+    @Override
+    public  List<String>  appWhiteListRead(){
+        try{
+            List<String> awl=new ArrayList();
+            File inputfile = new File("/data/system/apkinstallwhitelist.txt");
+            if(!inputfile.exists()){
+                inputfile.createNewFile();
+            }
+
+            FileReader fr = new FileReader(inputfile);
+            BufferedReader br = new BufferedReader(fr);
+            String s;
+            while ((s = br.readLine()) != null) {
+                System.out.println("packageName list="+s);
+                String[] data = s.split(",");
+                for(int i=0;i<data.length;i++){
+                    System.out.println("packagename="+data[i]);
+                    awl.add(data[i]);
+                }
+            }
+
+            fr.close();
+            return awl;
+        }catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public boolean appWhiteListWrite(List<String> packageName){
+        try{
+            File f = new File("/data/system/apkinstallwhitelist.txt");
+            if(f.exists()){
+                f.delete();
+            }
+            f.createNewFile();
+    
+            FileWriter fw = null;
+            BufferedWriter bw = null;
+        
+            fw = new FileWriter(f, true);
+            bw = new BufferedWriter(fw);
+            StringBuffer msg =new StringBuffer();
+            for(int j=0;j<packageName.size();j++){
+                if(j==0){
+                    msg.append(packageName.get(0));
+                }else{
+                    msg.append(","+packageName.get(j));
+                }
+            }          
+            bw.write(msg.toString());
+            bw.flush();
+            bw.close();
+            return true;
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return false;
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+           return false;
+        } 
+    }   
+}
+//mahui01@wind-mobi.com 2018/9/17 add for lenovo CSDK end

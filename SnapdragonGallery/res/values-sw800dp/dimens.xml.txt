@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2011, The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+    <dimen name="setting_row_height">54dp</dimen>
+    <dimen name="setting_item_text_size">21dp</dimen>
+    <dimen name="setting_knob_width">72dp</dimen>
+    <dimen name="setting_item_text_width">130dp</dimen>
+    <dimen name="setting_popup_window_width">410dp</dimen>
+    <dimen name="setting_item_list_margin">24dp</dimen>
+    <dimen name="popup_title_text_size">22dp</dimen>
+    <dimen name="popup_title_frame_min_height">64dp</dimen>
+    <dimen name="big_setting_popup_window_width">590dp</dimen>
+    <dimen name="setting_item_icon_width">35dp</dimen>
+    <!--fix feature#10896 mahui01@wind-mobi.com 2018/3/19 begin-->
+    <dimen name="land_toolbar_height">70dp</dimen>
+    <dimen name="por_imageshow_width">637dp</dimen>
+    <dimen name="por_imageshow_height">900dp</dimen>
+    <dimen name="por_imageshow_margin_top">100dp</dimen>
+    <dimen name="por_imageshow_margin_left">90dp</dimen>
+    <dimen name="por_straighten_reset_magrin_left">100dp</dimen>
+    <dimen name="por_straighten_rw_margin_left">100dp</dimen>
+    <dimen name="por_scrawl_draw_color_margin_left">30dp</dimen>
+    <dimen name="land_imageshow_width">732dp</dimen>
+    <dimen name="land_imageshow_height">442dp</dimen>
+    <dimen name="land_imageshow_margin_top">200dp</dimen>
+    <dimen name="land_imageshow_margin_left">74dp</dimen>
+    <dimen name="land__main_panel_height">686dp</dimen>
+    <dimen name="land_main_panel_max_width">450dp</dimen>
+    <dimen name="land_toolbar_left_margin">870dp</dimen>
+    <dimen name="land_toolbar_undo_left_margin">90dp</dimen>
+    <dimen name="land_toolbar_redo_left_margin">40dp</dimen>
+    <dimen name="land_toolbar_save_left_margin">65dp</dimen>
+    <dimen name="land_main_category_list_height">527dp</dimen>
+    <dimen name="land_category_height">560dp</dimen>
+    <dimen name="land_category_width">450dp</dimen>
+    <dimen name="land_category_category_panel_width">660dp</dimen>
+    <dimen name="land_category_category_panel_containter_height">625dp</dimen>
+    <dimen name="land_bottom_panel_height">64dip</dimen>
+    <dimen name="land_category_text_height">75dp</dimen>
+    <dimen name="land_categorytrack_margin">34dp</dimen>
+    <dimen name="land_category_panel_new_width">660dp</dimen>
+    <dimen name="land_item_height">150dp</dimen>
+    <dimen name="land_item_width">381dp</dimen>
+    <dimen name="land_category_geometry_height">165dp</dimen>
+    <dimen name="land_category_geometry_margin_bottom">23dp</dimen>
+    <dimen name="land_category_geometry_mirror_margintop">20dp</dimen>
+    <dimen name="land_category_geometry_mirror_width">68dp</dimen>
+    <dimen name="land_category_wheelview_width">300dp</dimen>
+    <dimen name="land_category_wheelview_height">100dp</dimen>
+    <dimen name="land_category_draw_size_width">90dp</dimen>
+    <dimen name="land_scrawl_draw_size_height">90dp</dimen>
+    <dimen name="land_scrawl_draw_style_height">150dp</dimen>
+    <dimen name="land_scrawl_draw_color_height">60dp</dimen>
+    <dimen name="land_scrawl_draw_colorPicker_width">375dp</dimen>
+    <!--fix feature#10896 mahui01@wind-mobi.com 2018/3/19 end-->
+</resources>

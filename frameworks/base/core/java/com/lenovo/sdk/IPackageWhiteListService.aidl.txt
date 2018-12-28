@@ -1,0 +1,12 @@
+package com.lenovo.sdk;
+
+/**
+* {@hide}
+*/
+interface IPackageWhiteListService {
+    boolean       appWhiteListOpen();
+    boolean       appWhiteListClose();
+    boolean       isAppWhiteListOn();
+    List<String>  appWhiteListRead();
+    boolean       appWhiteListWrite(in List<String> packageName);
+}

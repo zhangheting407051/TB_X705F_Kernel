@@ -1,0 +1,306 @@
+
+package com.android.systemui.lenovo.view;
+
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RecentTaskInfo;
+import android.content.Context;
+import android.content.res.Configuration;
+import android.os.Handler;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.View.OnClickListener;
+import android.view.View.OnScrollChangeListener;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
+import com.android.systemui.R;
+//yunbo@wind-mobi.com 20180731 st
+import com.android.systemui.statusbar.phone.StatusBar;
+//yunbo@wind-mobi.com 20180731 st
+
+import java.util.List;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class Dock extends LinearLayout {
+
+    private final boolean DEBUG = true;
+    private final String TAG = "Dock";
+    private DragAppPanel mDragAppPanel;
+    private AppPanel mAppPanel;
+    private HorizontalScrollView mScrollView;
+    public View mLeftArrow;
+    public View mRightArrow;
+    private LinearLayout mContainer = null;
+    private FrameLayout mContent;
+    private FrameLayout mBookuiMoreFL;
+    private int mDensityDpi;
+    private ObjectAnimator mLeftAnimation;
+    private ObjectAnimator mRightAnimation;
+
+    //mDockedStackExists record the splite screen status. if it's true with splite screen status.
+    private boolean mDockedStackExists;
+
+    public Dock(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (mDensityDpi != newConfig.densityDpi) {
+            mDensityDpi = newConfig.densityDpi;
+            reInitBookuiMore(newConfig,mContent);
+        }
+        postDelayed(new Runnable() {
+            public void run() {
+                updateArrowBackground();
+            }
+        }, 100);
+    }
+
+    public void init() {
+        mDensityDpi = mContext.getResources().getConfiguration().densityDpi;
+        mDragAppPanel = (DragAppPanel) findViewById(R.id.drag_app_panel);
+        mAppPanel = (AppPanel) this.findViewById(R.id.app);
+        mAppPanel.setDock(this);
+        mAppPanel.setDragAppPanel(mDragAppPanel);
+
+        mScrollView = (HorizontalScrollView) findViewById(R.id.scroll_view);
+        mDragAppPanel.setHorizontalScrollView(mScrollView);
+        mDragAppPanel.setDock(this);
+        mContent = (FrameLayout) findViewById(R.id.dock_panel_app_panel_layout);
+        reInitBookuiMore(mContext.getResources().getConfiguration(),mContent);
+        mScrollView.setOnScrollChangeListener(mScroll);
+        mLeftArrow.setVisibility(View.INVISIBLE);
+        mRightArrow.setVisibility(View.INVISIBLE);
+        mContainer = (LinearLayout) findViewById(R.id.container);
+
+        postDelayed(new Runnable() {
+            public void run() {
+                updateArrowBackground();
+            }
+        }, 100);
+        //yunbo@wind-mobi.com 20180731 st
+        Log.d(TAG,"resetAllApps,infoList:"+ StatusBar.infoList.toString());
+        if(StatusBar.infoList != null && StatusBar.infoList.size() > 0) {
+            resetAllApps(StatusBar.infoList);
+        }
+        //yunbo@wind-mobi.com 20180731 end
+    }
+
+    OnClickListener mArrowClick = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (v == mLeftArrow) {
+                if (!scrollLeft()) {
+                    mScrollView.fullScroll(View.FOCUS_LEFT);
+                    mLeftArrow.setVisibility(View.INVISIBLE);
+                }
+            } else {
+                if (!scrollRight()) {
+                    mScrollView.fullScroll(View.FOCUS_RIGHT);
+                    mRightArrow.setVisibility(View.INVISIBLE);
+                }
+            }
+        }
+    };
+
+    OnScrollChangeListener mScroll = new OnScrollChangeListener() {
+
+        @Override
+        public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+            if (DEBUG) {
+                Log.d(TAG, "onScrollChange scrollX:" + scrollX + "  scrollY" + scrollY
+                        + "   oldScrollX" + oldScrollX);
+            }
+            mAppPanel.disMissAllMenu();
+            int childWidth = ((ViewGroup) v).getChildAt(0).getMeasuredWidth();
+            int scrollViewWidth = v.getMeasuredWidth();
+            if (scrollX <= 0) {
+                animateHideArrowView(mLeftArrow);
+            } else if (oldScrollX <= 0) {
+                animateShowArrowView(mLeftArrow);
+            } else if (scrollX >= childWidth - scrollViewWidth) {
+                animateHideArrowView(mRightArrow);
+            } else if (oldScrollX >= childWidth - scrollViewWidth) {
+                animateShowArrowView(mRightArrow);
+            }
+        }
+    };
+
+    private void animateShowArrowView(final View v) {
+        ObjectAnimator objectAnimator = ObjectAnimator.ofFloat(v, View.ALPHA, 0f, 1f);
+        if (v == mLeftArrow) {
+            if (mLeftAnimation != null) {
+                mLeftAnimation.cancel();
+            }
+            mLeftAnimation = objectAnimator;
+        } else {
+            if (mRightAnimation != null) {
+                mRightAnimation.cancel();
+            }
+            mRightAnimation = objectAnimator;
+        }
+        objectAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (DEBUG) {
+                    Log.d(TAG, "animateShowEnd:" + v);
+                }
+                v.setVisibility(View.VISIBLE);
+                if (mLeftAnimation == animation) {
+                    mLeftAnimation = null;
+                } else {
+                    mRightAnimation = null;
+                }
+            }
+        });
+        objectAnimator.setDuration(1000);
+        v.setVisibility(View.VISIBLE);
+        v.setAlpha(0f);
+        objectAnimator.start();
+    }
+
+    private void animateHideArrowView(final View v) {
+        if (DEBUG) {
+            Log.d(TAG, "animateHide:" + v);
+        }
+        ObjectAnimator objectAnimator = ObjectAnimator.ofFloat(v, View.ALPHA, 1f, 0f);
+        if (v == mLeftArrow) {
+            if (mLeftAnimation != null) {
+                mLeftAnimation.cancel();
+            }
+            mLeftAnimation = objectAnimator;
+        } else {
+            if (mRightAnimation != null) {
+                mRightAnimation.cancel();
+            }
+            mRightAnimation = objectAnimator;
+        }
+        objectAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (DEBUG) {
+                    Log.d(TAG, "animateHideEnd:" + v);
+                }
+                v.setVisibility(View.INVISIBLE);
+                if (mLeftAnimation == animation) {
+                    mLeftAnimation = null;
+                } else {
+                    mRightAnimation = null;
+                }
+            }
+        });
+        objectAnimator.setDuration(1000);
+        objectAnimator.start();
+    }
+
+    /* 点击箭头，一页一页的滑动，而不是滑到底部 */
+    public boolean scrollLeft() {
+        int x = mScrollView.getScrollX();
+        final int arrowWidth = mLeftArrow.getWidth() + mRightArrow.getWidth();
+        final int onePageWidth = mScrollView.getWidth() - arrowWidth;
+        if (x > 0) {
+            mScrollView.smoothScrollBy(-onePageWidth, 0);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean scrollRight() {
+        View view = (View) mScrollView.getChildAt(mScrollView.getChildCount() - 1);
+        int subViewWidth = view.getRight();
+        int x = mScrollView.getScrollX();
+        final int arrowWidth = mLeftArrow.getWidth() + mRightArrow.getWidth();
+        final int onePageWidth = mScrollView.getWidth() - arrowWidth;
+        final int spaceWidth = subViewWidth - x - mScrollView.getWidth();
+        if (spaceWidth > 0) {
+            mScrollView.smoothScrollBy(onePageWidth, 0);
+            return true;
+        }
+        return false;
+    }
+
+    private void updateArrowBackground() {
+        int containerWidth = mContainer.getMeasuredWidth();
+        int scrollViewWidth = mScrollView.getMeasuredWidth();
+
+        if (mScrollView.getScrollX() <= 0) {
+            animateHideArrowView(mLeftArrow);
+        } else {
+            animateShowArrowView(mLeftArrow);
+        }
+        if (scrollViewWidth < containerWidth) {
+            animateShowArrowView(mRightArrow);
+        } else {
+            animateHideArrowView(mRightArrow);
+        }
+
+        invalidate();
+    }
+
+    public void scrollFocusOnView(final View icon, final boolean isRemove) {
+        new Handler().post(new Runnable() {
+            @Override
+            public void run() {
+                if (isRemove) {
+                    updateArrowBackground();
+                    return;
+                }
+                int scrollViewWidth = mScrollView.getWidth();
+                int appPanelWidth = mAppPanel.getWidth();
+                if (scrollViewWidth == appPanelWidth) {
+                    //do nothings
+                } else {
+                    mScrollView.smoothScrollTo((int) icon.getX(), 0);
+                }
+            }
+        });
+    }
+
+    public boolean isDockedStackExists() {
+        return mDockedStackExists;
+    }
+
+    public void setDockedStackExists(boolean exists) {
+        mDockedStackExists = exists;
+    }
+
+    public void saveCurrentFouceTask() {
+        mAppPanel.saveCurrentFouceTask();
+    }
+
+    private void reInitBookuiMore(Configuration con, FrameLayout frameLayout) {
+        if (frameLayout != null) {
+            if (mBookuiMoreFL != null) {
+                frameLayout.removeView(mBookuiMoreFL);
+            }
+            LayoutInflater inflater = LayoutInflater.from(mContext.createConfigurationContext(con));
+            mBookuiMoreFL = (FrameLayout) inflater.inflate(R.layout.bookui_more,null);
+            mLeftArrow = mBookuiMoreFL.findViewById(R.id.left_arrow);
+            mRightArrow = mBookuiMoreFL.findViewById(R.id.right_arrow);
+            mLeftArrow.setOnClickListener(mArrowClick);
+            mRightArrow.setOnClickListener(mArrowClick);
+            frameLayout.addView(mBookuiMoreFL);
+        }
+    }
+    public List<RecentTaskInfo> getAppData() {
+        Log.d(TAG, " getAppData");
+        if (mAppPanel != null) {
+            return mAppPanel.getAppData();
+        } else {
+            return null;
+        }
+    }
+
+    public void resetAllApps(final List<RecentTaskInfo> list) {
+        if (mAppPanel != null && list != null && list.size() > 0)
+            mAppPanel.resetAllApps(list);
+    }
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

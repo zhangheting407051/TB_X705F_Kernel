@@ -1,0 +1,278 @@
+
+package com.android.systemui.lenovo.view;
+
+import android.content.Context;
+import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnHoverListener;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+
+import com.android.systemui.R;
+import com.android.systemui.lenovo.bean.TaskDescription;
+
+import java.util.ArrayList;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class AppIcon extends FrameLayout implements OnHoverListener {
+    private String TAG = "AppIcon";
+    public ImageView mAppIconView;
+    private ImageView mAnchorView;
+    private ImageView mTaskLoadingView;
+
+    private String mPackageName;
+    private int mPos = 0;
+    private String mAppLaunchActivityName;
+    private CharSequence mLabelName;
+    private boolean mIsCanPin;
+    private int mStatus = 0;
+    Drawable mDrawable;
+    int mResId;
+    private final int STATUS_FLAG_APP_OPEN = 0x00000001;
+    private final int STATUS_FLAG_APP_FOCUSED = 0x00000010;
+    private final int STATUS_FLAG_APP_HOVERED = 0x00000100;
+    private final int STATUS_FLAG_TASK_LOADING = 0x10000000;
+
+    private ArrayList<TaskDescription> mTaskList = new ArrayList<TaskDescription>();
+    public ResolveInfo mInfo;
+    private Handler mHandler = new Handler();
+    private Runnable mStopLoadingAnimationRunnable = new Runnable() {
+        @Override
+        public void run() {
+            stopTaskLoadingAnimation();
+        }
+    };
+
+    public AppIcon(Context context) {
+        super(context);
+        initUIComponents(mContext.getResources().getConfiguration());
+    }
+
+    private void initUIComponents(Configuration configuration) {
+        LayoutInflater.from(mContext.createConfigurationContext(configuration)).inflate(R.layout.app_icon, this);
+        mAppIconView = (ImageView) findViewById(R.id.app_icon);
+        mAnchorView = (ImageView) findViewById(R.id.anchor);
+        mTaskLoadingView = (ImageView) findViewById(R.id.task_loading);
+        this.setOnHoverListener(this);
+    }
+
+    public void setImageIcon(Drawable drawable) {
+        mDrawable = drawable;
+        mAppIconView.setBackground(drawable);
+    }
+
+    public void setImageIcon(int resId) {
+        mResId = resId;
+        mAppIconView.setBackgroundResource(resId);
+    }
+
+    @Override
+    public boolean onHover(View v, MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_HOVER_ENTER) {
+            mStatus |= STATUS_FLAG_APP_HOVERED;
+            updateAnchorViewStatus();
+        } else if (event.getAction() == MotionEvent.ACTION_HOVER_EXIT) {
+            mStatus &= ~STATUS_FLAG_APP_HOVERED;
+            updateAnchorViewStatus();
+        }
+        return false;
+    }
+
+    public void setPackageName(String name) {
+        mPackageName = name;
+        this.setTag(mPackageName);
+    }
+
+    public void setPos(int mIndex) {
+        mPos = mIndex;
+    }
+
+    public void setAppLaunchActivityName(String appLaunchActivityName) {
+        mAppLaunchActivityName = appLaunchActivityName;
+    }
+
+    public void setLabelName (CharSequence labelName) {
+        mLabelName = labelName;
+    }
+
+    public void setIsCanPin(boolean isCanPin) {
+        mIsCanPin = isCanPin;
+    }
+
+    public String getPackageName() {
+        return mPackageName;
+    }
+
+    public int getTaskCount() {
+        return mTaskList.size();
+    }
+
+    public String getAppLaunchActivityName() {
+        return mAppLaunchActivityName;
+    }
+
+    public ArrayList<TaskDescription> getTaskList() {
+        return mTaskList;
+    }
+
+    public boolean isTaskIdCurrent(int taskId) {
+        for (TaskDescription des : mTaskList) {
+            if (des != null && des.getTaskId() == taskId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean addTask(TaskDescription task) {
+        for (int i = 0; i < mTaskList.size(); i++) {
+            TaskDescription t = mTaskList.get(i);
+            if (t.getTaskId() == task.getTaskId()) {
+                Log.e(TAG, "add Task conflict taskId:" + String.valueOf(t.getTaskId()));
+                return false;
+            }
+        }
+        mTaskList.add(task);
+        return true;
+    }
+
+    public boolean removeTask(int taskId) {
+        int index = -1;
+        for (int i = 0; i < mTaskList.size(); i++) {
+            if (mTaskList.get(i).getTaskId() == taskId) {
+                index = i;
+            }
+        }
+        if (index != -1) {
+            mTaskList.remove(index);
+        }
+        return true;
+    }
+
+    public void setFocus(boolean focus) {
+        setStatus(focus);
+    }
+
+    private void setStatus(boolean focus) {
+        if (focus) {
+            mStatus = STATUS_FLAG_APP_FOCUSED;
+        }else {
+            mStatus = STATUS_FLAG_APP_OPEN;
+        }
+
+        updateAnchorViewStatus();
+    }
+
+    private void updateAnchorViewStatus() {
+         final int status = mStatus;
+
+        if ((status & STATUS_FLAG_APP_OPEN) == 0) {
+            mAnchorView.setBackgroundResource(R.drawable.icon_tab_select);
+        } else {
+            mAnchorView.setBackground(null);
+        }
+    }
+
+    public void startTaskLoading(int taskId) {
+        if (taskId < 0) {
+            return;
+        }
+
+        startTaskLoadingAnimation();
+
+        mHandler.removeCallbacks(mStopLoadingAnimationRunnable);
+
+        // The loading animation should be stopped in 10 seconds anyway.
+        //yunbo@wind-mobi.com 20180626 st
+        mHandler.postDelayed(mStopLoadingAnimationRunnable, 2 * 1000);
+        //yunbo@wind-mobi.com 20180626 end
+    }
+
+    private void stopTaskLoadingAnimation() {
+        mHandler.removeCallbacks(mStopLoadingAnimationRunnable);
+        mTaskLoadingView.setVisibility(View.GONE);
+        Log.d(TAG, "stopTaskLoadingAnimation: " + mPackageName);
+    }
+
+    private void startTaskLoadingAnimation() {
+        Log.d(TAG, "startTaskLoadingAnimation: " + mPackageName);
+
+        mStatus |= STATUS_FLAG_TASK_LOADING;
+        updateAnchorViewStatus();
+
+        mTaskLoadingView.clearAnimation();
+        final Animation taskLoadingAnim = new AlphaAnimation(0.0f, 1.0f);
+        taskLoadingAnim.setDuration(800);
+        taskLoadingAnim.setRepeatCount(Animation.INFINITE);
+        taskLoadingAnim.setRepeatMode(Animation.REVERSE);
+        taskLoadingAnim.setAnimationListener(new AnimationListener() {
+            int repeatedCount = 0;
+
+            @Override
+            public void onAnimationStart(Animation animation) {
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                repeatedCount++;
+                final int status = mStatus;
+
+                /**
+                 * The animation should stop when there's no loading
+                 * tasks, and the visual state is close to what it's
+                 * supposed to be like when the animation is gone.
+                 */
+                if ((repeatedCount % 2 == 1 && (status & STATUS_FLAG_APP_FOCUSED) != 0)
+                        || (repeatedCount % 2 == 0 && (status & STATUS_FLAG_APP_FOCUSED) == 0)) {
+                    mTaskLoadingView.clearAnimation();
+                    mTaskLoadingView.setVisibility(View.GONE);
+                    mStatus &= ~STATUS_FLAG_TASK_LOADING;
+                    updateAnchorViewStatus();
+                }
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+            }
+        });
+
+        mTaskLoadingView.setVisibility(View.VISIBLE);
+        mTaskLoadingView.startAnimation(taskLoadingAnim);
+    }
+
+    public void stopTaskLoading(int taskId) {
+        if (taskId < 0) {
+            return;
+        }
+
+        stopTaskLoadingAnimation();
+    }
+
+    public int getTaskId() {
+        return getTaskList().get(0).getTaskId();
+    }
+
+
+    public void reInflateViews(Configuration configuration,int itemwidth) {
+        this.removeAllViews();
+        this.getLayoutParams().width = itemwidth;
+        initUIComponents(configuration);
+        if (null == mDrawable) {
+            mAppIconView.setBackgroundResource(mResId);
+        } else {
+            mAppIconView.setBackground(mDrawable);
+        }
+        this.invalidate();
+    }
+
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

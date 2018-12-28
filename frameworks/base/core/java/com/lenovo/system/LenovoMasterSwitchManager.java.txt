@@ -1,0 +1,14 @@
+package com.lenovo.system;
+
+import android.os.SystemProperties;
+/**
+ * @hide
+ */
+public class LenovoMasterSwitchManager {
+    // 主编译开关
+    public static final boolean BUILD_LENOVOMASTER_SWITCH_ON = false;
+
+    public static boolean isAutoStartDisable(){
+        return SystemProperties.getBoolean("persist.sys.tabletmaster.autostart.disable",false);
+    }
+}

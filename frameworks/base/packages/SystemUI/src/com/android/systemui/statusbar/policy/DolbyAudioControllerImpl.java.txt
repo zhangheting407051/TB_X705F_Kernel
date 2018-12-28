@@ -1,0 +1,186 @@
+/*
+ * This program is protected under international and U.S. copyright laws as
+ * an unpublished work. These changes are confidential and proprietary to the
+ * copyright owners. Reproduction or disclosure, in whole or in part, or the
+ * production of derivative works therefrom without the express permission of
+ * the copyright owners is prohibited.
+ *
+ *                Copyright (C) 2017-2018 by Dolby Laboratories,
+ *                            All rights reserved.
+ */
+
+package com.android.systemui.statusbar.policy;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.util.Log;
+import com.android.systemui.R;
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+
+import com.android.systemui.statusbar.policy.DolbyAudioController.Callback;
+
+import com.dolby.dax.DolbyAudioEffect;
+import com.dolby.dax.DsCommon;
+
+public class DolbyAudioControllerImpl implements DolbyAudioController {
+
+    private Context mContext;
+    private DolbyAudioEffect mDolbyAudio = null;
+    static private int mPriority = -1;
+    private final ArrayList<Callback> mCallbacks = new ArrayList<Callback>();
+
+    private BroadcastReceiver intentReceiver_ = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals(DsCommon.DOLBY_UPDATE_EVENT)) {
+                String event = intent.getStringExtra(DsCommon.EVENTNAME);
+                switch (event) {
+                    case DsCommon.DOLBY_UPDATE_EVENT_PROFILE:
+                    case DsCommon.DOLBY_UPDATE_EVENT_DS_STATE:
+                        for (Callback cb : mCallbacks) {
+                           cb.updateDolbyTileUI();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            } else if (action.equals(DsCommon.DOLBY_AUDIO_SERVER_RESTARTED)) {
+                if (mDolbyAudio != null){
+                    mDolbyAudio.release();
+                    mDolbyAudio = new DolbyAudioEffect(mPriority, 0);
+                    Log.d("DolbyAudioControllerImpl", "Dax effect re-created successfully");
+                }
+            }
+        }
+    };
+
+    public void swapDolbyState() {
+        if (null != mDolbyAudio) {
+            try {
+                boolean newState = !(mDolbyAudio.getDsOn());
+                if (!mDolbyAudio.hasControl()) {
+                    mDolbyAudio.release();
+                    mPriority = 0;
+                    mDolbyAudio = new DolbyAudioEffect(mPriority, 0);
+                }
+                mDolbyAudio.setDsOn(newState);
+                for (Callback cb : mCallbacks) {
+                    cb.updateDolbyTileUI();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public int getDolbyState() {
+        int state = 2; //DS_STATE_DISABLED;
+        if (null != mDolbyAudio) {
+            try {
+                state = mDolbyAudio.getDsOn() ? 1 : 0;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return state;
+    }
+
+    public void setDolbyProfile(int profile) {
+        if (null != mDolbyAudio) {
+            try {
+                String version = mDolbyAudio.getDsVersion().substring(0,3);
+                if (!mDolbyAudio.hasControl()) {
+                    mDolbyAudio.release();
+                    mPriority = 0;
+                    mDolbyAudio = new DolbyAudioEffect(mPriority, 0);
+                }
+                if (version.equals("DS1")) {
+                    mDolbyAudio.setProfile(profile + 1);
+                } else {
+                    mDolbyAudio.setProfile(profile);
+                }
+                for (Callback cb : mCallbacks) {
+                    cb.updateDolbyTileUI();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return;
+    }
+
+    public int getDolbyProfile(){
+        int profile = -1;
+        if (null != mDolbyAudio) {
+            try {
+                String version = mDolbyAudio.getDsVersion().substring(0,3);
+                if (version.equals("DS1")) {
+                    profile = mDolbyAudio.getProfile() - 1;
+                } else {
+                    profile = mDolbyAudio.getProfile();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return profile;
+    }
+
+    public String getDolbyVersion() {
+        String version = "DAX3";
+        if (null != mDolbyAudio) {
+            try {
+                version = mDolbyAudio.getDsVersion();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return version;
+    }
+
+    public DolbyAudioControllerImpl(Context context) {
+        mContext = context;
+        mDolbyAudio = new DolbyAudioEffect(mPriority, 0);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(DsCommon.DOLBY_UPDATE_EVENT);
+        filter.addAction(DsCommon.DOLBY_AUDIO_SERVER_RESTARTED);
+        mContext.registerReceiver(intentReceiver_, filter);
+    }
+
+    public void addCallback(Callback callback) {
+        if (callback == null || mCallbacks.contains(callback)) return;
+        if (mDolbyAudio == null) {
+            mDolbyAudio = new DolbyAudioEffect(mPriority, 0);
+            if (!mDolbyAudio.hasControl()) {
+                Log.w("DolbyAudioControllerImpl", "Dolby audio effect is out of control");
+            }
+        }
+        mCallbacks.add(callback);
+    }
+
+    public void removeCallback(Callback callback) {
+        if (mDolbyAudio != null && mPriority == 0) {
+            mDolbyAudio.release();
+            mDolbyAudio = null;
+        }
+        if (callback == null) return;
+        mCallbacks.remove(callback);
+    }
+
+    public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("DolbyAudioController state:");
+
+        pw.print("  Dax state="); pw.println(getDolbyState());
+        pw.print("  Dax profile="); pw.println(getDolbyProfile());
+        pw.print("  Dax version="); pw.println(getDolbyVersion());
+    }
+}

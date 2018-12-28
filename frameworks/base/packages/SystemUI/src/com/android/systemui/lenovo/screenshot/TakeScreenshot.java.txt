@@ -1,0 +1,129 @@
+package com.android.systemui.lenovo.screenshot;
+
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
+import android.os.UserHandle;
+import android.util.Log;
+import com.android.systemui.Prefs;
+
+public class TakeScreenshot {
+
+    private final static String TAG = "TakeScreenshot";
+    private static TakeScreenshot sInstance = null;
+    private Context mContext;
+    private Handler mHandler;
+
+    private TakeScreenshot(Context context) {
+        this.mContext = context;
+        mHandler = new Handler();
+    }
+
+    public synchronized static TakeScreenshot getTakeScreenshot(Context context) {
+        if (sInstance == null) {
+            sInstance = new TakeScreenshot(context);
+        }
+        return sInstance;
+    }
+
+    public void takeScreenshot(boolean isScroll) {
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                doTakeScreenshot(isScroll);
+            }
+        }, 450);
+    }
+
+    private void doTakeScreenshot(boolean isScroll) {
+        synchronized (mScreenshotLock) {
+            if (mScreenshotConnection != null) {
+                Log.e(TAG, "Service Connection is not null, unable to take screenshot!!!");
+                return;
+            }
+            final boolean showNotify
+                    = Prefs.getInt(mContext, "no_notification_when_screenshot_success" , 0) == 0 ;
+            Intent intent = new Intent();
+            intent.setClass(mContext, LenovoTakeScreenshotService.class);
+            intent.putExtra("SHOW_NOTIFY" , showNotify);
+            intent.putExtra("isScroll", isScroll);
+            ServiceConnection conn = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    synchronized (mScreenshotLock) {
+                        if (mScreenshotConnection != this) {
+                            return;
+                        }
+
+                        Messenger messenger = new Messenger(service);
+                        Message msg = Message.obtain(null, 1);
+                        final ServiceConnection myConn = this;
+                        Handler h = new Handler(mHandler.getLooper()) {
+                            @Override
+                            public void handleMessage(Message msg) {
+                                synchronized (mScreenshotLock) {
+                                    if (mScreenshotConnection != null && mScreenshotConnection.equals(myConn)) {
+                                        Log.d(TAG, "SwitchScreenShot, unbindService by message");
+                                        mContext.unbindService(mScreenshotConnection);
+                                        mScreenshotConnection = null;
+                                        mHandler.removeCallbacks(mScreenshotTimeout);
+                                    }
+                                }
+                            }
+                        };
+                        msg.replyTo = new Messenger(h);
+                        msg.arg1 = msg.arg2 = 0;
+                        try {
+                            messenger.send(msg);
+                        } catch (RemoteException e) {
+                        }
+                    }
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    if (mScreenshotConnection != null) {
+                        Log.w(TAG, "onServiceDisconnected, try to unbind previous service ");
+                        try{
+                            mContext.unbindService(mScreenshotConnection);
+                            mScreenshotConnection = null;
+                            mHandler.removeCallbacks(mScreenshotTimeout);
+                        } catch(Exception e){
+                            Log.e(TAG, "Unbind failed!!!\n" + Log.getStackTraceString(e));
+                        }
+                    }
+                }
+            };
+            boolean isBindSucceed;
+            isBindSucceed = mContext.bindServiceAsUser(intent, conn, Context.BIND_AUTO_CREATE,UserHandle.CURRENT);
+
+            Log.d(TAG, "Switch screen shot bind: "+isBindSucceed);
+            if (isBindSucceed) {
+                Log.d(TAG, " SwitchScreenShot, bindService");
+                mScreenshotConnection = conn;
+                mHandler.postDelayed(mScreenshotTimeout, 5000);
+            }
+        }
+    }
+
+    private final Object mScreenshotLock = new Object();
+    private ServiceConnection mScreenshotConnection = null;
+    private final Runnable mScreenshotTimeout = new Runnable() {
+        @Override
+        public void run() {
+            synchronized (mScreenshotLock) {
+                if (mScreenshotConnection != null) {
+                    Log.d(TAG, "SwitchScreenShot, unbindService");
+                    mContext.unbindService(mScreenshotConnection);
+                    mScreenshotConnection = null;
+                }
+            }
+        }
+    };
+}

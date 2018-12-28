@@ -1,0 +1,505 @@
+package com.wind.cta;
+
+import android.content.Context;
+import android.os.Build;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.os.ServiceManager;
+import android.os.SystemProperties;
+import android.util.Log;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
+
+import com.wind.cta.IWindCtaService;
+
+import com.android.internal.R;
+//import android.R;
+import java.util.HashMap;
+
+/**
+ * {@hide}
+ */
+public class CtaPermissionChecker {
+    public static final String TAG = "CtaPermissionChecker";
+    public static IWindCtaService sService = null;
+    private static final String PROP_CTA_ENABLE = "persist.sys.cta.security";
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_PHONE_CALL = 0;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_SEND_MMS = 1;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_SEND_SMS = 2;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_READ_CONTACTS = 3;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_READ_CALL_LOG = 4;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_READ_MMS = 5;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_READ_SMS = 6;
+
+    /**
+     * {@hide}
+     */
+    @Deprecated
+    public static final int CTA_READ_MMS_SMS = CTA_READ_MMS;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_MOBILE_NETWORK = 8;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_WLAN = 9;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_LOCATION = 10;
+
+    /**
+     * {@hide}
+     */
+    @Deprecated
+    public static final int CTA_CALL_RECORDER = 11;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_SOUND_RECORDER = 12;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_CAMERA = 13;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_BLUETOOTH = 14;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_COST = 15;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_USE_NETWORK = 16;
+
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_WRITE_CONTACTS = 17;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_WRITE_CALL_LOG = 18;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_WRITE_MMS = 19;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_WRITE_SMS = 20;
+
+    /**
+     * {@hide}
+     */
+    @Deprecated
+    public static final int CTA_WRITE_MMS_SMS = CTA_WRITE_MMS;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_NFC = 21;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_PHOTOGRAPH = 22;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_PICTURE_RECORDING = 23;
+
+	//liaoxiaomin@wind-mobi.com add begin 20180502
+    /**
+     * {@hide}
+     */
+    public static final int CTA_READ_STORAGE = 24;
+
+    /**
+     * {@hide}
+     */
+    public static final int CTA_WIRTE_STORAGE = 25;
+	//liaoxiaomin@wind-mobi.com add end 20180502
+
+    private Context mContext;
+    private int mWindowType = -1;
+	public static boolean isMMS = false;
+    /**
+     * since Android M, some permission was defined as runtime permission,
+     * this map is desined for mapping android runtime permissions to CTA actions
+     */
+    private static final HashMap<String, Integer[]> MAP_ANDROID_RUNTIME_PERMISSION_TO_CTA_ACTIONS
+        = new HashMap<String, Integer[]>() {
+        {
+            put( "android.permission.CALL_PHONE",               new Integer[] {CTA_PHONE_CALL} );
+            put( "android.permission.READ_CALL_LOG",            new Integer[] {CTA_READ_CALL_LOG} );
+            put( "android.permission.WRITE_CALL_LOG",           new Integer[] {CTA_WRITE_CALL_LOG} );
+
+            put( "android.permission.SEND_SMS",                 new Integer[] {//CTA_SEND_MMS,
+                                                                                CTA_SEND_SMS,
+                                                                               // CTA_WRITE_MMS,
+                                                                                CTA_WRITE_SMS} );
+            put( "android.permission.READ_SMS",                 new Integer[] {//CTA_READ_MMS,
+                                                                                CTA_READ_SMS} );
+
+            put( "android.permission.READ_CONTACTS",            new Integer[] {CTA_READ_CONTACTS} );
+            put( "android.permission.WRITE_CONTACTS",           new Integer[] {CTA_WRITE_CONTACTS} );
+
+            put( "android.permission.CAMERA",                   new Integer[] {CTA_CAMERA,
+                                                                                CTA_PHOTOGRAPH,
+                                                                                CTA_PICTURE_RECORDING} );
+
+            put( "android.permission.RECORD_AUDIO",             new Integer[] {/*CTA_CALL_RECORDER,*/
+                                                                                CTA_SOUND_RECORDER} );
+
+            put( "android.permission.ACCESS_FINE_LOCATION",     new Integer[] {CTA_LOCATION} );
+            put( "android.permission.ACCESS_COARSE_LOCATION",   new Integer[] {CTA_LOCATION} );
+        }
+    };
+
+    /**
+     * this map is desined for mapping android normal permissions to CTA actions
+     */
+    private static final HashMap<String, Integer[]> MAP_ANDROID_NORMAL_PERMISSION_TO_CTA_ACTIONS
+        = new HashMap<String, Integer[]>() {
+        {
+            put( "android.permission.MODIFY_PHONE_STATE",       new Integer[] {CTA_MOBILE_NETWORK} );
+            put( "android.permission.CHANGE_WIFI_STATE",        new Integer[] {CTA_WLAN} );
+            put( "android.permission.BLUETOOTH_ADMIN",          new Integer[] {CTA_BLUETOOTH} );
+            put( "android.permission.NFC",                      new Integer[] {CTA_NFC} );
+			//liaoxiaomin@wind-mobi.com add begin 20180502
+			put( "android.permission.READ_EXTERNAL_STORAGE",                      new Integer[] {CTA_READ_STORAGE} );
+			put( "android.permission.WIRTE_EXTERNAL_STORAGE",                      new Integer[] {CTA_WIRTE_STORAGE} );
+			//liaoxiaomin@wind-mobi.com add end 20180502
+        }
+    };
+
+    /**
+     * since Android M, some permission was defined as runtime permission,
+     * this map is desined for mapping CTA actions to android runtime permissions
+     */
+    private static final SparseArray<String[]> MAP_CTA_ACTION_TO_ANDROID_RUNTIME_PERMISSIONS
+        = new SparseArray<String[]>() {
+        {
+            put( CTA_PHONE_CALL,        new String[] {"android.permission.CALL_PHONE"} );
+            put( CTA_READ_CALL_LOG,     new String[] {"android.permission.READ_CALL_LOG"} );
+            put( CTA_WRITE_CALL_LOG,    new String[] {"android.permission.WRITE_CALL_LOG"} );
+			if(isMMS){
+					put( CTA_SEND_MMS,          new String[] {"android.permission.SEND_SMS"} );
+					put( CTA_READ_MMS,          new String[] {"android.permission.READ_SMS"} );
+					put( CTA_WRITE_MMS,         new String[] {"android.permission.SEND_SMS"} );
+			}
+            put( CTA_SEND_MMS,          new String[] {"android.permission.SEND_SMS"} );
+            put( CTA_SEND_SMS,          new String[] {"android.permission.SEND_SMS"} );
+            put( CTA_READ_MMS,          new String[] {"android.permission.READ_SMS"} );
+            put( CTA_WRITE_MMS,         new String[] {"android.permission.SEND_SMS"} );
+            put( CTA_READ_SMS,          new String[] {"android.permission.READ_SMS"} );
+            put( CTA_WRITE_SMS,         new String[] {"android.permission.SEND_SMS"} );
+
+            put( CTA_READ_CONTACTS,     new String[] {"android.permission.READ_CONTACTS"} );
+            put( CTA_WRITE_CONTACTS,    new String[] {"android.permission.WRITE_CONTACTS"} );
+
+            //   CTA_CALL_RECORDER, "android.permission.RECORD_AUDIO" not used;
+            put( CTA_SOUND_RECORDER,    new String[] {"android.permission.RECORD_AUDIO"} );
+
+            put( CTA_CAMERA,            new String[] {"android.permission.CAMERA"} );
+            put( CTA_PHOTOGRAPH,        new String[] {"android.permission.CAMERA"} );
+            put( CTA_PICTURE_RECORDING, new String[] {"android.permission.CAMERA"} );
+
+            put( CTA_LOCATION,          new String[] {"android.permission.ACCESS_FINE_LOCATION",
+                                                        "android.permission.ACCESS_COARSE_LOCATION"} );
+        };
+    };
+
+    /**
+     * this map is desined for mapping CTA actions to android normal permissions
+     */
+    private static final SparseArray<String[]> MAP_CTA_ACTION_TO_ANDROID_NORMAL_PERMISSIONS
+        = new SparseArray<String[]>() {
+        {
+            put (CTA_MOBILE_NETWORK,    new String[] {"android.permission.MODIFY_PHONE_STATE"} );
+            put (CTA_WLAN,              new String[] {"android.permission.CHANGE_WIFI_STATE"} );
+            put (CTA_BLUETOOTH,         new String[] {"android.permission.BLUETOOTH_ADMIN"} );
+            put (CTA_NFC,               new String[] {"android.permission.NFC"} );
+			//liaoxiaomin@wind-mobi.com add begin 20180502
+            put (CTA_READ_STORAGE,      new String[] {"android.permission.READ_EXTERNAL_STORAGE"} );
+            put (CTA_WIRTE_STORAGE,     new String[] {"android.permission.WIRTE_EXTERNAL_STORAGE"} );
+			//liaoxiaomin@wind-mobi.com add end 20180502			
+
+        }
+    };
+
+    /**
+     * map ctaActionToAndroidRuntimePermissions
+     * @param action CTA ation
+     * @return string array of android permissions
+     *
+     * {@hide}
+     */
+    public static String[] ctaActionToAndroidRuntimePermissions(int action) {
+
+        return MAP_CTA_ACTION_TO_ANDROID_RUNTIME_PERMISSIONS.get(action, new String[0]);
+    }
+
+    /**
+     * map ctaActionToAndroidPermissions
+     * @param action CTA ation
+     * @return string array of android permissions
+     *
+     * {@hide}
+     */
+    public static String[] ctaActionToAndroidPermissions(int action) {
+
+        String permissions[] = null;
+
+        permissions = MAP_CTA_ACTION_TO_ANDROID_RUNTIME_PERMISSIONS.get(action);
+        if (permissions == null) {
+            permissions = MAP_CTA_ACTION_TO_ANDROID_NORMAL_PERMISSIONS.get(action, new String[0]);
+        }
+
+        return permissions;
+    }
+
+    /**
+     * map adroidRuntimePermissionToCtaActions
+     * @param permission android permissions
+     * @return Integer array of CTA actions
+     *
+     * {@hide}
+     */
+    public static Integer[] androidRuntimePermissionToCtaActions(String permission) {
+
+        Integer actions[] = new Integer[0];
+
+        if (MAP_ANDROID_RUNTIME_PERMISSION_TO_CTA_ACTIONS.containsKey(permission)) {
+            actions = MAP_ANDROID_RUNTIME_PERMISSION_TO_CTA_ACTIONS.get(permission);
+        }
+
+        return actions;
+    }
+
+    /**
+     * map adroidPermissionToCtaActions
+     * @param permission android permissions
+     * @return Integer array of CTA actions
+     *
+     * {@hide}
+     */
+    public static Integer[] androidPermissionToCtaActions(String permission) {
+
+        Integer actions[] = new Integer[0];
+
+        if (MAP_ANDROID_RUNTIME_PERMISSION_TO_CTA_ACTIONS.containsKey(permission)) {
+            actions = MAP_ANDROID_RUNTIME_PERMISSION_TO_CTA_ACTIONS.get(permission);
+        } else if (MAP_ANDROID_NORMAL_PERMISSION_TO_CTA_ACTIONS.containsKey(permission)) {
+            actions = MAP_ANDROID_NORMAL_PERMISSION_TO_CTA_ACTIONS.get(permission);
+        }
+
+        return actions;
+    }
+
+    /**
+     * checker wether the gived permission could map to CTA action
+     * @param permission android permissions
+     * @return true or false
+     *
+     * {@hide}
+     */
+    public static boolean isUsefullPermission(String permission) {
+
+        return (MAP_ANDROID_RUNTIME_PERMISSION_TO_CTA_ACTIONS.containsKey(permission) ||
+                    MAP_ANDROID_NORMAL_PERMISSION_TO_CTA_ACTIONS.containsKey(permission));
+    }
+    /**
+     * create instance of CtaChecker
+     *
+     * @param context caller's context
+     * @return none
+     * {@hide}
+     */
+    public CtaPermissionChecker(Context context) {
+        mContext = context;
+    }
+
+    /**
+     * {@hide}
+     */
+    @Deprecated
+    public void setCheckWindowType(int windowType) {
+        mWindowType = windowType;
+    }
+
+    /**
+     * for all function code  to checke whether current cta operation
+     * was granted by user
+     *
+     * @param action CTA action to be checked
+     * @param caller the caller's package name
+     * @return true/false (grant/deny)
+     * {@hide}
+     */
+    public static boolean checkPermission(int action, String caller) {
+        boolean accept = true;
+		Log.i("liaoxiaomin/cta","CtaPermissionChecker.java : getCtaService()="+getCtaService() );
+        if (getCtaService() != null) {
+            try {
+                accept = getCtaService().checkPermission(action, caller);
+            } catch (RemoteException e) {
+                Log.d(TAG, "CTA check failed !!!");
+            }
+        }
+        return accept;
+    }
+
+    private static final SparseIntArray MAP_CTA_ACTION_TO_ACT_STRING_ID = new SparseIntArray() {
+        {
+            put (CTA_PHONE_CALL,        R.string.cta_act_phone_call);
+            put (CTA_SEND_MMS,          R.string.cta_act_send_mms);
+            put (CTA_SEND_SMS,          R.string.cta_act_send_sms);
+            put (CTA_READ_CONTACTS,     R.string.cta_act_read_contacts);
+            put (CTA_READ_CALL_LOG,     R.string.cta_act_read_call_log);
+            put (CTA_READ_MMS,          R.string.cta_act_read_mms);
+            put (CTA_READ_SMS,          R.string.cta_act_read_sms);
+            put (CTA_MOBILE_NETWORK,    R.string.cta_act_mobile_network);
+            put (CTA_WLAN,              R.string.cta_act_wlan);
+            put (CTA_LOCATION,          R.string.cta_act_location);
+            put (CTA_CALL_RECORDER,     R.string.cta_act_call_recorder);
+            put (CTA_SOUND_RECORDER,    R.string.cta_act_sound_recorder);
+            put (CTA_CAMERA,            R.string.cta_act_camera);
+            put (CTA_BLUETOOTH,         R.string.cta_act_bluetooth);
+            put (CTA_USE_NETWORK,       R.string.cta_act_use_network);
+            put (CTA_WRITE_CONTACTS,    R.string.cta_act_write_contacts);
+            put (CTA_WRITE_CALL_LOG,    R.string.cta_act_write_call_log);
+            put (CTA_WRITE_MMS,         R.string.cta_act_write_mms);
+            put (CTA_WRITE_SMS,         R.string.cta_act_write_sms);
+            put (CTA_NFC,               R.string.cta_act_nfc);
+            put (CTA_PHOTOGRAPH,        R.string.cta_act_photograph);
+            put (CTA_PICTURE_RECORDING, R.string.cta_act_picture_recording);
+			//liaoxiaomin@wind-mobi.com add begin 20180502
+		    put(CTA_READ_STORAGE, R.string.cta_read_external_storage);
+			put(CTA_WIRTE_STORAGE, R.string.cta_write_external_storage);	
+			//liaoxiaomin@wind-mobi.com add end 20180502
+        }
+    };
+
+    /**
+     * get the action descriptor title of given CTA action
+     *
+     * @param action CTA action
+     * @return the action descriptor title
+     * {@hide}
+     */
+    public String getAction(int action) {
+
+        String message = "";
+
+        if (mContext != null && MAP_CTA_ACTION_TO_ACT_STRING_ID.get(action, -1) != -1) {
+            message = mContext.getResources().getString(MAP_CTA_ACTION_TO_ACT_STRING_ID.get(action));
+        }
+
+        return message;
+    }
+
+    private static final SparseIntArray MAP_CTA_ACTION_TO_MESSAGE_STRING_ID = new SparseIntArray() {
+        {
+            put (CTA_PHONE_CALL,        R.string.cta_msg_phone_call);
+            put (CTA_SEND_MMS,          R.string.cta_msg_send_mms);
+            put (CTA_SEND_SMS,          R.string.cta_msg_send_sms);
+            put (CTA_READ_CONTACTS,     R.string.cta_msg_read_contacts);
+            put (CTA_READ_CALL_LOG,     R.string.cta_msg_read_call_log);
+            put (CTA_READ_MMS,          R.string.cta_msg_read_mms);
+            put (CTA_READ_SMS,          R.string.cta_msg_read_sms);
+            put (CTA_MOBILE_NETWORK,    R.string.cta_msg_mobile_network);
+            put (CTA_WLAN,              R.string.cta_msg_wlan);
+            put (CTA_LOCATION,          R.string.cta_msg_location);
+            put (CTA_CALL_RECORDER,     R.string.cta_msg_call_recorder);
+            put (CTA_SOUND_RECORDER,    R.string.cta_msg_sound_recorder);
+            put (CTA_CAMERA,            R.string.cta_msg_camera);
+            put (CTA_BLUETOOTH,         R.string.cta_msg_bluetooth);
+            put (CTA_USE_NETWORK,       R.string.cta_msg_use_network);
+            put (CTA_WRITE_CONTACTS,    R.string.cta_msg_write_contacts);
+            put (CTA_WRITE_CALL_LOG,    R.string.cta_msg_write_call_log);
+            put (CTA_WRITE_MMS,         R.string.cta_msg_write_mms);
+            put (CTA_WRITE_SMS,         R.string.cta_msg_write_sms);
+            put (CTA_NFC,               R.string.cta_msg_nfc);
+            put (CTA_PHOTOGRAPH,        R.string.cta_msg_photograph);
+            put (CTA_PICTURE_RECORDING, R.string.cta_msg_picture_recording);
+			//liaoxiaomin@wind-mobi.com add begin 20180502
+		    put (CTA_READ_STORAGE,     R.string.cta_read_external_storage);
+            put (CTA_WIRTE_STORAGE, 	R.string.cta_write_external_storage);	
+			//liaoxiaomin@wind-mobi.com add end 20180502		
+        }
+    };
+
+    /**
+     * get the action descriptor of given CTA action
+     *
+     * @param action CTA action
+     * @return the action descriptor
+     * {@hide}
+     */
+    public String getMessage(int action, String caller) {
+
+        String message = "";
+
+        if (mContext != null && MAP_CTA_ACTION_TO_MESSAGE_STRING_ID.get(action, -1) != -1) {
+            message = mContext.getResources().getString(MAP_CTA_ACTION_TO_MESSAGE_STRING_ID.get(action));
+        }
+
+        return (caller + " " + message);
+    }
+
+    /**
+     * @hide
+     */
+    public static IWindCtaService getCtaService() {
+        if (sService == null) {
+            sService = IWindCtaService.Stub.asInterface(ServiceManager.getService("wind_cta"));
+        }
+        return sService;
+    }
+}

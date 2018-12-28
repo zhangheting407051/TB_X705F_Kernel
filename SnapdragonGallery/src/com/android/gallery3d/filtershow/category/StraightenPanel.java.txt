@@ -1,0 +1,292 @@
+/*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ *       copyright notice, this list of conditions and the following
+ *       disclaimer in the documentation and/or other materials provided
+ *       with the distribution.
+ *     * Neither the name of The Linux Foundation nor the names of its
+ *       contributors may be used to endorse or promote products derived
+ *       from this software without specific prior written permission.
+
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package com.android.gallery3d.filtershow.category;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.View;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.ImageView;
+import android.widget.Button;
+import android.widget.RelativeLayout;
+import android.view.MotionEvent;
+import android.view.View.OnTouchListener;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
+import android.content.res.Configuration;
+import android.util.Log;
+import com.android.gallery3d.filtershow.editors.EditorStraighten;
+import com.android.gallery3d.filtershow.ui.FilterShowWheelView;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+import com.android.gallery3d.filtershow.FilterShowActivity;
+import com.android.gallery3d.filtershow.editors.Editor;
+
+import org.codeaurora.gallery.R;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+public class StraightenPanel extends GeometryPanel implements FilterShowWheelView.UpdateStarightenListener,FilterShowActivity.HandleOperateListener{
+    public static final String EDITOR_ID = "editor_id";
+    public static final String EDITOR_NAME = "editor_name";
+    private static final int NINETY_ANGLE = 90;
+    private static final int THREE_SIXTY_ANGLE = 360;
+
+    private static final int STRAIGHTEN_RESET = 0;
+    private static final int STRAIGHTEN_WHEEL = 1;
+    private static final int STRAIGHTEN_ROTATE = 2;
+
+    public static final int NO_EDITOR = -1;
+    private EditorStraighten mEditor;
+    private int mEditorID = 0;
+    private String mName;
+
+    private RelativeLayout mStraightenLayout;
+    private TextView mStraightenReset;
+    private TextView mStraightenAngle;
+    private ImageView mStraightenCCW;
+
+    private Button mCropButton;
+    private Button mStraightenButton;
+    private Button mMirrorButton;
+    private View mStraightenView;
+    private FilterShowWheelView mWheelView;
+
+    private int mPosX = 0;
+    private int mDeltaX = 0;
+    private int currentIndex = 1;
+    private int currentAngle = 0;
+    private int mCurrentStrightenSelect = 0;
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
+
+    private void initArguments(Bundle arguments) {
+        if (arguments != null) {
+            mEditorID = arguments.getInt(EDITOR_ID);
+            mName = arguments.getString(EDITOR_NAME);
+        }
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+    public void setEditor(int editor) {
+        mEditorID = editor;
+    }
+    //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        //initArguments(getArguments());
+        if (mEditorID != NO_EDITOR) {
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180329 begin
+            filterShowActivity = (FilterShowActivity) activity;
+            //fix feature#10896 xiangkezhu@wind-mobi.com 20180329 end
+            mCurrentStrightenSelect = filterShowActivity.getEditorStrightenSelect();
+            mEditor = (EditorStraighten)filterShowActivity.getEditor(mEditorID);
+         //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+            if (mEditor != null) {
+                mEditor.attach();
+            }
+        }
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        //fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin
+        filterShowActivity.setHandlerOperateListener(this);
+        initViews();
+        reflectViewsAction();
+    }
+
+    private void reflectViewsAction() {
+        if (mEditor == null) return;
+        switch (mCurrentStrightenSelect) {
+        case STRAIGHTEN_RESET:
+            resetStraightenAngle();
+            break;
+        case STRAIGHTEN_WHEEL:
+            mWheelView.setCurrentView(true);
+            break;
+        case STRAIGHTEN_ROTATE:
+            currentAngle = 90;
+            rotateCCW(currentAngle);
+            break;
+        default:
+            break;
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        if (isLandscape()) {
+            mMainView = inflater.inflate(R.layout.filtershow_category_geometry_panel,
+                    container, false);
+            return mMainView;
+        } else {
+            mStraightenView = inflater.inflate(R.layout.filtershow_straighten_layout, container, false);
+            mStraightenView.setVisibility(View.VISIBLE);
+            return mStraightenView;
+        }
+    }
+
+    private void initViews(){
+        if (isLandscape()) {
+            mWheelView = (FilterShowWheelView) mMainView.findViewById(R.id.wheel_view);
+            mWheelView.setUpdateStarightenListener(this);
+            mStraightenReset = (TextView) mMainView.findViewById(R.id.straighten_reset);
+            mStraightenCCW = (ImageView) mMainView.findViewById(R.id.straighten_ccw);
+        } else {
+            mWheelView = (FilterShowWheelView) mStraightenView.findViewById(R.id.wheel_view);
+            mWheelView.setUpdateStarightenListener(this);
+            mStraightenReset = (TextView) mStraightenView.findViewById(R.id.straighten_reset);
+            mStraightenCCW = (ImageView) mStraightenView.findViewById(R.id.straighten_ccw);
+        }
+
+        mWheelView.setCurrentView(true);
+
+        mStraightenReset.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+                resetStraightenAngle();
+            }
+        });
+
+        mStraightenCCW.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+                int angle= 0;
+                //bug:A6000-5153-huangjian-001 20170322 modify begin
+                if (currentAngle == THREE_SIXTY_ANGLE)
+                    currentAngle = 0;
+                if (currentAngle < 0 ) {
+                    angle = currentAngle - NINETY_ANGLE;
+                    if (angle < -THREE_SIXTY_ANGLE) {
+                        angle = - (angle + THREE_SIXTY_ANGLE);
+                    }
+                } else {
+                    angle = currentAngle + NINETY_ANGLE;
+                    if (angle > THREE_SIXTY_ANGLE) {
+                        angle = -(angle - THREE_SIXTY_ANGLE);
+                    }
+                }
+                currentAngle = angle;
+                rotateCCW(angle);
+            }
+        });
+    }
+
+    private void resetStraightenAngle(){
+        mWheelView.resetStraightenText();
+        mEditor.resetStraightenAngle();
+    }
+
+    private void rotateCCW(int angle){
+        mEditor.rotateCCW(angle);
+        filterShowActivity.showSaveButtonIfNeed();
+    }
+
+    @Override
+    protected void initPanels() {
+       /* super.initPanels();
+        for (View view : mPanels) {
+            view.setVisibility(View.GONE);
+        }*/
+    }
+
+    @Override
+    public void onDetach() {
+        if (mEditor != null) {
+            mEditor.detach();
+        }
+        super.onDetach();
+    }
+
+    @Override
+    protected void initCropButton(){
+        if(!isLandscape()){
+            mCropButton = (Button)mStraightenView.findViewById(R.id.por_basic_crop);
+            mStraightenButton = (Button)mStraightenView.findViewById(R.id.por_basic_rotate);
+            mMirrorButton = (Button)mStraightenView.findViewById(R.id.por_basic_mirror);
+
+            mCropButton.setOnClickListener(mButtonOnClickListener);
+            mStraightenButton.setOnClickListener(mButtonOnClickListener);
+            mMirrorButton.setOnClickListener(mButtonOnClickListener);
+        }
+    }
+
+    private View.OnClickListener mButtonOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            int index = 0;
+            int viewId = view.getId();
+            switch (viewId){
+                case R.id.por_basic_crop: {
+                    index = 0;
+                    break;
+                }
+                case R.id.por_basic_rotate: {
+                    index = 1;
+                    break;
+                }
+                case R.id.por_basic_mirror: {
+                    index = 2;
+                    break;
+                }
+            }
+            if (currentIndex == index) return;
+            currentIndex = index;
+            switchFragement(index);
+        }
+    };
+
+    public void updateStrarghtenByAngle(int angle){
+        currentAngle = angle;
+        mEditor.straightenByAngle(currentAngle);
+        filterShowActivity.showSaveButtonIfNeed();
+    }
+
+    @Override
+    public void handleRedoOperateAction() {
+    }
+
+    @Override
+    public void handleUndoOperateAction() {
+    }
+//fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end
+}

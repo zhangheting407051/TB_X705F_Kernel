@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/crop_5to7_unselect" android:state_selected="false"></item>
+    <item android:drawable="@drawable/crop_5to7_select" android:state_selected="true"></item>
+</selector>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

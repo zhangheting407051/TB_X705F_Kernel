@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/filtershow_curves_controls"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1B1B1B">
+
+    <TextView
+        android:layout_width="@dimen/land_category_width"
+        android:layout_height="@dimen/land_category_text_height"
+        android:text="@string/curvesRGB"
+        android:textColor="#ffffff"
+        android:textSize="24sp"
+        android:background="#202020"
+        android:gravity="center_vertical|center_horizontal"/>
+
+
+    <LinearLayout
+        android:layout_width="@dimen/land_category_width"
+        android:layout_height="380dp"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/curves_channel_rgb"
+            android:layout_width="98dp"
+            android:layout_height="38dp"
+            android:text="@string/curves_channel_rgb"
+            android:textSize="18sp"
+            android:textColor="#ffffff"
+            android:layout_marginTop="30dp"
+            android:layout_marginBottom="30dp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:focusable="true"
+            android:background="@drawable/button_selected"
+        />
+
+        <Button
+            android:id="@+id/curves_channel_red"
+            android:layout_width="98dp"
+            android:layout_height="38dp"
+            android:text="@string/curves_channel_red"
+            android:textSize="18sp"
+            android:layout_marginTop="30dp"
+            android:layout_marginBottom="30dp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/curves_channel_green"
+            android:layout_width="98dp"
+            android:layout_height="38dp"
+            android:text="@string/curves_channel_green"
+            android:textSize="18sp"
+            android:layout_marginTop="30dp"
+            android:layout_marginBottom="30dp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+        <Button
+            android:id="@+id/curves_channel_blue"
+            android:layout_width="98dp"
+            android:layout_height="38dp"
+            android:text="@string/curves_channel_blue"
+            android:textSize="18sp"
+            android:layout_marginTop="30dp"
+            android:layout_marginBottom="30dp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_original"
+        />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="@dimen/land_category_width"
+        android:layout_height="165dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginLeft="118dp">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <ImageView
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:src="@drawable/edit_btn_output_rest"/>
+                <TextView
+                    android:id="@+id/curves_output"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/output_text"
+                    android:textColor="#ffffff"
+                    android:layout_centerHorizontal="true"
+                    android:layout_centerInParent="true"
+                    android:textSize="16sp"/>
+
+            </RelativeLayout>
+            <TextView
+                android:layout_width="68dp"
+                android:layout_height="wrap_content"
+                android:text="@string/output"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical|center_horizontal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginLeft="82dp">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <ImageView
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:src="@drawable/edit_btn_output_rest"/>
+                <TextView
+                    android:id="@+id/curves_input"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/input_text"
+                    android:textColor="#ffffff"
+                    android:layout_centerHorizontal="true"
+                    android:layout_centerInParent="true"
+                    android:textSize="16sp"/>
+
+            </RelativeLayout>
+            <TextView
+                android:layout_width="69dp"
+                android:layout_height="wrap_content"
+                android:text="@string/input"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical|center_horizontal"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

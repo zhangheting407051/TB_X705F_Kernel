@@ -1,0 +1,82 @@
+package com.android.systemui.lenovo.screenshot;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.util.Log;
+
+public class BitmapCropUtil {
+
+	/**
+	 * crop a bitmap 
+	 * 
+	 * @param bm: the bitmap that need to crop
+	 * @param height: the height that wanted 
+	 * @return cropped bitmap
+	 */
+	public static Bitmap cropBitmap(Bitmap bm, int height) {
+		Rect rect = new Rect(0, 0, bm.getWidth(), height);
+		return cropBitmap(bm, rect);
+	}
+	
+	/**
+	 * Lenovo-sw chentq2 add 2014-04-15 begin, for crop bitmap from Bottom to up
+	 * @param bm
+	 * @param height
+	 * @return
+	 */
+	public static Bitmap cropBitmapBottom(Bitmap bm, int height) {
+		Rect rect = new Rect(0, bm.getHeight() - height, bm.getWidth(), bm.getHeight());
+		
+		return cropBitmap(bm, rect);
+	}
+	
+	/**
+	 * crop a bitmap 
+	 * 
+	 * @param bm:the bitmap that need to crop
+	 * @param cropRect:the section that wanted
+	 * @return
+	 */
+	public static Bitmap cropBitmap(Bitmap bm, Rect cropRect) {
+		if(cropRect == null || bm ==null) {
+			if(cropRect == null) {
+				Log.d("BitmapCropUtil:", "cropRect is null");
+			} else {
+				Log.d("BitmapCropUtil", "bimap is null");
+			}
+			return bm;
+		}
+		int width = cropRect.width();
+		int height = cropRect.height();
+		Bitmap croppedImage = Bitmap.createBitmap(width, height,
+				Bitmap.Config.ARGB_8888);
+		Canvas canvas = new Canvas(croppedImage);
+		Rect dstRect = new Rect(0, 0, width, height);
+		canvas.drawBitmap(bm, cropRect, dstRect, null);
+		return croppedImage;
+	}
+	
+	/**
+	 * Lenovo-sw wangxd9 modify 2014-03-24 begin, for support screenhot part
+	 * @param bm
+	 * @param heightValue
+	 * @return
+	 *//*
+	public static Bitmap cropBitmapEx(Bitmap bm, int heightValue) {
+		Rect cropRect = new Rect(0, bm.getHeight() - heightValue, bm.getWidth(), bm.getHeight());
+		//int screenHeight = bm.getHeight() - heightValue;
+		
+		int width = cropRect.width();
+		int height = cropRect.height();
+		
+		Bitmap croppedImage = Bitmap.createBitmap(width, height,
+				Bitmap.Config.ARGB_8888);
+		Canvas canvas = new Canvas(croppedImage);
+		Rect dstRect = new Rect(0, 0, width, height);
+		canvas.drawBitmap(bm, cropRect, dstRect, null);
+		return croppedImage;
+	}*/
+	
+	private BitmapCropUtil() {}
+}

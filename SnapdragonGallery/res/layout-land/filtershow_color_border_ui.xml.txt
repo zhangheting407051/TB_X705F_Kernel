@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2013 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/top"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/land_main_panel_background"
+    android:orientation="vertical"
+    android:visibility="visible" >
+
+    <TextView
+        android:layout_width="@dimen/land_category_width"
+        android:layout_height="@dimen/land_category_text_height"
+        android:background="@color/bottom_panel_background_color"
+        android:gravity="center_vertical|center_horizontal"
+        android:text="@string/borders"
+        android:textColor="@color/filtershow_text_color"
+        android:textSize="24sp" />
+
+    <FrameLayout
+        android:id="@+id/editorContainer"
+        android:layout_width="match_parent"
+        android:layout_height="560dp"
+        android:layout_gravity="bottom" >
+
+        <LinearLayout
+            android:id="@+id/controls"
+            android:layout_width="match_parent"
+            android:layout_height="560dp"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:visibility="visible" >
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginTop="20dp"
+                android:columnCount="2"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/controlName1"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="8dip"
+                    android:text="@string/color_border_size"
+                    android:textColor="#ffffff" />
+
+                <TextView
+                    android:id="@+id/colorBorderSizeValue"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="8dip"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold" />
+
+                <SeekBar
+                    android:id="@+id/colorBorderSizeSeekBar"
+                    android:indeterminateTint="#4f92e9"
+                    android:progressBackgroundTint="#ffffff"
+                    android:progressTint="#4f92e9"
+                    android:thumbTint="#ffffff"
+                    android:layout_width="match_parent"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_gravity="fill_horizontal"
+                    android:layout_marginTop="20dp" />
+            </GridLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginTop="20dp"
+                android:columnCount="2"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/controlName2"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="8dip"
+                    android:text="@string/color_border_corner_size"
+                    android:textColor="#ffffff" />
+
+                <TextView
+                    android:id="@+id/colorBorderCornerValue"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="8dip"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold" />
+
+                <SeekBar
+                    android:id="@+id/colorBorderCornerSizeSeekBar"
+                    android:indeterminateTint="#4f92e9"
+                    android:progressBackgroundTint="#ffffff"
+                    android:progressTint="#4f92e9"
+                    android:thumbTint="#ffffff"
+                    android:layout_width="match_parent"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_gravity="fill_horizontal"
+                    android:layout_marginTop="20dp" />
+            </GridLayout>
+
+            <LinearLayout
+                android:id="@+id/allColorsChoose"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:layout_marginEnd="1dp"
+                android:layout_marginStart="1dp"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal" >
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="165dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_marginEnd="1dp"
+                    android:layout_marginStart="1dp"
+                    android:layout_marginTop="20dp"
+                    android:orientation="horizontal" >
+
+                    <LinearLayout
+                        android:id="@+id/listColors"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:orientation="horizontal" >
+
+                        <Button
+                            android:id="@+id/draw_color_button01"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:layout_marginEnd="20dp"
+                            android:layout_marginStart="15dp"
+                            android:background="@drawable/filtershow_color_picker_circle" />
+
+                        <Button
+                            android:id="@+id/draw_color_button02"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:layout_marginEnd="20dp"
+                            android:background="@drawable/filtershow_color_picker_circle" />
+
+                        <Button
+                            android:id="@+id/draw_color_button03"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:layout_marginEnd="20dp"
+                            android:background="@drawable/filtershow_color_picker_circle" />
+
+                        <Button
+                            android:id="@+id/draw_color_button04"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:layout_marginEnd="20dp"
+                            android:background="@drawable/filtershow_color_picker_circle" />
+
+                        <Button
+                            android:id="@+id/draw_color_button05"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:layout_marginEnd="20dp"
+                            android:background="@drawable/filtershow_color_picker_circle" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/colorPicker"
+            android:layout_width="375dp"
+            android:layout_height="560dp"
+            android:layout_gravity="bottom"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="35dp"
+            android:background="#ffffff"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dip"
+                android:text="@string/draw_color"
+                android:visibility="gone" />
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorCompareView
+                android:id="@+id/btnSelect"
+                android:layout_width="@dimen/draw_ui_width"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="0dp"
+                android:layout_marginTop="30dp" />
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorSVRectView
+                android:id="@+id/colorRectView"
+                android:layout_width="@dimen/draw_ui_width"
+                android:layout_height="280dp"
+                android:layout_gravity="center"
+                android:layout_marginEnd="0dp"
+                android:layout_marginTop="8dp" />
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorHueView
+                android:id="@+id/ColorHueView"
+                android:layout_width="@dimen/draw_ui_width"
+                android:layout_height="32dp"
+                android:layout_gravity="center"/>
+
+            <com.android.gallery3d.filtershow.colorpicker.ColorOpacityView
+                android:id="@+id/colorOpacityView"
+                android:layout_width="@dimen/draw_ui_width"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <Button
+                    android:id="@+id/cancel_choose_color"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_weight="1"
+                    android:background="#00ffffff"
+                    android:text="@string/cancel"
+                    android:textColor="#9E9E9E"
+                    android:textSize="14sp" >
+                </Button>
+
+                <ImageView
+                    android:layout_width="2dp"
+                    android:layout_height="fill_parent"
+                    android:src="@drawable/filtershow_vertical_bar" />
+
+                <Button
+                    android:id="@+id/verity_choose_color"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_weight="1"
+                    android:background="#00ffffff"
+                    android:text="@string/draw_size_accept"
+                    android:textColor="#478CFE"
+                    android:textSize="14sp" >
+                </Button>
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->
+</LinearLayout>

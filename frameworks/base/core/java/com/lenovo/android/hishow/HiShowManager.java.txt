@@ -1,0 +1,353 @@
+/*
+ * Create by lishunbo@wind-mobi.com 20180912 for baidu-dock feature
+ */
+
+package com.lenovo.android.hishow;
+
+import android.content.Context;
+import android.util.Log;
+
+import android.annotation.SystemService;
+import com.lenovo.android.hishow.IHiShowManager;
+import android.app.StatusBarManager;
+import android.os.SystemProperties;
+import android.provider.Settings;
+import android.os.ServiceManager;
+import android.view.WindowManager;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import java.util.List;
+
+/**
+ * Enqueues chunks of data (from various sources -- application crashes, kernel
+ * log records, etc.).  The queue is size bounded and will drop old data if the
+ * enqueued data exceeds the maximum size.  You can think of this as a
+ * persistent, system-wide, blob-oriented "logcat".
+ *
+ * <p>DropBoxManager entries are not sent anywhere directly, but other system
+ * services and debugging tools may scan and upload entries for processing.
+ */
+@SystemService(Context.HISHOW_SERVICE)
+public class HiShowManager {
+    private static final String TAG = "HiShowManager";
+
+    private static HiShowManager sInstance;
+
+    private final IHiShowManager mService;
+
+    private static final boolean DEBUG_LOG = SystemProperties.getBoolean("persist.debug.baidu_dock", false);
+    private void dLog(String TAG, String s) {if (DEBUG_LOG) Log.d(TAG, s);}
+
+    private HiShowManager() throws ServiceManager.ServiceNotFoundException {
+        mService = IHiShowManager.Stub.asInterface(
+                ServiceManager.getServiceOrThrow(Context.HISHOW_SERVICE));
+    }
+
+    /**
+     * Retrieve the global HiShowManager instance, creating it if it doesn't already exist.
+     * @hide
+     */
+    public static HiShowManager getInstance() {
+        synchronized (HiShowManager.class) {
+            if (sInstance == null) {
+                try {
+                    sInstance = new HiShowManager();
+                } catch (ServiceManager.ServiceNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            return sInstance;
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void lockScreen() {
+        try {
+            dLog(TAG, "baidu-dock-lockScreen");
+            mService.lockScreen();
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-lockScreen error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void controlStatusBar(boolean enable) {
+        try {
+            dLog(TAG, "baidu-dock-controlStatusBar:"+enable);
+            mService.enableStatusBar(enable, StatusBarManager.DISABLE_EXPAND);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-controlStatusBar error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void controlHomeButton(boolean enable) {
+        try {
+            dLog(TAG, "baidu-dock-controlHomeButton:"+enable);
+            mService.enableStatusBar(enable, StatusBarManager.DISABLE_HOME);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-controlHomeButton error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public String getSystemVersion() {
+        return "unknown";
+    }
+
+    /**
+     * @hide
+     */
+    public boolean isHiShowEnable() {
+        return SystemProperties.getBoolean("persist.sys.support_hishow", false);
+    }
+
+    /**
+     * @hide
+     */
+    public void controlRecentButton(boolean enable) {
+        try {
+            dLog(TAG, "baidu-dock-controlRecentButton:"+enable);
+            mService.enableStatusBar(enable, StatusBarManager.DISABLE_RECENT);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-controlRecentButton error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void controlFloatButton(boolean enable) {
+        try {
+            dLog(TAG, "baidu-dock-controlFloatButton:"+enable);
+            mService.controlFloatButton(enable, WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-controlFloatButton error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void switchDisturb(boolean enable) {
+        try {
+            dLog(TAG, "baidu-dock-switchDisturb:"+enable);
+            //mService.switchDisturb(enable);
+            mService.putIntToSystem("DISTURB_SETTINGS_SWITCH", enable ? 1:0);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-switchDisturb error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void startToCharge(boolean enable) {
+        try {
+            dLog(TAG, "baidu-dock-startToCharge:"+enable);
+            //mService.startToCharge(enable);
+            mService.setProp("persist.sys.enable_charge", Integer.toString(enable ? 1:0));
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-startToCharge error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void lightOffScreen(int brightness) {
+        try {
+            dLog(TAG, "baidu-dock-lightOffScreen:"+brightness);
+            mService.putIntToSystem(Settings.System.SCREEN_BRIGHTNESS, brightness);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-lightOffScreen error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public int getEnableBar() {
+        int resultRemote = -1;
+        try {
+            resultRemote = mService.getIntFromSystem("is_show_navigation_bar_hide_buttton", 0);
+            dLog(TAG, "baidu-dock-getEnableBar:"+resultRemote);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-getEnableBar error:"+e);
+            e.printStackTrace();
+        }
+        return resultRemote;
+    }
+
+    /**
+     * @hide
+     */
+    public void setEnableBar(int navbarStatus) {//refer to NavigationBarPreferenceFragment.java
+        try {
+            dLog(TAG, "baidu-dock-setEnableBar:"+navbarStatus);
+            if (navbarStatus == 0) {
+                mService.putIntToSystem("is_show_navigation_bar_hide_buttton", 0);
+                mService.putIntToSystem("start_auto_hide_navibar", 0);
+                mService.setProp("persist.fpc.nav.enable", Integer.toString(0));
+            } else if (navbarStatus == 1) {
+                mService.putIntToSystem("is_show_navigation_bar_hide_buttton", 1);
+                mService.setProp("persist.fpc.nav.enable", Integer.toString(0));
+            } else if (navbarStatus == 2) {
+                mService.putIntToSystem("is_show_navigation_bar_hide_buttton", 2);
+                mService.setProp("persist.fpc.nav.enable", Integer.toString(1));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-setEnableBar error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void applinkToAppStore(Context context, String packageName) {
+        PackageManager pm = context.getPackageManager();
+        Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
+        context.startActivity(launchIntent);
+    }
+
+    /**
+     * @hide
+     */
+    public void setAsDefaultLauncher(String packageName, String className) {
+        String key = packageName + "/" + className;
+        try {
+            dLog(TAG, "baidu-dock-setAppToHomeApp:"+key);
+            mService.setAppToHomeApp(key);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-setAppToHomeApp error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void restorePreLauncher() {
+        try {
+            dLog(TAG, "baidu-dock-restorePreLauncher:");
+            mService.resetPrevHomeApp();
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-restorePreLauncher error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public List<AlarmInfo> queryAllAlarmInfo() {
+        try {
+            dLog(TAG, "baidu-dock-queryAllAlarmInfo:");
+            return mService.queryAllAlarmInfo();
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-queryAllAlarmInfo error:"+e);
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * @hide
+     */
+    public int addNewAlarm(AlarmInfo alarmInfo) {
+        try {
+            dLog(TAG, "baidu-dock-addNewAlarm:"+alarmInfo.toString());
+            return mService.addNewAlarm(alarmInfo);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-addNewAlarm error:"+e);
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
+     * @hide
+     */
+    public boolean deleteAlarm(int alarmId) {
+        try {
+            dLog(TAG, "baidu-dock-deleteAlarm:"+alarmId);
+            return mService.deleteAlarm(alarmId);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-deleteAlarm error:"+e);
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * @hide
+     */
+    public boolean controlAlarm(boolean enable) {
+        try {
+            dLog(TAG, "baidu-dock-controlAlarm:"+enable);
+            return mService.controlAlarm(enable);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-controlAlarm error:"+e);
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * @hide
+     */
+    public void closeCurrentAlarm() {
+        try {
+            dLog(TAG, "baidu-dock-closeCurrentAlarm:");
+            mService.closeCurrentAlarm();
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-closeCurrentAlarm error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void setActivityController(List<String> pkgWhiteList, List<String> actWhiteList,
+                     List<String> pkgBlackList, List<String> actBlackList) {
+        try {
+            dLog(TAG, "baidu-dock-setActivityController:");
+            mService.setActivityController(pkgWhiteList, actWhiteList, pkgBlackList, actBlackList);
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-setActivityController error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void cancelActivityController() {
+        try {
+            dLog(TAG, "baidu-dock-cancelActivityController:");
+            mService.cancelActivityController();
+        } catch (Exception e) {
+            Log.e(TAG, "baidu-dock-cancelActivityController error:"+e);
+            e.printStackTrace();
+        }
+    }
+
+}

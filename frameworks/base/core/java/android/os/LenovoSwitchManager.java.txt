@@ -1,0 +1,13 @@
+package android.os;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+/**
+ * @hide
+ */
+public class LenovoSwitchManager {
+    // 主编译开关
+    public static final boolean BUILD_MAIN_SWITCH_ON = true;
+    // 自启动（权限管理）功能的开关
+    public static final boolean BUILD_BACKGROUND_PROCESS_KILLER_SWITCH_ON = true && BUILD_MAIN_SWITCH_ON;
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end 

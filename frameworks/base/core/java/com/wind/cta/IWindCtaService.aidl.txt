@@ -1,0 +1,9 @@
+package com.wind.cta;
+
+/**
+* {@hide}
+*/
+
+interface IWindCtaService{
+    boolean checkPermission(int action, String caller);
+}

@@ -1,0 +1,39 @@
+package com.android.systemui.scrollshot;
+
+import android.app.Service;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.IBinder;
+import android.provider.Settings;
+import android.util.Log;
+import android.util.ArrayMap;
+import android.app.ActivityThread;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+
+
+public class TakeScrollshotService extends Service implements ScrollShotListener {
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d("TakeScrollshotService", "TakeScrollshotService onStartCommand");
+
+        ScrollShot.getInstance().handleScrollShot(this, this);
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
+    public void onFinish() {
+        stopSelf();
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d("TakeScrollshotService", "TakeScrollshotService onDestroy");
+    }
+}

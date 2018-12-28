@@ -1,0 +1,583 @@
+package android.wind;
+
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.options.wind.FeatureOptions;
+import android.os.SystemProperties;
+import android.os.UserHandle;
+import android.provider.Settings;
+import android.text.TextUtils;
+import android.util.Log;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by hanweiwei on 2018/2/6.
+ */
+
+public final class WindCountryCodeUtils {
+    private static final String TAG = "WindCountryCodeUtils";
+    private static final boolean DEBUG_ALL = true;
+    private static final boolean DEBUG_LOGE = true; //suggest always open
+    private static final boolean DEBUG_LOGD = true;
+
+    private static Context mContext;
+
+    private static Map<String, String> mCountryCodeConfig = new HashMap<>();
+
+    private static final String country_code_list_path = "vendor/etc/countrycode/country_code_list.xml";
+
+    private static final String config_parent_path = "vendor/etc/countrycode";
+    private static final String common_config_file = "common_config.xml";
+    private static final String prc_config_file = "PRC_config.xml";
+    private static final String row_config_file = "ROW_config.xml";
+    private static final String country_config_file_suffix = "_config.xml";
+    private static Object isLock = "isLock";
+
+    public WindCountryCodeUtils(){}
+
+    public static class Globle{
+        private Globle(){}
+        public static final String DEFAULT_COUNTRY_CODE = "NotSet";
+        public static final String DEFAULT_SEPARATOR = ";";
+        public static final String KEY_ALL_COUNYTRY_CONFIG = "all_country_config";
+        public static final String XML_KEY_CONFIG = "config";
+        public static final String XML_KEY_NAME = "name";
+        public static final String XML_KEY_VALUE = "value";
+        /** @hide */ public static final String XML_KEY_ALL_PRELOADED_APK = "all_preloaded_apk";
+        /** @hide */ public static final String XML_KEY_SHOWING_APK = "showing_apk";
+        /** @hide */ public static final String XML_KEY_REMOVE_GMS_APK = "remove_gms_apk";
+        /** @hide */ public static final String XML_KEY_REMOVE_PLATFORM_APK = "remove_platform_apk";
+        /** @hide */ public static final String XML_KEY_LANGUAGE = "language";
+        /** @hide */ public static final String XML_KEY_CHROME_HOME_PAGE = "chrome_home_page";
+        /** @hide */ public static final String XML_KEY_USAGE_STATISTICS_MENU = "lenovo_usage_statistics_menu";
+        //yexumin@wind-mobi.com start for Feature10929 20180404 start
+        /** @hide */ public static final String MMS_CONFIG_MAX_SIZE = "MmsConfigMaxSize";
+        //yexumin@wind-mobi.com start for Feature10929 20180404 end
+        //yexumin@wind-mobi.com start for Feature10638 20180410 start
+        /** @hide */ public static final String SMS_ENCODING_7BIT = "SmsEncoding7bit";
+        //yexumin@wind-mobi.com start for Feature10929 20180410 end
+        //guozishen@wind-mobi.com start at 20180413 modify
+        /** @hide */ public static final String DEF_TIME_12_24 = "def_time_12_24";
+        //guozishen@wind-mobi.com end
+        //guozishen@wind-mobi.com start at 20180416 modify
+        /** @hide */ public static final String REGULATORY_INFORMATION = "regulatory_information";
+        //guozishen@wind-mobi.com end
+        //guozishen@wind-mobi.com start at 20180424 modify
+        /** @hide */ public static final String DATE_FORMATE_DD_MM_YYYY = "date_formate_dd_mm_yyyy";
+        /** @hide */ public static final String DATE_FORMATE_YYYY_MM_DD = "date_formate_yyyy_mm_dd";
+        //guozishen@wind-mobi.com end
+        //guozishen@wind-mobi.com start at 20180503 modify
+        /** @hide */ public static final String BACKLIGHT_BRIGHTNESS = "backlight_brightness";
+        //guozishen@wind-mobi.com end
+        //yunbo@wind-mobi.com 20180517 st
+        /** @hide */ public static final String JP_DEFAULT_IME = "jp_default_ime";
+        //yunbo@wind-mobi.com 20180517 end
+        //lijingwei@wind-mobi.com Feature#10938 20180523 start
+        /** @hide */ public static final String SHOW_RECONFIRM_DIALOG = "showReconfirmDialog";
+        //lijingwei@wind-mobi.com Feature#10938 20180523 end
+        //guozishen@wind-mobi.com start at 20180524
+        /** @hide */ public static final String DATA_TRAFFIC = "data_traffic";  
+        //guozishen@wind-mobi.com end
+        //zhangheting@wind-mobi.com add 20180707 start
+        /** @hide */ public static final String XML_KEY_TIMEZONE = "timezone";
+        //zhangheting@wind-mobi.com add 20180707 end
+    }
+
+
+    /**
+     * @hide
+     */
+    public static void initConfigs(){
+        LOGD("initConfigs");
+        synchronized (isLock) {
+            parseCommonConfigs();
+            parseCountryConfigs();
+        }
+    }
+
+
+    /**
+     * @hide
+     */
+    public static String getAllConfigs(){
+        StringBuilder sb = new StringBuilder();
+        for (String key: mCountryCodeConfig.keySet()){
+            String value = mCountryCodeConfig.get(key);
+            sb.append(key + ": " + value + "/n");
+        }
+
+        return sb.toString();
+    }
+
+    public static void registerListener(Context context){
+        LOGD("register listener");
+        synchronized (isLock) {
+            handleSpecialInitialConfigs(context);
+        }
+    }
+
+    private static void unregisterListener(Context context){
+        LOGD("unregister listener");
+    }
+
+
+
+    public static void handleSpecialInitialConfigs(Context context){
+        LOGD("handleSpecialInitialConfigs");
+        String ccode = getCountryCode();
+        PackageManager pm = context.getPackageManager();
+        //zhangheting@wind-mobi.com modify 20181121 start
+        int res = Settings.System.getInt(context.getContentResolver(), "is_first_boot", 0);
+        if (ccode != null && !ccode.equalsIgnoreCase(Globle.DEFAULT_COUNTRY_CODE) && res == 0) {
+            removeUnnecessaryApks(context, ccode);
+            Settings.System.putInt(context.getContentResolver(), "is_first_boot", 1);
+        }
+        //zhangheting@wind-mobi.com modify 20181121 end
+    }
+
+    /**
+     * parse all configs, if you have other config files, you need parse this file first.
+     */
+    private static void parseCommonConfigs(){
+        String path = config_parent_path + "/" + common_config_file;
+        LOGD("parse common configs, path: " + path);
+        parseCountryCodeConfigs(mCountryCodeConfig, path);
+    }
+
+    /**
+     * This config file is for country, before you parse this config, you need parse common config first,
+     * because maybe there has the same config, you need use the country config file.
+     */
+    private static void parseCountryConfigs(){
+
+        if (FeatureOptions.WIND_DEF_PRO_PRC){
+            LOGD("111111111111111");
+            parseCountryCodeConfigs(mCountryCodeConfig, config_parent_path + "/" + prc_config_file);
+
+        }else if (FeatureOptions.WIND_DEF_PRO_ROW){
+            LOGD("22222222222");
+            parseCountryCodeConfigs(mCountryCodeConfig, config_parent_path + "/" + row_config_file);
+        }
+
+        String ccode = getCountryCode();
+
+        if (ccode != null && !ccode.equals(Globle.DEFAULT_COUNTRY_CODE)) {
+            String path = config_parent_path + "/" + ccode + country_config_file_suffix;
+            LOGD("parse country configs, path: " + path);
+            parseCountryCodeConfigs(mCountryCodeConfig, path);
+        }else {
+            LOGD("user hasn't set the country code.");
+        }
+    }
+
+    /**
+     * This function is used to get all country of the hardware id.
+     * @return  if thers's none country code, return null, else return all countries.
+     */
+    //zhangheting@wind-mobi.com modify 20180731 start
+    public static List<String> getCountryCodeList(){
+        String countrycode = getCountryCode();
+        if (countrycode == null || countrycode.equals(Globle.DEFAULT_COUNTRY_CODE)){
+            LOGE("country code has been set, you can't get it.");
+//            return null;
+        }
+
+        //Map<String, String> codeMaps = new HashMap<>();
+        List<String> codeList = new ArrayList();
+        //parseCountryCodeList(codeMaps, country_code_list_path);
+        parseCountryCodeList(codeList, country_code_list_path);
+
+        return codeList.isEmpty() ? null : codeList;
+    }
+    //zhangheting@wind-mobi.com modify 20180731 end
+    /**
+     * @hide whether country code has been set.
+     * @return if has been set, return true, else return false
+     */
+    public static boolean isCountrycodeSelected(){
+        String countrycode = getCountryCode();
+        if (countrycode == null){
+            return false;
+        }else if (countrycode.equals(Globle.DEFAULT_COUNTRY_CODE)){
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * ro.product.countrycode is used to save country code
+     * if user hasn't choose the country, return null.
+     * @return country code
+     */
+    public static String getCountryCode(){
+//        String ccode = SystemProperties.get("ro.product.countrycode");
+        String ccode = SystemProperties.get("gsm.product.countrycode");
+
+        if (ccode == null || ccode.length() <= 0){
+            LOGE("country code is null or empty");
+            return Globle.DEFAULT_COUNTRY_CODE;
+
+        }else if (ccode.equalsIgnoreCase(Globle.DEFAULT_COUNTRY_CODE)){
+            LOGE("country code is notset");
+            return Globle.DEFAULT_COUNTRY_CODE;
+        }
+
+        LOGD("country code is " + ccode);
+        return ccode.toUpperCase();
+    }
+
+
+    /**
+     *
+     * @param key the feature what you want to query.
+     * @return  true or false, if the feature is support return true.
+     */
+    public static boolean getBoolValue(String key){
+        return isFeatureSupport(key);
+    }
+
+    private static boolean isFeatureSupport(String key){
+        if (mCountryCodeConfig.isEmpty()){
+            LOGD("isFeatureSupport --> mCountryCodeConfig is empty.");
+            initConfigs();
+        }
+
+        String value = mCountryCodeConfig.get(key);
+
+        if (value != null && value.equals("yes")){
+            return true;
+        }
+
+        LOGD(key + " is not support!!!");
+        return false;
+    }
+
+    /**
+     *
+     * @param key the feature what you want to query.
+     * @return return the values of the feature, if nothing in this key or not find this key, return null.
+     */
+    public static String getStringValues(String key){
+        return getFeatureValues(key);
+    }
+
+    private static String getFeatureValues(String key){
+        if (mCountryCodeConfig.isEmpty()){
+            LOGD("getFeatureValues --> mCountryCodeConfig is empty.");
+            initConfigs();
+        }
+
+        String value = mCountryCodeConfig.get(key);
+
+        if (value == null || value.isEmpty()){
+            LOGD(key + " is not found, value is null!!!");
+            return null;
+        }
+
+        return value;
+    }
+
+    /**
+     *
+     * @param key   the feature what you want to query.
+     *               the values acctually is a array, so you need to know the separator, so that you can get the right value,
+     *               default id ';'
+     * @return return the value of the feature, if nothing in this key or not find this key, return null;
+     */
+    public static String[] getStringArrayValues(String key){
+        return getFeatureArrayValues(key, Globle.DEFAULT_SEPARATOR);
+    }
+
+    /**
+     *
+     * @param key the feature what you want to query.
+     * @param separator  the values acctually is a array, so you need to know the separator, so that you can get the right value,
+     *                    default is ';'
+     * @return return the value of the feature, if nothing in this key or not find this key, return null;
+     */
+    public static String[] getStringArrayValues(String key, String separator){
+        if (separator == null){
+            separator = Globle.DEFAULT_SEPARATOR;
+        }
+        return getFeatureArrayValues(key, separator);
+    }
+
+    private static String[] getFeatureArrayValues(String key, String separator){
+        if (mCountryCodeConfig.isEmpty()){
+            LOGD("getFeatureArrayValues --> mCountryCodeConfig is empty.");
+            initConfigs();
+        }
+
+        String values = mCountryCodeConfig.get(key);
+
+        if (values == null || values.isEmpty()){
+            LOGD(key + " is not found, value array is null!!!");
+            return null;
+        }
+        String[] contents = values.split(separator);
+
+        return contents;
+    }
+
+    /**
+     *  device has preloaded all apk, include other country apks, so here is to remove unnecessary apks
+     * @param context
+     */
+    public static void removeUnnecessaryApks(Context context, String countryCode){
+
+        disabledUnnecessaryPlatformApks(context);
+        disabledUnnecessargGMSApks(context);
+        disabledUnnecessaryApks(context, countryCode);
+    }
+
+    private static void disabledUnnecessaryPlatformApks(Context context){
+        String[] rmPlatformApks = getStringArrayValues(Globle.XML_KEY_REMOVE_PLATFORM_APK);
+        if (rmPlatformApks != null){
+            LOGD(rmPlatformApks.length + " platform apks need to remove!");
+            disableApks(context, Arrays.asList(rmPlatformApks));
+        }else {
+            LOGD("No platform apk need to remove!");
+        }
+    }
+
+    private static void disabledUnnecessargGMSApks(Context context){
+
+        String[] rmGMSApks = getStringArrayValues(Globle.XML_KEY_REMOVE_GMS_APK);
+        if (rmGMSApks != null){
+            LOGD(rmGMSApks.length + " GMS apks need to remove!");
+            disableApks(context, Arrays.asList(rmGMSApks));
+        }else {
+            LOGD("No GMS apk need to remove!");
+        }
+
+    }
+
+    private static void disabledUnnecessaryApks(Context context, String countryCode){
+        String[] allApks = getStringArrayValues(Globle.XML_KEY_ALL_PRELOADED_APK);
+        String[] showingApks = getStringArrayValues(Globle.XML_KEY_SHOWING_APK);
+
+        if (allApks == null){
+            LOGD("No preload apk in this project.");
+            return;
+        }
+
+        List<String> disabledApksList = new ArrayList<>();
+
+        if (showingApks == null){
+            LOGD("No preload apk need to showing.");
+            disabledApksList = Arrays.asList(allApks);
+        }else {
+            LOGD(showingApks.length + " preload apks need to showing.");
+            boolean isShowing = false;
+            for (String pkg: allApks){
+                isShowing = false;
+                for (String showingPkg: showingApks){
+                    if (pkg != null && showingPkg != null && pkg.equals(showingPkg)){
+                        isShowing = true;
+                        break;
+                    }
+                }
+                if (!isShowing){
+                    disabledApksList.add(pkg);
+                }
+            }
+        }
+
+        if (disabledApksList.size() > 0) {
+            LOGI(disabledApksList.size() + " apks need to disabled.");
+            disableApks(context, disabledApksList);
+        }
+    }
+
+    private static void disableApks(Context context, List<String> pkgs){
+        if (pkgs != null){
+            PackageManager pm = context.getPackageManager();
+            for (String pkg: pkgs){
+                try {
+                    ApplicationInfo info = context.getPackageManager().getApplicationInfo(pkg, 0);
+                } catch (PackageManager.NameNotFoundException e) {
+                    Log.d(TAG, pkg + "was not found, continue");
+                    continue;
+                }
+                pm.setApplicationEnabledSetting(pkg, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+//                pm.setApplicationHiddenSettingAsUser(pkg, true, UserHandle.ALL);
+                LOGI("disable apk: " + pkg);
+            }
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public static long getGlobleSettingsLongValues(String name, long def){
+        long value = Settings.System.getLong(mContext.getContentResolver(), name, def);
+        return value;
+    }
+
+    /**
+     * @hide
+     */
+    public static void putGlobleSettingsLongValues(String name, long value){
+        Settings.System.putLong(mContext.getContentResolver(), name, value);
+    }
+
+
+    private static void parseCountryCodeConfigs(Map<String,String> mapConfigs, String filePath){
+        LOGD("parseCountryCodeConfigs: " + filePath);
+        try {
+            XmlPullParserFactory xmlPullParserFactory = XmlPullParserFactory.newInstance();
+            XmlPullParser xmlPullParser = xmlPullParserFactory.newPullParser();
+
+            File file = new File(filePath);
+            FileInputStream fileInputStream = new FileInputStream(file);
+            xmlPullParser.setInput(fileInputStream, "utf-8");
+
+            int event = xmlPullParser.getEventType();
+            StringBuilder sb = new StringBuilder();
+            while (event != XmlPullParser.END_DOCUMENT){
+                switch (event){
+                    case XmlPullParser.START_DOCUMENT:
+                        break;
+                    case XmlPullParser.START_TAG:
+                        String tagName = xmlPullParser.getName();
+                        if (tagName.equals(Globle.XML_KEY_CONFIG)){
+                            String key = "";
+                            String value = "";
+                            for (int i = 0; i < xmlPullParser.getAttributeCount(); i++) {
+                                String name = xmlPullParser.getAttributeName(i);
+                                if (name.equals(Globle.XML_KEY_NAME)){
+                                    key = xmlPullParser.getAttributeValue(i);
+                                }else if (name.equals(Globle.XML_KEY_VALUE)){
+                                    value = xmlPullParser.getAttributeValue(i);
+                                }
+                            }
+
+                            if (key != null && !key.isEmpty()){
+                                mapConfigs.put(key, value);
+                            }
+                            sb.append("\n ==> name: " + key + " value: " + value);
+                        }
+                        break;
+                    case XmlPullParser.END_TAG:
+                        break;
+                }
+                event = xmlPullParser.next();
+
+            }
+            LOGD( "all: " + sb.toString());
+            fileInputStream.close();
+
+        } catch (XmlPullParserException e) {
+            e.printStackTrace();
+            LOGE("XmlPullParserException, file: " + filePath);
+        }catch (FileNotFoundException e) {
+            e.printStackTrace();
+            LOGE( "FileNotFoundException, file: " + filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            LOGE("IOException, file: " + filePath);
+        }
+    }
+    //zhangheting@wind-mobi.com modify 20180731 start
+    private static void parseCountryCodeList(List<String> codeList, String filePath){
+    //zhangheting@wind-mobi.com modify 20180731 end
+//        filePath = Environment.getExternalStorageDirectory() + "/country_code_list.xml";
+        try {
+            XmlPullParserFactory xmlPullParserFactory = XmlPullParserFactory.newInstance();
+            XmlPullParser xmlPullParser = xmlPullParserFactory.newPullParser();
+
+            //String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+            File file = new File(filePath);
+            FileInputStream fileInputStream = new FileInputStream(file);
+            xmlPullParser.setInput(fileInputStream, "utf-8");
+
+            int event = xmlPullParser.getEventType();
+            StringBuilder sb = new StringBuilder();
+            while (event != XmlPullParser.END_DOCUMENT){
+                switch (event){
+                    case XmlPullParser.START_DOCUMENT:
+                        break;
+
+                    case XmlPullParser.START_TAG:
+                        String tagName = xmlPullParser.getName();
+                        boolean isNeed = false;
+                        if (FeatureOptions.WIND_DEF_PRO_ROW){
+                            isNeed = tagName.equals("AP") || tagName.equals("AG") || tagName.equals("EMEA");
+                        }else if (FeatureOptions.WIND_DEF_PRO_PRC){
+                            isNeed = tagName.equals("PRC");
+                        }
+
+                        if (isNeed){
+                            String country = "";
+                            String code = "";
+
+                            for (int i = 0; i < xmlPullParser.getAttributeCount(); i++){
+                                String name = xmlPullParser.getAttributeName(i);
+
+                                if (name.equals("country")){
+                                    country = xmlPullParser.getAttributeValue(i);
+                                }else if (name.equals("code")){
+                                    code = xmlPullParser.getAttributeValue(i);
+                                }
+                            }
+                            //zhangheting@wind-mobi.com modify 20180731 start
+                            //mapConfigs.put(country, code);
+                            codeList.add(code + " " + country);
+                            //zhangheting@wind-mobi.com modify 20180731 end
+                            sb.append("\n" + country + ": " + code);
+                        }
+                        break;
+                    case XmlPullParser.END_TAG:
+                        break;
+                }
+                event = xmlPullParser.next();
+            }
+            //LOGD( "all: " + sb.toString());
+            fileInputStream.close();
+        } catch (XmlPullParserException e) {
+            e.printStackTrace();
+            LOGE("XmlPullParserException, file: " + filePath);
+        }catch (FileNotFoundException e) {
+            e.printStackTrace();
+            LOGE( "FileNotFoundException, file: " + filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            LOGE("IOException, file: " + filePath);
+        }
+    }
+
+
+    private static void LOGI(String text){
+        if (DEBUG_ALL)
+            Log.i(TAG, text);
+    }
+
+    private static void LOGD(String text){
+        if (DEBUG_ALL || DEBUG_LOGD)
+            Log.d(TAG, text);
+    }
+
+    private static void LOGE(String text){
+        if (DEBUG_ALL || DEBUG_LOGE)
+            Log.e(TAG, text);
+    }
+
+
+}

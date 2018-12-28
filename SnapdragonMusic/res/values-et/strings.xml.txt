@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onesong">"1 laul"</string>
+    <string name="goto_start">"Teek"</string>
+    <string name="party_shuffle">"Peo juhuesitus"</string>
+    <string name="party_shuffle_off">"Peo juhuesitus välja lülitatud"</string>
+    <string name="clear_all_playlists">Tühjenda kõik esitusloendid</string>
+    <string name="delete_item">Kustuta</string>
+    <string name="play_all">"Esita kõik"</string>
+    <string name="open_in_music">Ava muusikas</string>
+    <string name="share">Jaga</string>
+    <string name="details">Üksikasjad</string>
+    <string name="delete_artist_desc">Kas kustutada püsivalt kõik artisti <xliff:g id="artist">%s</xliff:g> laulud?</string>
+    <string name="delete_album_desc">Kas kustutada püsivalt kogu album „<xliff:g id="album">%s</xliff:g>“?</string>
+    <string name="delete_song_desc">Kas kustutada püsivalt laul „<xliff:g id="song">%s</xliff:g>“?</string>
+    <string name="delete_confirm_button_text">OK</string>
+    <string name="scanning">"SD-kaardi skannimine ..."</string>
+    <string name="scanning_nosdcard">"USB-mäluseadme skaneering ..."</string>
+    <string name="nowplaying_title">"Esitamine kestab"</string>
+    <string name="partyshuffle_title">"Peo juhuesitus"</string>
+    <string name="artists_title">"Artistid"</string>
+    <string name="albums_menu">"Albumid"</string>
+    <string name="albums_title">"Albumid"</string>
+    <string name="tracks_menu">"Laulud"</string>
+    <string name="tracks_title">"Laulud"</string>
+    <string name="folder_menu">Kaustad</string>
+    <string name="folders_title">Kaustad</string>
+    <string name="playlists_menu">"Esitusloendid"</string>
+    <string name="playlists_title">"Esitusloendid"</string>
+    <string name="videos_title">Videod</string>
+    <string name="all_title">"Kõik meediumid"</string>
+    <string name="browse_menu">"Artistid"</string>
+    <string name="search_title">Otsing</string>
+    <string name="no_tracks_title">"Laulud puuduvad"</string>
+    <string name="no_videos_title">Videoid pole</string>
+    <string name="no_playlists_title">"Esitusloendid puuduvad"</string>
+    <string name="delete_playlist_menu">Kustuta</string>
+    <string name="edit_playlist_menu">Redigeeri</string>
+    <string name="rename_playlist_menu">Muuda nime</string>
+    <string name="clear_all_playlists_message">Kas soovite tühjendada kõik esitusloendid?</string>
+    <string name="delete_playlist_message">Kas soovite kustutada üksuse „<xliff:g id="name">%s</xliff:g>“?</string>
+    <string name="delete_playlist_button_ok">OK</string>
+    <string name="delete_playlist_button_cancel">Loobu</string>
+    <string name="playlist_deleted_message">"Esitusloend on kustutatud."</string>
+    <string name="playlist_renamed_message">"Esitusloend on ümber nimetatud."</string>
+    <string name="recentlyadded">"Viimati lisatud"</string>
+    <string name="recentlyadded_title">"Viimati lisatud"</string>
+    <string name="podcasts_listitem">"Interneti-saated"</string>
+    <string name="podcasts_title">"Interneti-saated"</string>
+    <string name="audio_db_playlist_name">"Minu salvestused"</string>
+    <string name="sdcard_missing_title">"SD-kaart puudub"</string>
+    <string name="sdcard_missing_title_nosdcard">"Ei ole USB-mäluseadet"</string>
+    <string name="sdcard_missing_message">"SD-kaart ei ole telefoni sisestatud."</string>
+    <string name="sdcard_missing_message_nosdcard">"Teie telefonil ei ole USB-mäluseadet."</string>
+    <string name="sdcard_busy_title">"SD-kaart pole saadaval"</string>
+    <string name="sdcard_busy_title_nosdcard">"SD-kaart pole saadaval"</string>
+    <string name="sdcard_busy_message">"Teie SD-kaart on hõivatud."</string>
+    <string name="sdcard_busy_message_nosdcard">"Teie USB-mäluseade on hõivatud."</string>
+    <string name="sdcard_error_title">"SD-kaardi viga"</string>
+    <string name="sdcard_error_title_nosdcard">"USB-mäluseadme viga"</string>
+    <string name="sdcard_error_message">"Teie SD-kaardil tuvastati viga."</string>
+    <string name="sdcard_error_message_nosdcard">"Tuvastati USB-mäluseadme viga."</string>
+    <string name="unknown_artist_name">"Tundmatu artist"</string>
+    <string name="unknown_album_name">"Tundmatu album"</string>
+    <string name="unknown_folder_name">Tundmatu tee</string>
+    <string name="unknown_folder_count">Arv teadmata</string>
+    <string name="shuffle_on_notif">"Juhuesitus on sisse lülitatud."</string>
+    <string name="shuffle_off_notif">"Juhuesitus on välja lülitatud."</string>
+    <string name="repeat_off_notif">"Kordus on välja lülitatud."</string>
+    <string name="repeat_current_notif">"Praeguse laulu kordus."</string>
+    <string name="repeat_all_notif">"Kõigi laulude kordamine."</string>
+    <string name="ringtone_menu">"Kasuta telefoni helinana"</string>
+    <string name="ringtone_menu_short">"Kasuta helinana"</string>
+    <string name="ringtone_set">"„<xliff:g id="NAME">%s</xliff:g>” määratud telefoni helinaks."</string>
+    <string name="ringtone_menu_1">Kasuta SIM-pesa 1 helinana</string>
+    <string name="ringtone_menu_2">Kasuta SIM-pesa 2 helinana</string>
+    <string name="ringtone_menu_sim_name_1">Kasuta pesa 1 „<xliff:g id="NAME">%s</xliff:g>” helinana</string>
+    <string name="ringtone_menu_sim_name_2">Kasuta pesa 2 „<xliff:g id="NAME">%s</xliff:g>” helinana</string>
+    <string name="ringtone_menu_short_1">Kasuta helinana 1</string>
+    <string name="ringtone_menu_short_2">Kasuta helinana 2</string>
+    <string name="ringtone_set_1">„<xliff:g id="name" example="Alarm Bell">%s</xliff:g>“ on määratud SIM-pesa 1 helinaks.</string>
+    <string name="ringtone_set_2">„<xliff:g id="name" example="Alarm Bell">%s</xliff:g>“ on määratud SIM-pesa 2 helinaks.</string>
+    <string name="play_selection">Esita</string>
+    <string name="add_to_playlist">"Lisa esitusloendisse"</string>
+    <string name="queue">"Praegune esitusloend"</string>
+    <string name="new_playlist">Uus</string>
+    <string name="new_playlist_name_template">"Uus esitusloend <xliff:g id="NUMBER">%d</xliff:g>&quot;</string>
+    <string name="emptyplaylist">"Valitud esitusloend on tühi."</string>
+    <string name="create_playlist_create_text">Salvesta</string>
+    <string name="create_playlist_overwrite_text">Kirjuta üle</string>
+    <string name="service_start_error_title">"Taasesituse probleem"</string>
+    <string name="service_start_error_msg">"Seda lugu ei õnnestunud esitada."</string>
+    <string name="service_start_error_button">OK</string>
+    <string name="weekpicker_set">Valmis</string>
+    <string name="weekpicker_title">"Kellaaja määramine"</string>
+    <string name="save_as_playlist">"Salvesta esitusloendina"</string>
+    <string name="clear_playlist">"Kustuta esitusloend"</string>
+    <string name="musicbrowserlabel">Muusika</string>
+    <string name="musicshortcutlabel">"Muusika esitusloend"</string>
+    <string name="mediaplaybacklabel">Muusika</string>
+    <string name="videobrowserlabel">Videod</string>
+    <string name="mediapickerlabel">Muusika</string>
+    <string name="playback_failed">"Pleier ei toeta sellist helifaili tüüpi."</string>
+    <string name="open_failed">Vabandust, faili ei saa avada.</string>
+    <string name="cancel">Loobu</string>
+    <string name="remove_from_playlist">"Eemalda esitusloendist"</string>
+    <string name="streamloadingtext">"Ühendamine vooga <xliff:g id="HOST">%s</xliff:g> …"</string>
+    <string name="mediasearch">"Otsi terminit <xliff:g id="TERM">%s</xliff:g>, kasutades:"</string>
+    <string name="working_artists">"Artistid ..."</string>
+    <string name="working_albums">"Albumid ..."</string>
+    <string name="working_songs">"Laulud ..."</string>
+    <string name="working_folders">Kaustad…</string>
+    <string name="working_playlists">"Esitusloendid ..."</string>
+    <string name="loading">"Laadimine ..."</string>
+    <string name="sort_by_track">"Rajad"</string>
+    <string name="sort_by_album">"Albumid"</string>
+    <string name="sort_by_artist">"Artistid"</string>
+    <string name="music_picker_title">"Muusikaraja valimine"</string>
+    <string name="search_settings_description">"Artistid, albumid ja rajad"</string>
+    <string name="search_hint">"Otsi muusikat"</string>
+    <string name="search_hint_video">Otsi videot</string>
+    <string name="fast_scroll_alphabet">" ABCDEFGHIJKLMNOPQRSŠZŽTUVWÕÄÖÜXY"</string>
+    <string name="widget_initial_text">"Puudutage muusika valimiseks."</string>
+    <string name="effectspanel">"Ekvalaiser"</string>
+    <string name="duplicate_playlist_name_alert">Esitusloend nimega „<xliff:g id="name">%s</xliff:g>“ on juba olemas. Valige muu nimi.</string>
+    <string name="same_playlist_name_alert">Esitusloendi nime „<xliff:g id="name">%s</xliff:g>“ ei muudetud. Valige muu nimi.</string>
+    <string name="button_ok">"OK"</string>
+    <string name="list_empty">Esitusloendis pole muusikat.</string>
+    <string name="enable_gallery_app">Videot ei saa esitada, aktiveerige sätetest galeriirakendus.</string>
+    <string name="close_music">"Lõpeta"</string>
+    <string name="delete_video_item_message">Kas soovite kustutada üksuse „<xliff:g id="name">%s</xliff:g>“?</string>
+    <string name="video_deleted_message">Videofail kustutatud.</string>
+    <string name="more_music">Rohkem muusikat</string>
+    <string name="more_video">Rohkem videoid</string>
+    <string name="music_gesture_play">"Esita/peata heli"</string>
+    <string name="music_gesture_prev">"Esita eelmist rada"</string>
+    <string name="music_gesture_next">"Esita järgmist rada"</string>
+    <string name="no_permission_for_drm">"Kahjuks ei saa DRM-faili jagada"</string>
+    <string name="drm_license_info">DRM-i litsentsiteave</string>
+    <string name="drm_ringtone_error">CD/SD-faile ei saa helinaks määrata</string>
+    <string name="drm_right_expired">DRM-õigused aegunud</string>
+    <string name="action_consumes_rights">Selle meediumi esitamiseks on vaja õigusi.</string>
+    <string name="rights_expired">Õigused laulule aegunud.</string>
+    <string name="ring_tone_size_exceed">DRM-helina suurus ei tohi olla suurem kui 300 kB.</string>
+    <string name="cant_set_ringtone_with_count_perm">Loendusloaga DRM-faili ei saa määrata helinaks.</string>
+    <string name="navigation_drawer_title">"Muusika"</string>
+    <string name="action_settings">Seaded</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.3 start -->
+    <string name="equalizer_button_text">Audio+</string>
+    <!-- qidongdong@wind-mobi.com on 2018.7.3 end -->
+    <string name="exit_button_text">Välju</string>
+    <string name="action_settings1">Settings1</string>
+    <string name="action_settings2">Settings2</string>
+    <string name="action_one">Üks</string>
+    <string name="action_two">Kaks</string>
+    <string name="action_three">Kolm</string>
+    <string name="shuffle_all">KÕIK JUHUESITUSES</string>
+    <string name="no_music_found">Muusikat ei leitud</string>
+    <string name="song_deleted_error_message">Ei õnnestunud esitada teie soovitud rada</string>
+    <string name="song_title">Laulu nimi:</string>
+    <string name="album_title">Albumi nimi:</string>
+    <string name="artist_title">Artisti nimi:</string>
+    <string name="duration_title">Kestus: </string>
+    <string name="path_title">Tee:</string>
+    <string name="size_title">Suurus:</string>
+    <string name="duration_unit">"Min"</string>
+    <string name="size_bytes">"B"</string>
+    <string name="size_kilobytes">kB</string>
+    <string name="size_megabytes">"MB"</string>
+    <string name="size_gigabytes">"GB"</string>
+    <string name="favorite">Lemmik</string>
+    <string name="no_favorite">Lemmikut pole</string>
+    <string name="favorite_playlist">Minu lemmik</string>
+    <string name="can_not_create_my_favorite">Ei saa luua ega üle kirjutada  „Minu lemmikute“ esitusloendit</string>
+    <string name="add_by_filemanager">Lisa failihaldurist</string>
+    <string name="add_file_failed">Ei saa seda faili lisada, sest vorming ei ole toetatud või puudub see meediumiteegist</string>
+    <string name="dialog_title_help">Spikker</string>
+    <string name="dialog_content">See rakendus ei saa vajalike lubadeta töötada. Andke load menüüst Sätted.</string>
+    <string name="dialog_button_quit">Välju</string>
+    <string name="dialog_button_settings">Seaded</string>
+    <string name="audio_preview_fail_security">Faili avamine nurjus turvalisuse probleemide tõttu.</string>
+    <string name="audio_preview_fail_io">"Faili ei saa avada"</string>
+    <string name="audio_preview_fail_illegal_state">Lubamatu olek, faili avamine nurjus.</string>
+    <string name="audio_preview_fail_illegal_argument">Lubamatu argument, faili avamine nurjus.</string>
+    <string name="enable_screen_on">Aktiveeri ekraani sisselülitus</string>
+    <string name="disable_screen_on">Blokeeri ekraani sisselülitus</string>
+    <string name="albumsongseparator">\n</string>
+    <string name="notification_artist_album">&quot;<xliff:g id="ALBUM">%2$s</xliff:g>"\n"<xliff:g id="ARTIST">%1$s</xliff:g>&quot;</string>
+</resources>

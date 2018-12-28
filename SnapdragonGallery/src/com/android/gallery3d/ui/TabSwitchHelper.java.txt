@@ -1,0 +1,105 @@
+package com.android.gallery3d.ui;
+
+import com.android.gallery3d.app.AbstractGalleryActivity;
+import com.android.gallery3d.app.AlbumSetPage;
+import com.android.gallery3d.app.GalleryActivity;
+import com.android.gallery3d.app.TimeLinePage;
+
+import android.view.MotionEvent;
+
+public class TabSwitchHelper {
+
+    private static final String TAG = "TabSwitchHelper";
+
+
+    private TabSwitchListener mListener;
+    private AbstractGalleryActivity mActivity;
+
+    private static final float MIN_LENGTH = 200;
+    private static final float MAX_DEGREE = 30;
+    private static final float MIN_DEGREE = 0;
+    private static final long MAX_DELAY_TIME = 300;
+
+    private float mDownX;
+    private float mDownY;
+    private long startTime;
+    private boolean isTimeOut = false;
+
+    public void initSwitchListener(AbstractGalleryActivity activity, TabSwitchListener listener) {
+        this.mListener = listener;
+        mActivity = activity;
+    }
+
+    /**
+     * @param event
+     *            ----------->
+     */
+    public void isLeftToRight(MotionEvent event) {
+        float distance = mDownX - event.getX();
+        boolean isLeftToRight = false;
+        if (distance > MIN_LENGTH) {
+            isLeftToRight = true;
+        }
+        if (mListener != null && isLeftToRight && mActivity.getStateManager().getStateCount() > 0) {
+            if (mActivity.getStateManager().getTopState() instanceof TimeLinePage) {
+                mListener.switchTab(GalleryActivity.PAGE_ALBUMS);
+            }
+        }
+    }
+
+    /**
+     * @param event
+     *            <------------
+     */
+    public void isRightToLeft(MotionEvent event) {
+        float distance = mDownX - event.getX();
+        boolean isRightToLeft = false;
+        if (distance < -MIN_LENGTH) {
+            isRightToLeft = true;
+        }
+        if (mListener != null && isRightToLeft && mActivity.getStateManager().getStateCount() > 0) {
+            if (mActivity.getStateManager().getTopState() instanceof AlbumSetPage) {
+                mListener.switchTab(GalleryActivity.PAGE_PHOTOS);
+            }
+        }
+    }
+    public boolean isLeft(MotionEvent event) {
+        float distance = mDownX - event.getX();
+        return distance < -MIN_LENGTH ? true : false;
+    }
+
+    public boolean isTabSwitching(MotionEvent event) {
+
+        switch (event.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+            startTime = System.currentTimeMillis();
+            mDownX = event.getX();
+            mDownY = event.getY();
+            isTimeOut = false;
+            break;
+        case MotionEvent.ACTION_UP:
+        case MotionEvent.ACTION_MOVE:
+            if (isTimeOut)
+                break;
+            long deltaTime = System.currentTimeMillis() - startTime;
+            float deltaY = Math.abs((event.getY() - mDownY));
+            float deltaX = Math.abs((event.getX() - mDownX));
+            if (deltaTime < MAX_DELAY_TIME) {
+                if (deltaX > 0.1 && deltaY > 0.1) {
+                    double size = deltaY / deltaX;
+                    double degree = Math.toDegrees(Math.atan(size));
+                    // 0 < degree < 30
+                    if (degree <= MAX_DEGREE && degree >= MIN_DEGREE) {
+                        return true;
+                    }
+                }
+            } else {
+                isTimeOut = true;
+            }
+            break;
+        default:
+            break;
+        }
+        return false;
+    }
+}

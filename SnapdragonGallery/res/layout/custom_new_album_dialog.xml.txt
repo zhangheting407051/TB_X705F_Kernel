@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/white_bg_oval_shape"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/menu_album_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:textColor="#000000"
+            android:textSize="20sp" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="15dp"
+            android:background="#50BEBEBE" />
+
+        <!-- bailu@wind-mobi.com 20180612 start -->
+        <EditText
+            android:id="@+id/album_name"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="24dp"
+            android:layout_marginRight="24dp"
+            android:layout_marginTop="20dp"
+            android:theme="@style/MyEditText"
+            android:maxLength="64"
+            android:singleLine="true" />
+        <!-- bailu@wind-mobi.com 20180612 end -->
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="30dp"
+            android:background="#50BEBEBE" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="5dp"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/dialog_cancel_choose"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="6dp"
+            android:layout_weight="1"
+            android:background="#00FFFFFF"
+            android:text="@string/cancel"
+            android:textColor="@color/dialog_button_color"
+            android:textSize="18sp" >
+        </Button>
+
+        <ImageView
+            android:layout_width="2dp"
+            android:layout_height="fill_parent"
+            android:background="#50BEBEBE" />
+
+        <Button
+            android:id="@+id/dialog_verity_choose"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="6dp"
+            android:layout_weight="1"
+            android:background="#00FFFFFF"
+            android:text="@string/ok"
+            android:textColor="@color/dialog_right_button_color"
+            android:textSize="18sp" >
+        </Button>
+    </LinearLayout>
+
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->

@@ -1,0 +1,1317 @@
+package com.wantjoin.childmode;
+
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.pm.UserInfo;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteException;
+import android.net.Uri;
+import android.os.UserHandle;
+import android.os.UserManager;
+import android.util.Log;
+
+import com.wantjoin.childmode.AccessCtrlInfo.*;
+import com.wantjoin.childmode.BitmapUtils;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+import java.util.Collections;
+import java.util.Comparator;
+
+/**
+ * 说明：数据库接口类
+ *
+ * @author 孟祥生
+ * @version 2016年12月7日
+ */
+public class AccessSqlOper {
+
+    public static final String TAG = "AccessSqlOper";        //调试信息
+    public static final String IS_CHILD_USER = "persist.sys.ischilduser";
+    public static final String CHILD_SEX = "persist.sys.childsex";
+    public static final String CHILD_AGE = "persist.sys.childage";
+    public static final String SAVE_USER_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    /**
+     * 获取用户列表
+     *
+     * @param con      应用环境接口
+     * @param VectUser 输出：用户集合
+     * @return 成功返回true，否则返回false
+     */
+    public static boolean getUsersFromSQL(Context con, Vector<KidUserInfo.KidUser> VectUser) {
+        try {
+            ContentResolver cr = con.getContentResolver();
+//	        int nLimitedCnt = 10;
+            //for(int i = 0; i < 100; ++i)
+            {
+                //Cursor cur = cr.query(KidUserInfo.CONTENT_URI, null, null, null, "_id ASC " + "LIMIT " + (i * nLimitedCnt)+ ", " + nLimitedCnt);
+                Cursor cur = cr.query(KidUserInfo.CONTENT_URI, null, null, null, null);
+                if (cur != null) {
+//		        	if(cur.getCount() == 0)
+//		        	{
+//		        		break;
+//		        	}
+                    while (cur.moveToNext()) {
+                        KidUserInfo.KidUser user = new KidUserInfo().new KidUser();
+                        user.nID = cur.getInt(cur.getColumnIndex(KidUserInfo._ID));
+                        user.sName = cur.getString(cur.getColumnIndex(KidUserInfo.NAME));
+                        user.nType = cur.getInt(cur.getColumnIndex(KidUserInfo.TYPE));
+                        user.sBirthday = cur.getString(cur.getColumnIndex(KidUserInfo.BIRTHDAY));
+                        user.nSex = cur.getInt(cur.getColumnIndex(KidUserInfo.SEX));
+                        user.nTotalTime = cur.getInt(cur.getColumnIndex(KidUserInfo.TOTALTIME));
+                        user.nContinueTime = cur.getInt(cur.getColumnIndex(KidUserInfo.CONTINUETIME));
+                        user.nDurationToday = cur.getInt(cur.getColumnIndex(KidUserInfo.DURATIONTODAY));
+                        user.sLastLoginDate = cur.getString(cur.getColumnIndex(KidUserInfo.LASTLOGINDATE));
+                        user.nUsageTime = cur.getInt(cur.getColumnIndex(KidUserInfo.USAGETIME));
+                        user.nIntervalTime = cur.getInt(cur.getColumnIndex(KidUserInfo.INTERVALTIME));
+                        user.bEnableWebCtrl = (cur.getInt(cur.getColumnIndex(KidUserInfo.ENABLE_WEB_CTRL)) != 0);
+
+
+                        user.bEnableUserPhoto = (cur.getInt(cur.getColumnIndex(KidUserInfo.USER_PHOTO_CHANGED)) != 0);
+                        user.bEnableWelcomeActivity = (cur.getInt(cur.getColumnIndex(KidUserInfo.IF_SHOW_WELCOME)) != 0);
+                        VectUser.add(user);
+                    }
+                    cur.close();
+                }
+//		        else{
+//		        	break;
+//		        }
+            }
+        } catch (SQLiteException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 通过用户ID获取用户信息
+     *
+     * @param con 应用环境接口
+     * @return 成功返回true，否则返回false
+     */
+    public static KidUserInfo.KidUser getUserByUsrID(Context con, int nUserID) {
+        try {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = null;
+            cur = cr.query(KidUserInfo.CONTENT_URI, null, KidUserInfo._ID + " = " + nUserID, null, null);
+            if (cur != null) {
+                KidUserInfo.KidUser user = new KidUserInfo().new KidUser();
+                if (cur.getCount() > 0||cur.getColumnCount()>0) {
+                    while (cur.moveToNext()) {
+                        user.nID = cur.getInt(cur.getColumnIndex(KidUserInfo._ID));
+                        user.sName = cur.getString(cur.getColumnIndex(KidUserInfo.NAME));
+                        user.nType = cur.getInt(cur.getColumnIndex(KidUserInfo.TYPE));
+                        user.sBirthday = cur.getString(cur.getColumnIndex(KidUserInfo.BIRTHDAY));
+                        user.nSex = cur.getInt(cur.getColumnIndex(KidUserInfo.SEX));
+                        user.nTotalTime = cur.getInt(cur.getColumnIndex(KidUserInfo.TOTALTIME));
+                        user.nContinueTime = cur.getInt(cur.getColumnIndex(KidUserInfo.CONTINUETIME));
+                        user.nDurationToday = cur.getInt(cur.getColumnIndex(KidUserInfo.DURATIONTODAY));
+                        user.sLastLoginDate = cur.getString(cur.getColumnIndex(KidUserInfo.LASTLOGINDATE));
+                        user.nUsageTime = cur.getInt(cur.getColumnIndex(KidUserInfo.USAGETIME));
+                        user.nIntervalTime = cur.getInt(cur.getColumnIndex(KidUserInfo.INTERVALTIME));
+                        user.bEnableWebCtrl = (cur.getInt(cur.getColumnIndex(KidUserInfo.ENABLE_WEB_CTRL)) != 0);
+
+                        user.bEnableUserPhoto = (cur.getInt(cur.getColumnIndex(KidUserInfo.USER_PHOTO_CHANGED)) != 0);
+                        user.bEnableWelcomeActivity = (cur.getInt(cur.getColumnIndex(KidUserInfo.IF_SHOW_WELCOME)) != 0);
+                    }
+                }
+                cur.close();
+
+                return user;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
+    }
+
+
+    /**
+     * 新建或更新儿童用户信息
+     *
+     * @param con     应用环境接口
+     * @param user    用户信息
+     * @param bInsert 更新标记（true插入，false更新）
+     * @return 成功返回user.nID, 否则返回-1
+     */
+    public static int InsertOrUpdateKidUserInfo(Context con, KidUserInfo.KidUser user, boolean bInsert) {
+        ContentResolver cr = con.getContentResolver();
+        ContentValues value = new ContentValues();
+        value.put(KidUserInfo._ID, user.nID);
+        value.put(KidUserInfo.NAME, user.sName);
+        value.put(KidUserInfo.TYPE, user.nType);
+        value.put(KidUserInfo.BIRTHDAY, user.sBirthday);
+        value.put(KidUserInfo.SEX, user.nSex);
+        value.put(KidUserInfo.TOTALTIME, user.nTotalTime);
+        value.put(KidUserInfo.CONTINUETIME, user.nContinueTime);
+        value.put(KidUserInfo.LASTLOGINDATE, user.sLastLoginDate);
+        value.put(KidUserInfo.DURATIONTODAY, user.nDurationToday);
+        value.put(KidUserInfo.USAGETIME, user.nUsageTime);
+        value.put(KidUserInfo.INTERVALTIME, user.nIntervalTime);
+        value.put(KidUserInfo.ENABLE_WEB_CTRL, (user.bEnableWebCtrl ? 1 : 0));
+
+        value.put(KidUserInfo.USER_PHOTO_CHANGED, (user.bEnableUserPhoto ? 1 : 0));
+        value.put(KidUserInfo.IF_SHOW_WELCOME, (user.bEnableWelcomeActivity ? 1 : 0));
+
+        if (bInsert) {
+            Uri ResultUri = null;
+            try {
+                ResultUri = cr.insert(KidUserInfo.CONTENT_URI, value);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+            if (ResultUri != null)        //插入成功
+            {
+                Cursor cur = cr.query(ResultUri, null, null, null, null);
+                if (cur != null) {
+                    int nID = -1;
+                    if (cur.moveToNext()) {
+                        nID = cur.getInt(cur.getColumnIndex(KidUserInfo._ID));
+                    }
+                    cur.close();
+
+                    return nID;
+                }
+            }
+            return -1;
+        } else {
+            try {
+                if (cr.update(KidUserInfo.CONTENT_URI, value, KidUserInfo._ID + "=" + user.nID, null) >= 0)    //更新成功
+                {
+                    return user.nID;
+                } else {
+                    return -1;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        }
+    }
+
+    /**
+     * 删除用户
+     *
+     * @param con 应用环境接口
+     * @param nID 用户ID
+     * @return 成功返回true, 否则返回false
+     */
+    public static boolean deleteKidUserInfoFromSQL(Context con, int nID) {
+        ContentResolver cr = con.getContentResolver();
+        cr.delete(KidUserInfo.CONTENT_URI, KidUserInfo._ID + "=" + nID, null);
+        cr.delete(CtrlTimeInfo.CONTENT_URI, CtrlTimeInfo.USERID + "=" + nID, null);
+        cr.delete(CtrlInfo.CONTENT_URI, CtrlInfo.USERID + "=" + nID, null);
+        cr.delete(NetLogInfo.CONTENT_URI, NetLogInfo.USERID + "=" + nID, null);
+        cr.delete(AppLogInfo.CONTENT_URI, AppLogInfo.USERID + "=" + nID, null);
+        return true;
+    }
+
+    /**
+     * 获取用户白名单WEB
+     *
+     * @param con     应用环境接口
+     * @param nUserID 用户ID
+     * @return 控制信息集合
+     */
+    public static Vector<CtrlInfo.Ctrl> getUnLimitedWebFromSQL(Context con, int nUserID) {
+        Vector<CtrlInfo.Ctrl> vectCtrlApp = new Vector<CtrlInfo.Ctrl>();
+        ContentResolver cr = con.getContentResolver();
+        Cursor cur = null;
+        try {
+            cur = cr.query(CtrlInfo.CONTENT_URI, null,
+                    CtrlInfo.USERID + " = " + nUserID + " and " +
+                            CtrlInfo.LIMITED + " in (" + (CtrlInfo.LIMITED_FALSE | CtrlInfo.TYPE_WEB_ADDR)
+                            + "," + (CtrlInfo.LIMITED_FALSE | CtrlInfo.TYPE_WEB_ADDR_WIHT_WILDCARD) + ","
+                            + (CtrlInfo.LIMITED_FALSE | CtrlInfo.TYPE_WEB_IP) + ")", null, null);
+            if (cur != null) {
+                while (cur.moveToNext()) {
+                    CtrlInfo.Ctrl ctrl = new CtrlInfo().new Ctrl();
+                    ctrl.nID = cur.getInt(cur.getColumnIndex(CtrlInfo._ID));
+                    ctrl.nLimited = cur.getInt(cur.getColumnIndex(CtrlInfo.LIMITED));
+                    ctrl.sObject = cur.getString(cur.getColumnIndex(CtrlInfo.OBJECT));
+                    ctrl.nUserID = cur.getInt(cur.getColumnIndex(CtrlInfo.USERID));
+                    ctrl.bStream = cur.getBlob(cur.getColumnIndexOrThrow(CtrlInfo.PHOTO));
+                    if (ctrl.bStream != null) {
+                        ctrl.bitmap = BitmapUtils.byteToBitmap(ctrl.bStream);
+                    }
+                    vectCtrlApp.add(ctrl);
+                }
+                cur.close();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return vectCtrlApp;
+    }
+
+
+    /**
+     * 删除控制项
+     *
+     * @param con 应用环境接口
+     * @param nID 控制项ID
+     * @return 成功返回true, 否则返回false
+     */
+    public static boolean deleteCtrlInfoFromSQL(Context con, int nID) {
+        ContentResolver cr = con.getContentResolver();
+        try {
+            cr.delete(CtrlInfo.CONTENT_URI, CtrlInfo._ID + "=" + nID, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 清空一月前的失效记录
+     *
+     * @param con 应用环境接口
+     * @return 成功返回true, 否则返回false
+     */
+    public static boolean deleteRecordNoWork(Context con) {
+        Date dNow = new Date();   //当前时间
+        Date dBefore = new Date();
+        Calendar calendar = null; //得到日历
+        calendar = Calendar.getInstance();
+        calendar.setTime(dNow);//把当前时间赋给日历
+        calendar.add(calendar.MONTH, -1);  //设置为前1月
+        dBefore = calendar.getTime();   //得到前1月的时间
+        long lStartTimeInMillis = dBefore.getTime();
+        Log.e(TAG, "deleteRecordNoWork: " + new SimpleDateFormat("yyyy-MM-dd").format(dBefore));
+        ContentResolver cr = con.getContentResolver();
+        //AppLogInfo.BEGINTIME和NetLogInfo.LOGTIME是相同的时间，保证app和net记录同步删除
+        cr.delete(AppLogInfo.CONTENT_URI,
+                AppLogInfo.BEGINTIME + " <= " + String.valueOf(lStartTimeInMillis), null);
+
+        cr.delete(NetLogInfo.CONTENT_URI,
+                NetLogInfo.LOGTIME + " <= " + String.valueOf(lStartTimeInMillis), null);
+
+        return true;
+    }
+
+
+    /**
+     * 新建或更新控制项信息
+     *
+     * @param con     应用环境接口
+     * @param ctrl    控制信息
+     * @param bInsert 更新标记（true插入，false更新）
+     * @return 成功返回ctrl.nID, 否则返回-1
+     */
+    public static int InsertOrUpdateCtrlInfo(Context con, CtrlInfo.Ctrl ctrl, boolean bInsert) {
+        ContentResolver cr = con.getContentResolver();
+        ContentValues value = new ContentValues();
+        value.put(CtrlInfo.USERID, ctrl.nUserID);
+        value.put(CtrlInfo.APPUID, ctrl.nAppUid);
+        value.put(CtrlInfo.LIMITED, ctrl.nLimited);
+        value.put(CtrlInfo.OBJECT, ctrl.sObject);
+        //根据stream 和bitmap去存贮数据,优先使用stream
+        if (ctrl.bStream == null && ctrl.bitmap != null){
+            ctrl.bStream = BitmapUtils.getByteForBitmap(ctrl.bitmap);
+        }
+        value.put(CtrlInfo.PHOTO,ctrl.bStream);
+//        else {
+//            value.put(CtrlInfo.PHOTO,BitmapUtils.getByteForDrawable(WebUtils.getUriDrawable(ctrl.sObject)));
+//        }
+
+        if (bInsert) {
+            Uri ResultUri = null;
+            try {
+                ResultUri = cr.insert(CtrlInfo.CONTENT_URI, value);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+            if (ResultUri != null)        //插入成功
+            {
+                Cursor cur = cr.query(ResultUri, null, null, null, null);
+                if (cur != null) {
+                    int nID = -1;
+                    if (cur.moveToNext()) {
+                        nID = cur.getInt(cur.getColumnIndex(CtrlInfo._ID));
+                    }
+                    cur.close();
+
+                    return nID;
+                }
+            }
+            return -1;
+        } else {
+            if (cr.update(CtrlInfo.CONTENT_URI, value, CtrlInfo._ID + "=" + ctrl.nID, null) >= 0)    //更新成功
+            {
+                return ctrl.nID;
+            } else {
+                return -1;
+            }
+        }
+    }
+
+
+    /**
+     * 获取web浏览记录数
+     *
+     * @param con     应用环境接口
+     * @param nUserID 用户ID
+     * @param lStart  记录起始时间（ms，参考Calendar.getInstance().getTimeInMillis()取到的值）
+     * @param lEnd    记录结束时间（同lStart）
+     * @return 成功返回记录数，失败返回0
+     */
+    public static int getWebRecordCnt(Context con, int nUserID, long lStart, long lEnd) {
+        int nCount = 0;
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = cr.query(NetLogInfo.CONTENT_URI, null,
+                    NetLogInfo.USERID + " = " + nUserID
+                            + " and " + NetLogInfo.LOGTIME + " >= ?  and " + NetLogInfo.LOGTIME + " <= ?",
+                    new String[]{String.valueOf(lStart), String.valueOf(lEnd)}, null);
+            if (cur != null) {
+                Log.e("GetWebRecord 网络浏览记录数量：", "" + cur.getCount());
+                nCount = cur.getCount();
+                cur.close();
+                return nCount;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * 获取单条web浏览记录
+     *
+     * @param con       应用环境接口
+     * @param nNetLogID 记录ID
+     * @return 成功返回记录，失败返回null
+     */
+    public static NetLogInfo.NetLog getWebRecordByID(Context con, int nNetLogID) {
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = cr.query(NetLogInfo.CONTENT_URI, null, NetLogInfo._ID + " = " + nNetLogID, null, null);
+            if (cur != null) {
+                NetLogInfo.NetLog netLog = new NetLogInfo().new NetLog();
+                while (cur.moveToNext()) {
+                    netLog.nID = cur.getInt(cur.getColumnIndex(NetLogInfo._ID));
+//                    netLog.nAppUid = cur.getInt(cur.getColumnIndex(NetLogInfo.APPUID));
+                    netLog.nAppLogID = cur.getInt(cur.getColumnIndex(NetLogInfo.APPLOGID));
+                    netLog.sPkgName = cur.getString(cur.getColumnIndex(NetLogInfo.APPPKGNAME));
+                    netLog.sHost = cur.getString(cur.getColumnIndex(NetLogInfo.HOST));
+                    netLog.nUserID = cur.getInt(cur.getColumnIndex(NetLogInfo.USERID));
+                    netLog.lSendCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.SENDCOUNT));
+                    netLog.lRecvCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.RECVCOUNT));
+                    netLog.lLogTime = cur.getLong(cur.getColumnIndex(NetLogInfo.LOGTIME));
+                }
+                cur.close();
+                return netLog;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 获取web浏览记录
+     *
+     * @param con        应用环境接口
+     * @param nUserID    用户ID
+     * @param VectNetLog 网络记录集合
+     * @param lStart     记录起始时间（ms，参考Calendar.getInstance().getTimeInMillis()取到的值）
+     * @param lEnd       记录结束时间（同lStart）
+     * @return 成功返回记录数，失败返回-1
+     */
+    public static int getWebRecord(Context con, int nUserID, Vector<NetLogInfo.NetLog> VectNetLog, long lStart, long lEnd) {
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = null;
+            try {
+                cur = cr.query(NetLogInfo.CONTENT_URI, null,
+                        NetLogInfo.USERID + " = " + nUserID
+                                + " and " + NetLogInfo.LOGTIME + " >= ?  and " + NetLogInfo.LOGTIME + " <= ?",
+                        new String[]{String.valueOf(lStart), String.valueOf(lEnd)}, NetLogInfo.APPPKGNAME + " ASC");
+
+                if (cur != null) {
+                    VectNetLog.clear();
+                    Log.e("GetWebRecord 网络浏览记录数量：", "" + cur.getCount());
+                    while (cur.moveToNext()) {
+                        NetLogInfo.NetLog netLog = new NetLogInfo().new NetLog();
+                        netLog.nID = cur.getInt(cur.getColumnIndex(NetLogInfo._ID));
+//                    netLog.nAppUid = cur.getInt(cur.getColumnIndex(NetLogInfo.APPUID));
+                        netLog.nAppLogID = cur.getInt(cur.getColumnIndex(NetLogInfo.APPLOGID));
+                        netLog.sPkgName = cur.getString(cur.getColumnIndex(NetLogInfo.APPPKGNAME));
+                        netLog.sHost = cur.getString(cur.getColumnIndex(NetLogInfo.HOST));
+                        netLog.nUserID = cur.getInt(cur.getColumnIndex(NetLogInfo.USERID));
+                        netLog.lSendCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.SENDCOUNT));
+                        netLog.lRecvCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.RECVCOUNT));
+                        netLog.lLogTime = cur.getLong(cur.getColumnIndex(NetLogInfo.LOGTIME));
+                        netLog.sHostTitle = cur.getString(cur.getColumnIndex(NetLogInfo.HOST_TITLE));
+
+                        VectNetLog.add(netLog);
+                    }
+                    cur.close();
+                    return VectNetLog.size();
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+        return -1;
+    }
+
+    public static int getWebRecord(Context con, int nUserID, Vector<NetLogInfo.NetLog> VectNetLog, long lStart, long lEnd, String sHost) {
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = cr.query(NetLogInfo.CONTENT_URI, null,
+                    NetLogInfo.USERID + " = " + nUserID
+                            + " and " + NetLogInfo.HOST + " = " + sHost + " and " + NetLogInfo.LOGTIME + " >= ?  and " + NetLogInfo.LOGTIME + " <= ?",
+                    new String[]{String.valueOf(lStart), String.valueOf(lEnd)}, NetLogInfo.HOST + " ASC");
+            if (cur != null) {
+                VectNetLog.clear();
+                Log.e("GetWebRecord 网络浏览记录数量：", "" + cur.getCount());
+                while (cur.moveToNext()) {
+                    NetLogInfo.NetLog netLog = new NetLogInfo().new NetLog();
+                    netLog.nID = cur.getInt(cur.getColumnIndex(NetLogInfo._ID));
+//                    netLog.nAppUid = cur.getInt(cur.getColumnIndex(NetLogInfo.APPUID));
+                    netLog.nAppLogID = cur.getInt(cur.getColumnIndex(NetLogInfo.APPLOGID));
+                    netLog.sPkgName = cur.getString(cur.getColumnIndex(NetLogInfo.APPPKGNAME));
+                    netLog.sHost = cur.getString(cur.getColumnIndex(NetLogInfo.HOST));
+                    netLog.nUserID = cur.getInt(cur.getColumnIndex(NetLogInfo.USERID));
+                    netLog.lSendCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.SENDCOUNT));
+                    netLog.lRecvCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.RECVCOUNT));
+                    netLog.lLogTime = cur.getLong(cur.getColumnIndex(NetLogInfo.LOGTIME));
+                    netLog.sHostTitle = cur.getString(cur.getColumnIndex(NetLogInfo.HOST_TITLE));
+                    VectNetLog.add(netLog);
+                }
+                cur.close();
+                return VectNetLog.size();
+            }
+        }
+        return -1;
+    }
+    /**
+     * 查询用户所有的webLog日志
+     * @param con
+     * @param nUserID
+     * @param vectorNetLog
+     * @return
+     */
+    public static int getWebRecordByUserID(Context con, int nUserID, Vector<NetLogInfo.NetLog> vectorNetLog){
+        if (con == null || nUserID <=0 || vectorNetLog ==null) return -1;
+        ContentResolver cr = con.getContentResolver();
+        Cursor cur = cr.query(NetLogInfo.CONTENT_URI,null,
+                NetLogInfo.USERID + " = " + nUserID,null,null);
+        if (cur != null){
+            vectorNetLog.clear();
+            cur.moveToFirst();
+            while (cur.moveToNext()){
+                NetLogInfo.NetLog netLog = new NetLogInfo().new NetLog();
+                netLog.nID = cur.getInt(cur.getColumnIndex(NetLogInfo._ID));
+//                    netLog.nAppUid = cur.getInt(cur.getColumnIndex(NetLogInfo.APPUID));
+                netLog.nAppLogID = cur.getInt(cur.getColumnIndex(NetLogInfo.APPLOGID));
+                netLog.sPkgName = cur.getString(cur.getColumnIndex(NetLogInfo.APPPKGNAME));
+                netLog.sHost = cur.getString(cur.getColumnIndex(NetLogInfo.HOST));
+                netLog.nUserID = cur.getInt(cur.getColumnIndex(NetLogInfo.USERID));
+                netLog.lSendCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.SENDCOUNT));
+                netLog.lRecvCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.RECVCOUNT));
+                netLog.lLogTime = cur.getLong(cur.getColumnIndex(NetLogInfo.LOGTIME));
+                netLog.sHostTitle = cur.getString(cur.getColumnIndex(NetLogInfo.HOST_TITLE));
+                vectorNetLog.add(netLog);
+            }
+            cur.close();
+            return vectorNetLog.size();
+        }
+        return -1;
+    }
+
+    /**
+     * 返回用户所有的appLog
+     * @param con
+     * @param nUserID
+     * @param vectorLog
+     * @return
+     */
+    public static int getAppRecordByUserID(Context con, int nUserID, Vector<AppLogInfo.AppLog> vectorLog){
+        if (con == null || nUserID <= 0 || vectorLog == null) return -1;
+        ContentResolver cr = con.getContentResolver();
+        Cursor cur = cr.query(AppLogInfo.CONTENT_URI,null,
+                AppLogInfo.USERID + " = " + nUserID,null,null);
+        if (cur != null){
+            cur.moveToFirst();
+            vectorLog.clear();
+            while (cur.moveToNext()){
+                AppLogInfo.AppLog appLog = new AppLogInfo().new AppLog();
+                appLog.nID = cur.getInt(cur.getColumnIndex(AppLogInfo._ID));
+//                    appLog.nAppUid = cur.getInt(cur.getColumnIndex(AppLogInfo.APPUID));
+                appLog.sPkgName = cur.getString(cur.getColumnIndex(AppLogInfo.APPPKGNAME));
+                appLog.sAppName = cur.getString(cur.getColumnIndex(AppLogInfo.APPNAME));
+                appLog.lBeginTime = cur.getLong(cur.getColumnIndex(AppLogInfo.BEGINTIME));
+                appLog.lEndTime = cur.getLong(cur.getColumnIndex(AppLogInfo.ENDTIME));
+                appLog.nUserID = cur.getInt(cur.getColumnIndex(AppLogInfo.USERID));
+                appLog.lLogTime = cur.getLong(cur.getColumnIndex(AppLogInfo.LOGTIME));
+                vectorLog.add(appLog);
+            }
+            cur.close();
+            return vectorLog.size();
+        }
+        return -1;
+    }
+    /**
+     * 获取web浏览记录（App记录ID为KEY）
+     *
+     * @param con        应用环境接口
+     * @param VectNetLog 网络记录集合
+     * @param lStart     记录起始时间（ms，参考Calendar.getInstance().getTimeInMillis()取到的值）
+     * @param lEnd       记录结束时间（同lStart）
+     * @return 成功返回记录数，失败返回-1
+     */
+    public static int getWebRecordByAppLogID(Context con, int nAppLogID, Vector<NetLogInfo.NetLog> VectNetLog, long lStart, long lEnd) {
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = cr.query(NetLogInfo.CONTENT_URI, null, NetLogInfo.APPLOGID + " = " + nAppLogID, null, NetLogInfo.HOST + " ASC");
+            if (cur != null) {
+                VectNetLog.clear();
+                Log.e("GetWebRecord 网络浏览记录数量：", "" + cur.getCount());
+                while (cur.moveToNext()) {
+                    NetLogInfo.NetLog netLog = new NetLogInfo().new NetLog();
+                    netLog.nID = cur.getInt(cur.getColumnIndex(NetLogInfo._ID));
+//                    netLog.nAppUid = cur.getInt(cur.getColumnIndex(NetLogInfo.APPUID));
+                    netLog.nAppLogID = cur.getInt(cur.getColumnIndex(NetLogInfo.APPLOGID));
+                    netLog.sPkgName = cur.getString(cur.getColumnIndex(NetLogInfo.APPPKGNAME));
+                    netLog.sHost = cur.getString(cur.getColumnIndex(NetLogInfo.HOST));
+                    netLog.nUserID = cur.getInt(cur.getColumnIndex(NetLogInfo.USERID));
+                    netLog.lSendCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.SENDCOUNT));
+                    netLog.lRecvCnt = cur.getLong(cur.getColumnIndex(NetLogInfo.RECVCOUNT));
+                    netLog.lLogTime = cur.getLong(cur.getColumnIndex(NetLogInfo.LOGTIME));
+
+                    VectNetLog.add(netLog);
+                }
+                cur.close();
+                return VectNetLog.size();
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 获取所有控制信息的包名
+     *
+     * @param con
+     * @param nUserID
+     * @param list
+     * @return 成功返回size, 失败返回-1(数据库不存在)
+     */
+    public static int getCtrlAllPkgInfo(Context con, int nUserID, List<String> list) {
+        int code = -1;
+        //快速旋转屏幕context失效问题
+        if (con == null)return code;
+        ContentResolver cr = con.getContentResolver();
+        Cursor cur = null;
+        try {
+            cur = cr.query(CtrlInfo.CONTENT_URI, null,
+                    CtrlInfo.USERID + " = " + nUserID + " and " +
+                            CtrlInfo.LIMITED + " in (" + (CtrlInfo.LIMITED_FALSE | CtrlInfo.TYPE_APP)
+                            + "," + (CtrlInfo.LIMITED_TRUE | CtrlInfo.TYPE_APP) + ")",
+                    null, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        if (cur != null) {
+            while (cur.moveToNext()) {
+                list.add(cur.getString(cur.getColumnIndex(CtrlInfo.OBJECT)));
+            }
+            return list.size();
+        }
+        return code;
+    }
+
+
+    /**
+     * 插入web浏览记录
+     *
+     * @param con    应用环境接口
+     * @param netLog 网络记录
+     * @return 成功返回netLog.nID，失败返回0
+     */
+    public static int InsertWebRecord(Context con, NetLogInfo.NetLog netLog) {
+        ContentValues value = new ContentValues();
+//        value.put(NetLogInfo.APPUID, netLog.nAppUid);
+        value.put(NetLogInfo.APPLOGID, netLog.nAppLogID);
+        value.put(NetLogInfo.APPPKGNAME, netLog.sPkgName);
+        value.put(NetLogInfo.HOST, netLog.sHost);
+        value.put(NetLogInfo.USERID, netLog.nUserID);
+        value.put(NetLogInfo.LOGTIME, netLog.lLogTime);
+        value.put(NetLogInfo.SENDCOUNT, netLog.lSendCnt);
+        value.put(NetLogInfo.RECVCOUNT, netLog.lRecvCnt);
+        value.put(NetLogInfo.HOST_TITLE, netLog.sHostTitle);
+
+        ContentResolver cr = con.getContentResolver();
+
+        Uri ResultUri = null;
+        try {
+            ResultUri = cr.insert(NetLogInfo.CONTENT_URI, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (ResultUri != null)        //插入成功
+        {
+            Cursor cur = cr.query(ResultUri, null, null, null, null);
+            if (cur != null) {
+                int nID = 0;
+                if (cur.moveToNext()) {
+                    nID = cur.getInt(cur.getColumnIndex(NetLogInfo._ID));
+                }
+                cur.close();
+
+                return nID;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * 判断用户是否添加过app control
+     * 如果从CtrlInfo中或去的数据为空,则说明是新建用户, 没有添加过,否则添加过
+     *
+     * @param con
+     * @param nUserID
+     * @return 没有添加过, 返回true, 添加过返回false
+     */
+    public static boolean isNotAppControl(Context con, int nUserID) {
+        ContentResolver cr = con.getContentResolver();
+        Cursor cur = null;
+        try {
+            cur = cr.query(CtrlInfo.CONTENT_URI, null,
+                    CtrlInfo.USERID + " = " + nUserID + " and " +
+                            CtrlInfo.LIMITED + " in (" + (CtrlInfo.LIMITED_FALSE | CtrlInfo.TYPE_APP)
+                            + "," + (CtrlInfo.LIMITED_TRUE | CtrlInfo.TYPE_APP) + ")",
+                    null, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true;
+        }
+        if (cur != null) {
+            boolean result = cur.moveToNext();
+            cur.close();
+            return !result;
+        }
+        return cur == null;
+    }
+
+
+    /**
+     * 是否有设置web控制
+     *
+     * @param con
+     * @param nUserID
+     * @return 没有禁止和允许的返回true
+     */
+    public static boolean isNotWebCtrl(Context con, int nUserID) {
+        ContentResolver cr = con.getContentResolver();
+        Cursor cur = null;
+        try {
+            cur = cr.query(CtrlInfo.CONTENT_URI, null,
+                    CtrlInfo.USERID + " = " + nUserID + " and " +
+                            CtrlInfo.LIMITED + " in (" + (CtrlInfo.LIMITED_FALSE | CtrlInfo.TYPE_WEB_ADDR)
+                            + "," + (CtrlInfo.LIMITED_TRUE | CtrlInfo.TYPE_WEB_ADDR) + ")",
+                    null, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true;
+        }
+        if (cur != null) {
+            boolean result = cur.moveToNext();
+            cur.close();
+            return !result;
+        }
+        return cur != null;
+    }
+
+    /**
+     * 获取所有的app控制信息,包含受控和不受控
+     *
+     * @param con
+     * @param nUserID
+     * @param vector
+     * @return 成功返回数量, 失败返回-1
+     */
+    public static int getUserAppCtrlInfo(Context con, int nUserID, Vector<CtrlInfo.Ctrl> vector) {
+        int result = -1;
+        ContentResolver cr = con.getContentResolver();
+        Cursor cur = null;
+        try {
+            cur = cr.query(CtrlInfo.CONTENT_URI, null,
+                    CtrlInfo.USERID + " = " + nUserID + " and " +
+                            CtrlInfo.LIMITED + " in (" + (CtrlInfo.LIMITED_FALSE | CtrlInfo.TYPE_APP)
+                            + "," + (CtrlInfo.LIMITED_TRUE | CtrlInfo.TYPE_APP) + ")",
+                    null, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        if (vector == null || cur == null) return result;
+        while (cur.moveToNext()) {
+            CtrlInfo.Ctrl ctrl = new CtrlInfo().new Ctrl();
+            ctrl.nUserID = cur.getInt(cur.getColumnIndex(CtrlInfo.USERID));
+            ctrl.sObject = cur.getString(cur.getColumnIndex(CtrlInfo.OBJECT));
+            ctrl.nLimited = cur.getInt(cur.getColumnIndex(CtrlInfo.LIMITED));
+            ctrl.nID = cur.getInt(cur.getColumnIndex(CtrlInfo._ID));
+            ctrl.bStream = cur.getBlob(cur.getColumnIndex(CtrlInfo.PHOTO));
+            if (ctrl.bStream != null){
+                ctrl.bitmap = BitmapUtils.byteToBitmap(ctrl.bStream);
+            }
+            vector.add(ctrl);
+        }
+        result = vector.size();
+        return result;
+    }
+
+
+    /**
+     * 获取app记录条数
+     *
+     * @param con     应用环境接口
+     * @param nUserID 用户ID
+     * @param lStart  记录起始时间（ms，参考Calendar.getInstance().getTimeInMillis()取到的值）
+     * @param lEnd    记录结束时间（同lStart）
+     * @return 成功返回记录条数，否则返回-1
+     */
+    public static int getAppRecordCnt(Context con, int nUserID, long lStart, long lEnd) {
+        int nCount = 0;
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = cr.query(AppLogInfo.CONTENT_URI, null,
+                    AppLogInfo.USERID + " = " + nUserID
+                            + " and " + AppLogInfo.BEGINTIME + " >= ?  and " + AppLogInfo.BEGINTIME + " <= ?",
+                    new String[]{String.valueOf(lStart), String.valueOf(lEnd)}, null);
+            if (cur != null) {
+                Log.e("getAppRecord APP记录数量：", "" + cur.getCount());
+                nCount = cur.getCount();
+                cur.close();
+                return nCount;
+            }
+        }
+
+        return -1;
+    }
+
+
+    /**
+     * 获取app浏览记录
+     *
+     * @param con        应用环境接口
+     * @param nUserID    用户ID
+     * @param VectAppLog 网络记录集合
+     * @param lStart     记录起始时间（ms，参考Calendar.getInstance().getTimeInMillis()取到的值）
+     * @param lEnd       记录结束时间（同lStart）
+     * @return 成功返回记录数，失败返回-1
+     */
+    public static int getAppRecord(Context con, int nUserID, Map<String, AppLogInfo.AppLog> VectAppLog, long lStart, long lEnd) {
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = null;        //按照_ID
+            try {
+                cur = cr.query(AppLogInfo.CONTENT_URI, null,
+                        AppLogInfo.USERID + " = " + nUserID
+                                + " and " + AppLogInfo.BEGINTIME + " >= ?  and " + AppLogInfo.BEGINTIME + " <= ?",
+                        //                    new String[]{String.valueOf(lStart), String.valueOf(lEnd)}, AppLogInfo.APPPKGNAME + " ASC");        //按照APP排序
+                        new String[]{String.valueOf(lStart), String.valueOf(lEnd)}, AppLogInfo._ID + " ASC");
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+            if (cur != null) {
+                VectAppLog.clear();
+                Log.e("getAppRecord APP记录数量：", "" + cur.getCount());
+                while (cur.moveToNext()) {
+                    AppLogInfo.AppLog appLog = new AppLogInfo().new AppLog();
+                    appLog.nID = cur.getInt(cur.getColumnIndex(AppLogInfo._ID));
+//                    appLog.nAppUid = cur.getInt(cur.getColumnIndex(AppLogInfo.APPUID));
+                    appLog.sPkgName = cur.getString(cur.getColumnIndex(AppLogInfo.APPPKGNAME));
+                    appLog.sAppName = cur.getString(cur.getColumnIndex(AppLogInfo.APPNAME));
+                    appLog.lBeginTime = cur.getLong(cur.getColumnIndex(AppLogInfo.BEGINTIME));
+                    appLog.lEndTime = cur.getLong(cur.getColumnIndex(AppLogInfo.ENDTIME));
+                    appLog.nUserID = cur.getInt(cur.getColumnIndex(AppLogInfo.USERID));
+                    appLog.lLogTime = cur.getLong(cur.getColumnIndex(AppLogInfo.LOGTIME));
+
+                    VectAppLog.put(appLog.sPkgName, appLog);
+                }
+
+                cur.close();
+                return VectAppLog.size();
+            }
+        }
+
+        return -1;
+    }
+
+    public static int getAppRecordByPkgname(Context con, int nUserID, String sPkgName, Vector<AppLogInfo.AppLog> VectAppLog, long lStart, long lEnd) {
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = cr.query(AppLogInfo.CONTENT_URI, null,
+                    AppLogInfo.USERID + " = " + nUserID
+                            + " and " + AppLogInfo.APPPKGNAME + " = '" + sPkgName + "' and " + AppLogInfo.BEGINTIME + " >= ?  and " + AppLogInfo.BEGINTIME + " <= ?",
+                    new String[]{String.valueOf(lStart), String.valueOf(lEnd)}, AppLogInfo.APPPKGNAME + " ASC");        //按照APP排序
+
+            if (cur != null) {
+                VectAppLog.clear();
+                Log.e("getAppRecord APP记录数量：", "" + cur.getCount());
+                while (cur.moveToNext()) {
+                    AppLogInfo.AppLog appLog = new AppLogInfo().new AppLog();
+                    appLog.nID = cur.getInt(cur.getColumnIndex(AppLogInfo._ID));
+//                    appLog.nAppUid = cur.getInt(cur.getColumnIndex(AppLogInfo.APPUID));
+                    appLog.sPkgName = cur.getString(cur.getColumnIndex(AppLogInfo.APPPKGNAME));
+                    appLog.sAppName = cur.getString(cur.getColumnIndex(AppLogInfo.APPNAME));
+                    appLog.lBeginTime = cur.getLong(cur.getColumnIndex(AppLogInfo.BEGINTIME));
+                    appLog.lEndTime = cur.getLong(cur.getColumnIndex(AppLogInfo.ENDTIME));
+                    appLog.nUserID = cur.getInt(cur.getColumnIndex(AppLogInfo.USERID));
+                    appLog.lLogTime = cur.getLong(cur.getColumnIndex(AppLogInfo.LOGTIME));
+
+                    VectAppLog.add(appLog);
+                }
+
+                cur.close();
+                return VectAppLog.size();
+            }
+        }
+
+        return -1;
+    }
+
+    public static AppLogInfo.AppLog getAppRecordByid(Context con, int nID) {
+        if (con != null) {
+            ContentResolver cr = con.getContentResolver();
+            Cursor cur = cr.query(AppLogInfo.CONTENT_URI, null,
+                    AppLogInfo._ID + " = " + nID, null, null);
+
+            if (cur != null) {
+                AppLogInfo.AppLog appLog = new AppLogInfo().new AppLog();
+                while (cur.moveToNext()) {
+                    appLog.nID = cur.getInt(cur.getColumnIndex(AppLogInfo._ID));
+//                    appLog.nAppUid = cur.getInt(cur.getColumnIndex(AppLogInfo.APPUID));
+                    appLog.sPkgName = cur.getString(cur.getColumnIndex(AppLogInfo.APPPKGNAME));
+                    appLog.sAppName = cur.getString(cur.getColumnIndex(AppLogInfo.APPNAME));
+                    appLog.lBeginTime = cur.getLong(cur.getColumnIndex(AppLogInfo.BEGINTIME));
+                    appLog.lEndTime = cur.getLong(cur.getColumnIndex(AppLogInfo.ENDTIME));
+                    appLog.nUserID = cur.getInt(cur.getColumnIndex(AppLogInfo.USERID));
+                    appLog.lLogTime = cur.getLong(cur.getColumnIndex(AppLogInfo.LOGTIME));
+                }
+
+                cur.close();
+                return appLog;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 插入app浏览记录
+     *
+     * @param con    应用环境接口
+     * @param appLog app记录
+     * @return 成功返回记录_ID，失败返回0
+     */
+    public static int InsertAppRecord(Context con, AppLogInfo.AppLog appLog) {
+        ContentValues value = new ContentValues();
+//        value.put(AppLogInfo.APPUID, appLog.nAppUid);
+        value.put(AppLogInfo.APPPKGNAME, appLog.sPkgName);
+        value.put(AppLogInfo.APPNAME, appLog.sAppName);
+        value.put(AppLogInfo.BEGINTIME, appLog.lBeginTime);
+        value.put(AppLogInfo.ENDTIME, appLog.lEndTime);
+        value.put(AppLogInfo.LOGTIME, appLog.lLogTime);
+        value.put(AppLogInfo.USERID, appLog.nUserID);
+
+        ContentResolver cr = con.getContentResolver();
+        Uri ResultUri = null;
+        try {
+            ResultUri = cr.insert(AppLogInfo.CONTENT_URI, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+        if (ResultUri != null)        //插入成功
+        {
+            Cursor cur = cr.query(ResultUri, null, null, null, null);
+            if (cur != null) {
+                int nID = 0;
+                if (cur.moveToNext()) {
+                    nID = cur.getInt(cur.getColumnIndex(AppLogInfo._ID));
+                }
+                cur.close();
+
+                return nID;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * 清空数据库，测试用
+     *
+     * @param con 应用环境接口
+     * @return 成功返回true, 否则返回false
+     */
+    public static boolean clearDatabase(Context con) {
+        ContentResolver cr = con.getContentResolver();
+        cr.delete(KidUserInfo.CONTENT_URI, null, null);
+        cr.delete(CtrlTimeInfo.CONTENT_URI, null, null);
+        cr.delete(CtrlInfo.CONTENT_URI, null, null);
+        cr.delete(NetLogInfo.CONTENT_URI, null, null);
+        cr.delete(AppLogInfo.CONTENT_URI, null, null);
+        return true;
+    }
+
+    /**
+     * 得到当前时间的时间戳
+     * @return
+     */
+    public static long getCurrentTime() {
+        try {
+            return System.currentTimeMillis();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
+     * 字符串时间"yyyy-MM-dd HH:mm:ss"转换为时间戳
+     * @param time
+     * @return
+     */
+    public static long TimeDataToLong(String time) {
+        SimpleDateFormat format =  new SimpleDateFormat(SAVE_USER_TIME_FORMAT);
+        try {
+            Date date1 = format.parse(time);
+            return date1.getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    /**
+     * 如果return 0,则可以使用
+     * 返还时间为秒，用户可进入的剩余间隔时间
+     * @param context
+     * @param userId
+     * @return
+     */
+    public static int TimeIsValuable(Context context,int userId) {
+        try {
+            KidUserInfo.KidUser kidUser = getUserByUsrID(context, userId);
+            if (kidUser != null && kidUser.sLastLoginDate != null && kidUser.sLastLoginDate.length() != 0) {
+                //得到最后次登陆时间，若时间到了，则得到的是相应时间
+                int invertedTime=kidUser.nIntervalTime;
+//                SharedPreferences kidUserWelcome = context.getSharedPreferences("used_time", Context.MODE_PRIVATE);
+//                int mAllUsedTime = kidUserWelcome.getInt("mAllUsedTime", 0);
+                int mAllUsedTime = kidUser.nContinueTime;
+                long lastLoginTime = TimeDataToLong(kidUser.sLastLoginDate);
+                if (lastLoginTime == 0) {
+                    Log.e(TAG, "没有保存最后时间");
+                    return 0;
+                }
+                int second = (int) ((getCurrentTime() - lastLoginTime) / 1000);
+                if (second >= invertedTime * 60) {
+                    Log.e(TAG, "可以切换进用户了");
+//                    SharedPreferences mSharedPreferences = context.getSharedPreferences("used_time", Context.MODE_PRIVATE);
+//                    SharedPreferences.Editor editor = mSharedPreferences.edit();
+//                    editor.putInt("mAllUsedTime", 0);
+//                    editor.apply();
+                    kidUser.nContinueTime = 0;
+                    int i = InsertOrUpdateKidUserInfo(context, kidUser, false);
+                    Log.e(TAG, "保存信息是否成功1？" + i);
+
+                    return 0;
+                }
+
+                if (kidUser.nIntervalTime == 0||kidUser.nUsageTime==0) {
+                    Log.e(TAG, "可用时间或间隔时间没有设置");
+                    return 0;
+                } else if (mAllUsedTime < kidUser.nUsageTime*60) {
+                    Log.e(TAG, "累计使用时间小于用户设置的可用时间，可进入");
+                    return 0;
+                }
+                //判断当前时间间隔是否大于用户设置的时间
+               if(second<invertedTime*60) {
+                   //new start,待测试，临时屏蔽
+                   if (second < 0) {
+                       Log.e(TAG, "用户调整了时间 需重新保存左后登录时间");
+                       SimpleDateFormat sDateFormat = new SimpleDateFormat(SAVE_USER_TIME_FORMAT);
+                       kidUser.sLastLoginDate = sDateFormat.format(new Date());
+                       InsertOrUpdateKidUserInfo(context, kidUser, false);
+                       return invertedTime*60;
+                   }
+                   //new end
+                    //返还剩余间隔时间
+                    Log.e(TAG, "间隔时间剩余："+(invertedTime*60-second));
+                    if ((invertedTime * 60 - second) ==0) {
+                        kidUser.nContinueTime = mAllUsedTime;
+                        int i = InsertOrUpdateKidUserInfo(context, kidUser, false);
+                        Log.e(TAG, "保存信息是否成功22？" + i);
+                    }
+                    return  invertedTime * 60-second;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+        return 0;
+    }
+
+
+    	/**
+	 *
+	 * 通过用户ID获取性别和年龄
+	 *
+	 * @param con
+	 * 		应用环境接口
+	 * @return
+	 * 		成功返回true，否则返回false
+	 */
+	public static boolean getKidUserByUsrID(Context con, int nUserID, Boolean bIsBoy, Integer nAge)
+	{
+		try
+		{
+	        ContentResolver cr = con.getContentResolver();
+        	Cursor cur = cr.query(KidUserInfo.CONTENT_URI, null, KidUserInfo._ID + " = " + nUserID, null, null);
+	        if (cur != null)
+	        {
+		        while (cur.moveToNext())
+		        {
+		        	String sBirthday = cur.getString(cur.getColumnIndex(KidUserInfo.BIRTHDAY));
+					try {
+						nAge = getAge(string2Time(sBirthday).getTime());
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+		        	bIsBoy = (cur.getInt(cur.getColumnIndex(KidUserInfo.SEX)) == KidUserInfo.SEX_BOY);
+		        }
+		        cur.close();
+
+		        return true;
+	        }
+		}
+		catch(SQLiteException e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+        return false;
+	}
+
+
+    /**
+     *
+     * 通过用户ID获取年龄
+     *
+     * @param con
+     * 		应用环境接口
+     * @return
+     * 		成功返回true，否则返回false
+     */
+    public static int getKidUserAgeByUsrID(Context con, int nUserID)
+    {
+        KidUserInfo.KidUser user = getUserByUsrID(con, nUserID);
+        if (user!=null&& user.sBirthday != null&&user.sBirthday.length()>0)
+        {
+            try {
+                return getAge(string2Time(user.sBirthday).getTime());
+            } catch (ParseException e) {
+                // TODO Auto-generated catch block
+                Log.e(TAG, "抛出异常1");
+                e.printStackTrace();
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                Log.e(TAG, "抛出异常2");
+                e.printStackTrace();
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     *
+     * 通过用户ID获取性别
+     *
+     * @param con
+     * 		应用环境接口
+     * @return
+     * 		1、男孩;2、女孩;0、未知
+     */
+    public static int getKidUserSexByUsrID(Context con, int nUserID)
+    {
+        KidUserInfo.KidUser user = getUserByUsrID(con, nUserID);
+        if (user != null)
+        {
+            return user.nSex;
+        }
+        return 0;
+    }
+    /**
+     *
+     * 通过用户ID获取控制密码
+     *
+     * @param con
+     * 		应用环境接口
+     * @return
+     * 		-1查询失败，其他为正常密码
+     */
+    public static int getKidUserControlPasswordByUsrID(Context con, int nUserID)
+    {
+        KidUserInfo.KidUser user = getUserByUsrID(con, nUserID);
+        if (user != null)
+        {
+            return user.nDurationToday;
+        }
+        return -1;
+    }
+
+
+    public static int getAge(Date birthDay) throws Exception {
+        Calendar cal = Calendar.getInstance();
+        if (cal.before(birthDay)) {
+            throw new IllegalArgumentException(
+                    "出生时间大于当前时间!");
+        }
+
+        int yearNow = cal.get(Calendar.YEAR);
+        int monthNow = cal.get(Calendar.MONTH) + 1;//注意此处，如果不加1的话计算结果是错误的
+        int dayOfMonthNow = cal.get(Calendar.DAY_OF_MONTH);
+        cal.setTime(birthDay);
+
+        int yearBirth = cal.get(Calendar.YEAR);
+        int monthBirth = cal.get(Calendar.MONTH);
+        int dayOfMonthBirth = cal.get(Calendar.DAY_OF_MONTH);
+
+        int age = yearNow - yearBirth;
+
+        if (monthNow <= monthBirth) {
+            if (monthNow == monthBirth) {
+                //monthNow==monthBirth
+                if (dayOfMonthNow < dayOfMonthBirth) {
+                    age--;
+                } else {
+                    //do nothing
+                }
+            } else {
+                //monthNow>monthBirth
+                age--;
+            }
+        } else {
+            //monthNow<monthBirth
+            //donothing
+        }
+
+        return age;
+    }
+    public static final String DATE_FORMAT = "yyyy/MM/dd";
+    public static final String DATE_FORMAT_SHOW = "dd/MM/yyyy";
+
+    public static Calendar string2Time(String sTime) throws ParseException
+    {
+        Log.e(TAG, "---------------------------");
+        DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+        Calendar calendar = Calendar.getInstance();
+        if(!sTime.equals(""))
+        {
+            calendar.setTime(dateFormat.parse(sTime.toString()));
+        }
+        Log.e(TAG, "+++++++++++++++++++++++++++++++++");
+        return calendar;
+    }
+
+    /**
+     * 遍历用户，得到用户顺序的List<UserInfo>集合，
+     * 顺序为：当前用户(当前登录用户为非机主情况)-机主-一般用户-儿童用户-访客
+     *
+     * @param context
+     * @return
+     */
+    public static List<UserInfo> getUserOrder(Context context) {
+        UserManager mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
+        List<UserInfo> users = mUserManager.getUsers(true);
+        List<UserInfo> orderUserInfo = new ArrayList<>();
+        try {
+            //根据用户序列号排序
+            Collections.sort(users, new ComparatorCreationTime(context));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        for (UserInfo userInfo : users) {
+            if (userInfo.id == UserHandle.myUserId()) {
+                orderUserInfo.add(userInfo);
+            }
+        }
+        for (UserInfo userInfo : users) {
+            if (userInfo.isAdmin() && userInfo.id != UserHandle.myUserId()) {
+                orderUserInfo.add(userInfo);
+                break;
+            }
+        }
+        for (UserInfo userInfo : users) {
+            if (!userInfo.isGuest() && !userInfo.isAdmin() && !isKidUser(userInfo)
+                    && userInfo.id != UserHandle.myUserId()) {
+                orderUserInfo.add(userInfo);
+            }
+        }
+        for (UserInfo userInfo : users) {
+            if (isKidUser(userInfo) && userInfo.id != UserHandle.myUserId()) {
+                orderUserInfo.add(userInfo);
+            }
+        }
+        for (UserInfo userInfo : users) {
+            if (userInfo.isGuest() && userInfo.id != UserHandle.myUserId()) {
+                orderUserInfo.add(userInfo);
+            }
+        }
+        Log.e(TAG, "users======" + users);
+        Log.e(TAG, "orderUserInfo======" + orderUserInfo);
+        return orderUserInfo;
+    }
+
+    static class ComparatorCreationTime implements Comparator<UserInfo> {
+        private Context con;
+
+        private ComparatorCreationTime(Context context) {
+            con = context;
+        }
+
+        @Override
+        public int compare(UserInfo userOne, UserInfo userTwo) {
+            // TODO Auto-generated method stub
+            return ((UserManager) con.getSystemService(Context.USER_SERVICE)).getUserSerialNumber(userOne.id) -
+                    ((UserManager) con.getSystemService(Context.USER_SERVICE))
+                            .getUserSerialNumber(userTwo.id);
+        }
+
+    }
+        
+    /**
+     * 判断是否为儿童用户（自定义）
+     * @param userInfo
+     * @return
+     */
+    public static boolean isKidUser(UserInfo userInfo) {
+        return userInfo.isRestricted() || userInfo.isKid();
+//        return true;
+    }
+}

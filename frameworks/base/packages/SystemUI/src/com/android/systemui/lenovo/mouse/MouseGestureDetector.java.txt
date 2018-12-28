@@ -1,0 +1,27 @@
+package com.android.systemui.lenovo.mouse;
+
+import android.content.Context;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
+
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 start
+public class MouseGestureDetector extends GestureDetector{
+    public MouseGestureDetector(Context context, OnGestureListener listener) {
+        super(context, listener);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        /**
+         * 当onTouch的action为cancel时，是否需要将cancel action转为up action;
+         * 主要针对dock栏的appicon上划到外部区域时，会调用cancel action
+         */
+        if (ev.getAction() == MotionEvent.ACTION_CANCEL) {
+            if (ev.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE) {
+                ev.setAction(MotionEvent.ACTION_UP);
+            }
+        }
+        return super.onTouchEvent(ev);
+    }
+}
+//yuanzhiqiang@wind-mobi.com add for BookUI on 2018-03-23 end

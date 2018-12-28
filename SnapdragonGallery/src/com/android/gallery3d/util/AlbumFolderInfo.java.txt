@@ -1,0 +1,84 @@
+/*
+ * Copyright (C) 2012 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.gallery3d.util;
+
+public class AlbumFolderInfo {
+    public static String FOLDER_INFO_KEY = "AlbumFolder";
+    public static String ATTRI_FOLDERNAME = "mFolderName";
+    public static String ATTRI_ISHIDE = "isHide";
+    public static String ATTRI_IS_USER_CREATE = "isUserCreate";
+    public static String ATTRI_PATH = "mPath";
+    public static String ATTRI_BUCKETID = "bucketId";
+
+    private String mFolderName;
+    private String mPath;
+    private boolean isHide;
+    private boolean isUserCreate;
+    private int mBucketId;
+
+    public AlbumFolderInfo(String folderName) {
+        this(folderName, GalleryUtils.OWNER_CREATE_ALBUM_PATH + folderName, false, true, (GalleryUtils.OWNER_CREATE_ALBUM_PATH + folderName).toLowerCase().hashCode());
+    }
+
+    public AlbumFolderInfo (String folderName, String path, boolean hide, boolean userCreate, int bucketId) {
+        this.mFolderName = folderName;
+        this.mPath = path;
+        this.isHide = hide;
+        this.isUserCreate = userCreate;
+        this.mBucketId = bucketId;
+    }
+
+    public String getmFolderName() {
+        return mFolderName;
+    }
+
+    public void setmFolderName(String mFolderName) {
+        this.mFolderName = mFolderName;
+    }
+
+    public String getmPath() {
+        return mPath;
+    }
+
+    public void setmPath(String mPath) {
+        this.mPath = mPath;
+    }
+
+    public boolean getIsHide() {
+        return isHide;
+    }
+
+    public void setIsHide(boolean isHide) {
+        this.isHide = isHide;
+    }
+
+    public boolean isUserCreate() {
+        return isUserCreate;
+    }
+
+    public void setUserCreate(boolean userCreate) {
+        isUserCreate = userCreate;
+    }
+
+    public int getBucketId() {
+        return mBucketId;
+    }
+
+    public void setBucketId(int bucketId) {
+        this.mBucketId = bucketId;
+    }
+}

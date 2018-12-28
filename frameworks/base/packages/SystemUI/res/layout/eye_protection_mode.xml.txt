@@ -1,0 +1,58 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="?android:attr/listPreferredItemHeight"
+    android:orientation="vertical">
+    <RadioGroup
+        android:id="@+id/eye_protection_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="100dp"
+        android:layout_marginTop="60dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/btn_standard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="@string/eye_protection_mode_standard"
+            android:textSize="20sp"
+            android:layout_marginBottom="30dp"/>
+
+
+        <RadioButton
+            android:id="@+id/btn_reading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/eye_protection_mode_read"
+            android:textSize="20sp"
+            android:layout_marginBottom="30dp"/>
+
+        <RadioButton
+            android:id="@+id/btn_multimedia"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/eye_protection_mode_multimedia"
+            android:textSize="20sp"
+            android:layout_marginBottom="30dp"/>
+
+        <RadioButton
+            android:id="@+id/btn_student_child"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/eye_protection_mode_student_children"
+            android:textSize="20sp"
+            android:layout_marginBottom="30dp"/>
+
+        <RadioButton
+            android:id="@+id/btn_user_defined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/eye_protection_mode_customize"
+            android:textSize="20sp"
+            android:layout_marginBottom="30dp"/>
+    </RadioGroup>
+
+</LinearLayout>

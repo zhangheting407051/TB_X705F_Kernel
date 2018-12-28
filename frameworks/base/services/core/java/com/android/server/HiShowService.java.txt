@@ -1,0 +1,204 @@
+/*
+ * Create by lishunbo@wind-mobi.com 20180912 for baidu-dock feature
+ */
+
+package com.android.server;
+
+import android.content.Context;
+import com.lenovo.android.hishow.IHiShowManager;
+import android.os.PowerManager;
+import android.os.SystemClock;
+import android.os.Binder;
+import android.provider.Settings;
+import android.os.SystemProperties;
+import android.util.Log;
+import android.app.StatusBarManager;
+import android.content.ComponentName;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import java.util.ArrayList;
+import java.util.List;
+import android.content.Intent;
+import android.view.WindowManagerImpl;
+import android.content.pm.ActivityInfo;
+import com.lenovo.android.hishow.AlarmInfo;
+import android.content.ContentResolver;
+
+public class HiShowService extends IHiShowManager.Stub {
+
+    private final Context mContext;
+    private final String TAG = "HiShowService";
+
+    private String mPrevDefaultHome = "com.tblenovo.launcher/com.android.launcher3.Launcher";
+
+    private static final boolean DEBUG_LOG = SystemProperties.getBoolean("persist.debug.baidu_dock", false);
+    private void dLog(String TAG, String s) {if (DEBUG_LOG) Log.d(TAG, s);}
+
+    public HiShowService(Context context) {
+        mContext = context;
+    }
+
+    @Override
+    public void lockScreen() {
+        PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            dLog(TAG, "baidu-dock-HiShowService-lockScreen:");
+            pm.goToSleep(SystemClock.uptimeMillis());
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    @Override
+    public void putIntToSystem(String key, int value) {
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            dLog(TAG, "baidu-dock-HiShowService-putIntToSystem:"+key+"/:"+value);
+            Settings.System.putInt(mContext.getContentResolver(), key, value);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    @Override
+    public int getIntFromSystem(String key, int def) {
+        int result = def;
+        result = Settings.System.getInt(mContext.getContentResolver(), key, def);
+        return result;
+    }
+
+    @Override
+    public void setProp(String key, String value) {
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            dLog(TAG, "baidu-dock-HiShowService-setProp:"+key+"/:"+value);
+            SystemProperties.set(key, value);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    @Override
+    public void enableStatusBar(boolean enable, int flag) {
+        StatusBarManager statusBarManager = (StatusBarManager) mContext.getSystemService(Context.STATUS_BAR_SERVICE);
+        int what = statusBarManager.getCurrentDisabledFlag(1);
+        if (!enable) {
+            what = what | flag;
+        } else {
+            what = what & ~flag;
+        }
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            dLog(TAG, "baidu-dock-HiShowService-enableStatusBar:"+enable+"/:"+flag+"/:"+what);
+            statusBarManager.disable(what);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    @Override
+    public void controlFloatButton(boolean enable, int type) {
+        /*WindowManagerImpl windowMgr = (WindowManagerImpl) mContext.getSystemService(Context.WINDOW_SERVICE);
+        windowMgr.hideViewFromType(!enable, type);*/
+    }
+
+    @Override
+    public void setAppToHomeApp(String key) {
+        if (key == null) {
+            dLog(TAG, "baidu-dock-HiShowService-setAppToHomeApp:key can't be null!!!");
+            return;
+        }
+        dLog(TAG, "baidu-dock-HiShowService-setAppToHomeApp-key:"+key);
+        setAppToHomeApp(key, true);
+    }
+
+    private void setAppToHomeApp(String key, boolean recordPrevHome) {
+        PackageManager pm = mContext.getPackageManager();
+        final ComponentName component = ComponentName.unflattenFromString(key);
+        final List<ResolveInfo> homeActivities = new ArrayList<>();
+        final ComponentName currentDefaultHome = pm.getHomeActivities(homeActivities);
+        if (recordPrevHome && (currentDefaultHome != null)) {
+            String currentDefaultHomeKey = currentDefaultHome.flattenToString();
+            dLog(TAG, "baidu-dock-HiShowService-setAppToHomeApp-currentDefaultHome:"+currentDefaultHomeKey);
+            if (!currentDefaultHomeKey.equals(key)) {
+                mPrevDefaultHome = currentDefaultHomeKey;
+            }
+        }
+
+        final List<ComponentName> allComponents = new ArrayList<>();
+        for (ResolveInfo info : homeActivities) {
+            final ActivityInfo appInfo = info.activityInfo;
+            ComponentName activityName = new ComponentName(appInfo.packageName, appInfo.name);
+            allComponents.add(activityName);
+        }
+
+        IntentFilter HOME_FILTER = new IntentFilter(Intent.ACTION_MAIN);
+        HOME_FILTER.addCategory(Intent.CATEGORY_HOME);
+        HOME_FILTER.addCategory(Intent.CATEGORY_DEFAULT);
+
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            pm.replacePreferredActivity(HOME_FILTER, IntentFilter.MATCH_CATEGORY_EMPTY,
+                          allComponents.toArray(new ComponentName[0]), component);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    @Override
+    public void resetPrevHomeApp() {
+        setAppToHomeApp(mPrevDefaultHome, false);
+    }
+
+    @Override
+    public List<AlarmInfo> queryAllAlarmInfo() {
+        return AlarmInfo.queryAlarm(mContext.getContentResolver());
+    }
+
+    @Override
+    public int addNewAlarm(AlarmInfo alarmInfo) {
+        return AlarmInfo.addAlarm(mContext.getContentResolver(), alarmInfo);
+    }
+
+    @Override
+    public boolean deleteAlarm(int alarmId) {
+        return AlarmInfo.deleteAlarm(mContext.getContentResolver(), alarmId);
+    }
+
+    @Override
+    public boolean controlAlarm(boolean enable) {
+        return false;
+    }
+
+    @Override
+    public void closeCurrentAlarm() {
+        Intent intent = new Intent();
+        intent.setClassName("com.android.deskclock", "com.android.deskclock.alarms.AlarmService");
+        intent.setAction("STOP_ALARM");
+        intent.putExtra("stopAlarmFromDock", true);
+
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            dLog(TAG, "baidu-dock-HiShowService-closeCurrentAlarm:");
+            mContext.startService(intent);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    @Override
+    public void setActivityController(List<String> pkgWhiteList, List<String> actWhiteList,
+                      List<String> pkgBlackList, List<String> actBlackList) {
+        PackageManager pm = mContext.getPackageManager();
+        pm.setActivityController(pkgWhiteList, actWhiteList, pkgBlackList, actBlackList);
+    }
+
+    @Override
+    public void cancelActivityController() {
+        PackageManager pm = mContext.getPackageManager();
+        pm.cancelActivityController();
+    }
+
+}

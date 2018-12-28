@@ -1,0 +1,56 @@
+package com.android.systemui.lenovo.screenshot;
+
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.KeyEvent;
+import android.widget.RelativeLayout;
+
+/**
+ * Modified by ligr3 at 2014-09-04, changed to RelativeLayout
+ *
+ */
+public class AreaScreenshotRelativeLayout extends RelativeLayout {
+
+    OnKeyListener onKeyListener;
+    
+    public AreaScreenshotRelativeLayout(Context context) {
+        super(context);
+    }
+
+    public AreaScreenshotRelativeLayout(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    public AreaScreenshotRelativeLayout(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+    }
+    
+    @Override
+    protected void onLayout(boolean arg0, int arg1, int arg2, int arg3, int arg4) {
+    	super.onLayout(arg0, arg1, arg2, arg3, arg4);
+    }
+    
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+//    	Log.e("TAG", "------dispatchKeyEvent" + event.getKeyCode());
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            if (onKeyListener != null) {
+                onKeyListener.onKey(this, KeyEvent.KEYCODE_BACK, event);
+                return true;
+            }
+        }
+        return super.dispatchKeyEvent(event);
+    }
+    
+    @Override
+    public void setOnKeyListener(OnKeyListener l) {
+//        super.setOnKeyListener(l);
+        this.onKeyListener = l;
+    }
+    
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+    }
+    
+}

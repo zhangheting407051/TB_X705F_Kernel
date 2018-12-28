@@ -1,0 +1,22 @@
+package com.android.systemui.scrollshot;
+
+import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.telecom.Log;
+
+import com.android.systemui.R;
+
+public class ShareScrollshotReceiver extends BroadcastReceiver {
+
+    private final static String TAG = "ShareScrollshotReceiver";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Log.d(TAG, "ScrollShot CANCEL_ID = " + ScrollshotNotification.CANCEL_ID);
+        final NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.cancel(R.id.notification_screenshot);
+    }
+}

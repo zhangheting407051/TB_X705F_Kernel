@@ -1,0 +1,36 @@
+#!/bin/sh
+
+LOCAL_PATH=$1
+DESTFILE=$LOCAL_PATH/include/DlbSecCheck.h
+CUR_PRODUCT_MANUFACTURER=$2
+CUR_PRODUCT_BRAND=$3
+CUR_PRODUCT_MODEL=$4
+CUR_PRODUCT_DEVICE=$5
+
+rm -f $DESTFILE
+
+# Create DlbSecCheck.h
+echo "#ifndef DOLBY_SEC_CHECK_H_">$DESTFILE
+echo "#define DOLBY_SEC_CHECK_H_">>$DESTFILE
+echo "#include <utils/String8.h>">>$DESTFILE
+echo "namespace android {">>$DESTFILE
+echo "class DlbSecCheck">>$DESTFILE
+echo "{">>$DESTFILE
+echo "public:">>$DESTFILE
+echo "    DlbSecCheck();">>$DESTFILE
+echo "    virtual ~DlbSecCheck();">>$DESTFILE
+echo "    virtual bool check();">>$DESTFILE
+echo "protected:">>$DESTFILE
+echo "    const android::String8 refManufacturer = android::String8(\""$CUR_PRODUCT_MANUFACTURER"\");">>$DESTFILE
+echo "    const android::String8 refBrand = android::String8(\""$CUR_PRODUCT_BRAND"\");">>$DESTFILE
+echo "    const android::String8 refModel = android::String8(\""$CUR_PRODUCT_MODEL"\");">>$DESTFILE
+echo "    const android::String8 refDevice = android::String8(\""$CUR_PRODUCT_DEVICE"\");">>$DESTFILE
+echo "    const int mSecurityCriteriaNum = 4;">>$DESTFILE
+echo "private:">>$DESTFILE
+echo "    void unmangle(const char* buff, char* outputBuff, int buffLen, const char* manglingSeq, int seqLen);">>$DESTFILE
+echo "    const char* mMangleSeq = { \"\\x5b\\xd6\\xe5\\x6b\\xd5\" };">>$DESTFILE
+echo "    const int mMangleSeqLen = 5;">>$DESTFILE
+echo "};">>$DESTFILE
+echo "}">>$DESTFILE
+echo "#endif">>$DESTFILE
+

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 begin-->
+
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dip"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:visibility="visible" >
+
+    <ImageButton
+        android:id="@+id/cancelFilter"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_weight=".1"
+        android:background="?android:attr/actionBarItemBackground"
+        android:gravity="center"
+        android:src="@drawable/cancel"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="@dimen/land_toolbar_left_margin"/>
+
+    <ImageButton
+        android:id="@+id/applyFilter"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_gravity="right|center_vertical"
+        android:layout_weight=".1"
+        android:background="?android:attr/actionBarItemBackground"
+        android:gravity="center"
+        android:src="@drawable/done"
+        android:layout_marginLeft="@dimen/land_palette_save_left_magin"/>
+
+</LinearLayout>
+<!--fix feature#10896 xiangkezhu@wind-mobi.com 20180319 end-->
